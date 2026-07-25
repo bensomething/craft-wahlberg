@@ -1,0 +1,6 @@
+/vendor
+composer.lock
+.claude/
+.DS_Store
+.phpunit.cache
+phpunit.xml.bak

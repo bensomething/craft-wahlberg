@@ -1,0 +1,32 @@
+{#
+    Macros for dropping the editor into your own templates.
+
+        {% import 'wahlberg/editor' as wahlberg %}
+
+        {{ wahlberg.field({
+            label: 'Release Notes'|t('my-plugin'),
+            instructions: 'Markdown, please.'|t('my-plugin'),
+            name: 'notes',
+            value: settings.notes,
+            errors: settings.getErrors('notes'),
+        }) }}
+
+    `field()` wraps the editor in Craft’s own field chrome — label, instructions,
+    errors, required marker. `input()` gives you the bare editor.
+
+    Editor options (`toolbar`, `preview`, `highlight`, `flavor`, `fontSize`,
+    `minRows`, `maxRows`, `inputAttributes`) can go in the same config; anything
+    else is passed through to Craft’s field macro.
+#}
+
+{% macro input(config) %}
+    {{- wahlbergEditor(config) -}}
+{% endmacro %}
+
+{% macro field(config) %}
+    {% import '_includes/forms' as forms %}
+    {% set config = config|merge({
+        id: config.id ?? "wahlberg-#{random()}",
+    }) %}
+    {{ forms.field(config, _self.input(config)) }}
+{% endmacro %}

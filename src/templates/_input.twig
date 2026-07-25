@@ -1,0 +1,58 @@
+{% set hasHeader = showPreview or showToolbar %}
+{% set highlight = highlight ?? true %}
+{% set inputAttributes = inputAttributes ?? {} %}
+
+<div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
+    style="--wahlberg-font-size: {{ fontSize }}px">
+    {% if hasHeader %}
+        <div class="wahlberg-header">
+            {% if showPreview %}
+                <div class="wahlberg-tabs" role="tablist">
+                    <button type="button" role="tab" class="wahlberg-tab is-selected" data-tab="write"
+                        aria-selected="true">{{ 'Write'|t('wahlberg') }}</button>
+                    <button type="button" role="tab" class="wahlberg-tab" data-tab="preview" tabindex="-1"
+                        aria-selected="false">{{ 'Preview'|t('wahlberg') }}</button>
+                </div>
+            {% endif %}
+
+            {% if showToolbar %}
+                <div class="wahlberg-toolbar" data-toolbar>
+                    {% for group in toolbar %}
+                        <div class="wahlberg-toolbar-group" data-toolbar-group>
+                            {% for button in group %}
+                                <button type="button" class="wahlberg-tool" data-command="{{ button.command }}"
+                                    {%- if button.shortcut %} data-shortcut="{{ button.shortcut }}"{% endif %}
+                                    title="{{ button.label }}" aria-label="{{ button.label }}">{{ button.icon|raw }}</button>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+
+                    {# The buttons fold into here when the header runs out of room #}
+                    <div class="wahlberg-overflow hidden" data-overflow>{{ overflowMenu|raw }}</div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="wahlberg-body">
+        <div class="wahlberg-editor" data-editor>
+            {% if highlight %}
+                {# Sits behind the textarea, showing the same text with the syntax picked out.
+                   The textarea's own text is transparent, so this is what's read on screen.
+
+                   Deliberately a div, not a pre/code: the CP stylesheet forces
+                   `font-size: .9em !important` onto every `code` element, which would
+                   render this layer 10% narrower than the textarea it has to match. #}
+                <div class="wahlberg-highlight" data-highlight aria-hidden="true"></div>
+            {% endif %}
+
+            <textarea id="{{ id }}"{% if name %} name="{{ name }}"{% endif %} rows="{{ rows }}"
+                class="wahlberg-source" data-source spellcheck="true" autocomplete="off"
+                autocapitalize="off"{{ attr(inputAttributes) }}>{{ value }}</textarea>
+        </div>
+
+        {% if showPreview %}
+            <div class="wahlberg-preview" data-preview hidden></div>
+        {% endif %}
+    </div>
+</div>
