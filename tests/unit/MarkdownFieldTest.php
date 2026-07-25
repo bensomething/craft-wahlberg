@@ -5,6 +5,7 @@ namespace bensomething\wahlberg\tests\unit;
 use bensomething\wahlberg\fields\MarkdownField;
 use bensomething\wahlberg\models\MarkdownData;
 use bensomething\wahlberg\tests\TestCase;
+use craft\elements\Entry;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestDox;
 use yii\db\Schema;
@@ -13,8 +14,8 @@ class MarkdownFieldTest extends TestCase
 {
     /** The settings this field adds, as opposed to the ones every field has. */
     private const SETTINGS = [
-        'flavor', 'fontSize', 'minRows', 'maxRows',
-        'showToolbar', 'showPreview', 'purifyHtml', 'purifierConfig',
+        'flavour', 'preserveLineBreaks', 'fontSize', 'minRows', 'maxRows',
+        'showToolbar', 'showPreview', 'showHighlighting', 'parseRefs', 'purifyHtml', 'purifierConfig',
     ];
 
     private function field(array $config = []): MarkdownField
@@ -65,10 +66,87 @@ class MarkdownFieldTest extends TestCase
     #[TestDox('the field settings reach the value object')]
     public function testSettingsArePassedToTheValue(): void
     {
-        $value = $this->field(['flavor' => 'original', 'purifyHtml' => false])->normalizeValue('hi');
+        $value = $this->field([
+            'flavour' => 'original',
+            'purifyHtml' => false,
+            'purifierConfig' => 'Loose.json',
+            'parseRefs' => false,
+        ])->normalizeValue('hi');
 
-        self::assertSame('original', $value->getFlavor());
+        self::assertSame('original', $value->getFlavour());
         self::assertFalse($value->getPurified());
+        self::assertSame('Loose.json', $value->getPurifierConfig());
+        self::assertFalse($value->getParseRefs());
+    }
+
+    #[TestDox('preserved line breaks resolve to the `gfm-comment` parser')]
+    #[DataProvider('lineBreakSettings')]
+    public function testPreserveLineBreaksResolvesToAParserFlavour(array $config, string $expected): void
+    {
+        self::assertSame($expected, $this->field($config)->getParserFlavour());
+        self::assertSame($expected, $this->field($config)->normalizeValue('hi')->getFlavour());
+    }
+
+    public static function lineBreakSettings(): array
+    {
+        return [
+            'on by default' => [[], 'gfm-comment'],
+            'off' => [['preserveLineBreaks' => false], 'gfm'],
+            'on' => [['preserveLineBreaks' => true], 'gfm-comment'],
+            // The other parsers have no such option, so the setting can’t leak into them
+            'ignored by traditional' => [['flavour' => 'original', 'preserveLineBreaks' => true], 'original'],
+            'ignored by extra' => [['flavour' => 'extra', 'preserveLineBreaks' => true], 'extra'],
+        ];
+    }
+
+    #[TestDox('the setting decides whether a single newline becomes a `<br>`')]
+    public function testPreserveLineBreaksChangesTheHtml(): void
+    {
+        self::assertStringContainsString('<br', (string)$this->field()->normalizeValue("one\ntwo")->getHtml());
+        self::assertStringNotContainsString(
+            '<br',
+            (string)$this->field(['preserveLineBreaks' => false])->normalizeValue("one\ntwo")->getHtml(),
+        );
+    }
+
+    #[TestDox('`flavor` from before the British spelling still applies')]
+    public function testLegacyFlavorSpellingIsCarriedOver(): void
+    {
+        $field = $this->field(['flavor' => MarkdownField::FLAVOUR_ORIGINAL]);
+
+        self::assertSame(MarkdownField::FLAVOUR_ORIGINAL, $field->flavour);
+        self::assertArrayNotHasKey('flavor', $field->getSettings());
+
+        // The old spelling still routes through the `gfm-comment` migration
+        self::assertTrue($this->field(['flavor' => 'gfm-comment'])->preserveLineBreaks);
+    }
+
+    #[TestDox('`gfm-comment` from before it became a setting still applies')]
+    public function testLegacyGfmCommentFlavourIsCarriedOver(): void
+    {
+        $field = $this->field(['flavour' => MarkdownField::FLAVOUR_GFM_COMMENT]);
+
+        self::assertSame(MarkdownField::FLAVOUR_GFM, $field->flavour);
+        self::assertTrue($field->preserveLineBreaks);
+        self::assertSame(MarkdownField::FLAVOUR_GFM_COMMENT, $field->getParserFlavour());
+
+        // An explicit setting alongside the old flavour name is left alone
+        self::assertFalse(
+            $this->field(['flavour' => MarkdownField::FLAVOUR_GFM_COMMENT, 'preserveLineBreaks' => false])
+                ->preserveLineBreaks,
+        );
+    }
+
+    #[TestDox('reference tags resolve against the element’s own site')]
+    public function testTheElementsSiteIsPassedToTheValue(): void
+    {
+        $element = new Entry();
+        $element->siteId = 3;
+
+        self::assertSame(3, $this->field()->normalizeValue('hi', $element)->getSiteId());
+
+        // Nothing to go on outside an element — Craft falls back to the current site
+        self::assertNull($this->field()->normalizeValue('hi')->getSiteId());
     }
 
     public function testSerializesBackToTheRawSource(): void
@@ -111,10 +189,12 @@ class MarkdownFieldTest extends TestCase
     public static function invalidSettings(): array
     {
         return [
-            'unknown flavor' => [['flavor' => 'markdown-but-worse'], 'flavor'],
+            'unknown flavour' => [['flavour' => 'markdown-but-worse'], 'flavour'],
             'text too small' => [['fontSize' => 4], 'fontSize'],
             'text too big' => [['fontSize' => 64], 'fontSize'],
-            'too few rows' => [['minRows' => 1], 'minRows'],
+            'too few rows' => [['minRows' => MarkdownField::MIN_ROWS - 1], 'minRows'],
+            'negative rows' => [['minRows' => -1], 'minRows'],
+            'too few maximum rows' => [['minRows' => MarkdownField::MIN_ROWS, 'maxRows' => MarkdownField::MIN_ROWS - 1], 'maxRows'],
             'max below min' => [['minRows' => 12, 'maxRows' => 6], 'maxRows'],
         ];
     }
@@ -132,12 +212,37 @@ class MarkdownFieldTest extends TestCase
     {
         return [
             'defaults' => [[]],
-            'every flavor' => [['flavor' => 'extra']],
+            'every flavour' => [['flavour' => 'extra']],
             'smallest text' => [['fontSize' => MarkdownField::MIN_FONT_SIZE]],
             'largest text' => [['fontSize' => MarkdownField::MAX_FONT_SIZE]],
             'no maximum' => [['minRows' => 4, 'maxRows' => null]],
             'max equal to min' => [['minRows' => 12, 'maxRows' => 12]],
+            'as short as it goes' => [['minRows' => MarkdownField::MIN_ROWS]],
+            'as short as it goes, fixed' => [['minRows' => MarkdownField::MIN_ROWS, 'maxRows' => MarkdownField::MIN_ROWS]],
         ];
+    }
+
+    #[TestDox('a new field starts out with the shared defaults')]
+    public function testDefaults(): void
+    {
+        $field = $this->field();
+
+        // The standalone editor falls back to these same constants, so a plugin
+        // rendering the macros gets an editor that matches a Markdown field
+        self::assertSame(14, MarkdownField::DEFAULT_FONT_SIZE);
+        self::assertSame(2, MarkdownField::DEFAULT_MIN_ROWS);
+
+        // A field starts out two rows tall, but can be set shorter than that
+        self::assertGreaterThan(MarkdownField::MIN_ROWS, MarkdownField::DEFAULT_MIN_ROWS);
+
+        self::assertSame(MarkdownField::DEFAULT_FONT_SIZE, $field->fontSize);
+        self::assertSame(MarkdownField::DEFAULT_MIN_ROWS, $field->minRows);
+        self::assertNull($field->maxRows);
+
+        // The editor's chrome is all on unless a field turns it off
+        self::assertTrue($field->showToolbar);
+        self::assertTrue($field->showPreview);
+        self::assertTrue($field->showHighlighting);
     }
 
     #[TestDox('settings are labelled the way the settings screen labels them')]
@@ -175,11 +280,16 @@ class MarkdownFieldTest extends TestCase
         self::assertLessThanOrEqual(100, strlen($long));
     }
 
-    public function testEveryFlavorIsOneTheParserKnows(): void
+    public function testEveryFlavourIsOneTheParserKnows(): void
     {
-        foreach (array_keys(MarkdownField::flavors()) as $flavor) {
-            self::assertArrayHasKey($flavor, \yii\helpers\Markdown::$flavors, "Unknown flavor `$flavor`");
+        foreach (MarkdownField::parserFlavours() as $flavour) {
+            self::assertArrayHasKey($flavour, \yii\helpers\Markdown::$flavors, "Unknown flavour `$flavour`");
         }
+
+        // Everything offered as a choice has to be parseable, but not the other way
+        // round — `gfm-comment` is a resolved setting rather than one of the options
+        self::assertSame([], array_diff(array_keys(MarkdownField::flavours()), MarkdownField::parserFlavours()));
+        self::assertArrayNotHasKey(MarkdownField::FLAVOUR_GFM_COMMENT, MarkdownField::flavours());
     }
 
     #[TestDox('the field icon resolves to something that exists')]

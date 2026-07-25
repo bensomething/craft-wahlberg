@@ -3,20 +3,36 @@
        inside a form control than it does elsewhere, which would put the two
        layers on different faces. */
     --wahlberg-mono: SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-    --wahlberg-surface: var(--white, #fff);
-    --wahlberg-tab-border: #e0e5eb;
 
-    /* Syntax palette — override these to retheme the editor. Colour only, on
-       purpose: see the note by the token styles. */
-    --wahlberg-mark: #98a2b3;
-    --wahlberg-heading: #0b1220;
-    --wahlberg-strong: #0b1220;
-    --wahlberg-em: #334155;
-    --wahlberg-code: #b45309;
-    --wahlberg-link: #2563eb;
-    --wahlberg-url: #6b7280;
-    --wahlberg-quote: #64748b;
-    --wahlberg-selection: rgb(37 99 235 / 22%);
+    /* The writing surface is an input, so it takes the input colour rather than a
+       literal white. `--white` is the wrong token for a surface: a dark CP theme
+       leaves it alone, because Craft uses it more often as ink on a coloured fill
+       than as a background. */
+    --wahlberg-surface: var(--input-bg, var(--white, #fff));
+    --wahlberg-tab-border: var(--hairline-color);
+
+    /* Syntax palette. Override these to retheme the editor. Colour only, on
+       purpose: see the note by the token styles.
+
+       Every one of these is a step on Craft's neutral ramp or a semantic colour,
+       never a literal. A theme that redeclares Craft's palette, dark mode
+       included, moves the ramp and the editor moves with it. Hard-coding a hex
+       here is what would opt the field out of theming. */
+    --wahlberg-mark: var(--gray-400);
+    --wahlberg-heading: var(--gray-900);
+    --wahlberg-strong: var(--gray-900);
+    --wahlberg-em: var(--text-color);
+
+    /* Craft has no token for a code colour, and amber-700 is unreadable on a dark
+       surface. `light-dark()` reads the `color-scheme` a dark theme sets, and
+       resolves to the light value when nothing sets one. */
+    --wahlberg-code: light-dark(var(--amber-700, #b45309), var(--amber-300, #fcd34d));
+    --wahlberg-link: var(--link-color);
+    --wahlberg-url: var(--gray-500);
+    --wahlberg-quote: var(--medium-text-color);
+
+    /* Derived from the link colour so it tracks whatever the palette calls blue */
+    --wahlberg-selection: hsl(from var(--link-color, #2563eb) h s l / 22%);
 
     border: 1px solid var(--hairline-color);
     border-radius: var(--large-border-radius, 5px);
@@ -28,7 +44,7 @@
 }
 
 /* Header: tabs on the start edge, formatting buttons on the end edge. No
-   wrapping — the toolbar folds into a menu instead. */
+   wrapping, the toolbar folds into a menu instead. */
 
 .wahlberg-header {
     display: flex;
@@ -87,6 +103,14 @@
 .wahlberg-tab.is-selected {
     border-color: var(--wahlberg-tab-border);
     background-color: var(--wahlberg-surface);
+
+    /* Craft's hairline is translucent, and a border blends with the fill beneath
+       it, so over the tab's own fill it comes out a shade lighter than the
+       header's bottom border running on beside it. Clipping the fill to the
+       padding box leaves the field's background behind both, and the two match.
+       The bottom edge has no border either way, so the tab still merges into the
+       pane below. */
+    background-clip: padding-box;
     color: var(--text-color);
 }
 
@@ -115,8 +139,8 @@
     display: none;
 }
 
-/* The overflow trigger is one of Craft’s menu buttons — strip the button
-   chrome and the disclosure caret so it reads as another toolbar icon */
+/* The overflow trigger is one of Craft’s menu buttons, so strip the button
+   chrome and the disclosure caret to make it read as another toolbar icon */
 
 .wahlberg-overflow {
     display: flex;
@@ -126,7 +150,7 @@
     border-inline-start: 1px solid var(--hairline-color);
 }
 
-/* Craft's .btn brings its own height and padding — size it like the other tools */
+/* Craft's .btn brings its own height and padding, so size it like the other tools */
 .wahlberg-more.btn {
     display: flex;
     align-items: center;
@@ -191,7 +215,7 @@
     fill: currentcolor;
 }
 
-/* Body — the source is two stacked layers: a <pre> showing the highlighted text,
+/* Body. The source is two stacked layers: a <pre> showing the highlighted text,
    and the real textarea on top with its own text made transparent. Every metric
    that affects where a character lands has to match on both, or they drift. */
 
@@ -211,7 +235,7 @@
     padding: 12px 14px;
     border: 0;
     font-family: var(--wahlberg-mono);
-    font-size: var(--wahlberg-font-size, 15px);
+    font-size: var(--wahlberg-font-size, 14px);
     line-height: 1.7;
     letter-spacing: normal;
     tab-size: 4;
@@ -241,7 +265,6 @@
     position: relative;
     display: block;
     width: 100%;
-    min-height: 6em;
     box-shadow: none;
     background-color: transparent;
     /* The text underneath is what gets read; this layer only carries the caret,
@@ -272,6 +295,7 @@
 }
 
 .wahlberg-preview {
+    position: relative;
     display: block;
     width: 100%;
     margin: 0;
@@ -296,10 +320,13 @@
 }
 
 /* Syntax.
-   Colour and text-decoration only — never font-weight or font-style. A bold or
-   italic cut can resolve to a face with different advance widths than the
-   textarea's regular text, and the two layers drift apart a fraction of a
-   character at a time until the caret is visibly off the end of a line. */
+   Colour and text-decoration apply unconditionally. Weight and slope don't, and
+   the rules that set them are gated on a class the JS adds: a cut the font family
+   hasn't got is fabricated by the browser, and a fabricated bold can advance wider
+   than the textarea's regular text, which drifts the two layers apart a fraction
+   of a character at a time until the caret is visibly off the end of a line. A
+   real monospace cut advances identically, so `alignFaces()` measures the face and
+   only clears it when it does. Don't hoist those rules out of the gate. */
 
 .wh-mark {
     color: var(--wahlberg-mark);
@@ -338,8 +365,41 @@
     color: var(--wahlberg-quote);
 }
 
+/* Weight and slope, once the face has been measured. See the note above.
+
+   A delimiter sits inside the span it delimits, so it would inherit both. Putting
+   it back leaves the markers quiet and the emphasis on the words, which is the
+   thing the author is actually reading. Direct children only, so emphasis nested
+   in a heading keeps the heading's weight. */
+
+.wahlberg--bold-tokens .wh-heading,
+.wahlberg--bold-tokens .wh-strong {
+    font-weight: var(--font-weight-bold, 700);
+}
+
+.wahlberg--bold-tokens :is(.wh-heading, .wh-strong) > .wh-mark {
+    font-weight: normal;
+}
+
+.wahlberg--italic-tokens .wh-em {
+    font-style: italic;
+}
+
+.wahlberg--italic-tokens .wh-em > .wh-mark {
+    font-style: normal;
+}
+
+/* Out of flow, so while it's loading the box stays exactly as tall as the editor
+   it replaced. Craft's spinner is a fixed height taller than one line of text,
+   and in flow it would push a one-row field open and drop it shut again the
+   moment the preview arrived. */
+
 .wahlberg-preview > .spinner {
-    margin: 0 auto;
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    margin: 0;
+    transform: translate(-50%, -50%);
 }
 
 .wahlberg-note {
@@ -348,7 +408,7 @@
     font-style: italic;
 }
 
-/* Rendered Markdown. Deliberately plain — this previews structure, not the
+/* Rendered Markdown. Deliberately plain: this previews structure, not the
    front end's design. */
 
 .wahlberg-preview > :first-child {

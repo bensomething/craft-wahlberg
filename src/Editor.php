@@ -12,7 +12,7 @@ use craft\web\View;
 
 /**
  * Renders the editor on its own, for anywhere you want it that isn’t a Markdown
- * field — a plugin’s own settings screen, a custom field type, a slideout.
+ * field: a plugin’s own settings screen, a custom field type, a slideout.
  *
  * ```php
  * echo Editor::inputHtml([
@@ -23,7 +23,7 @@ use craft\web\View;
  * ```
  *
  * The markup and the JS config this produces are public API. The CSS class names
- * and data attributes inside it are not — go through this method rather than
+ * and data attributes inside it are not, so go through this method rather than
  * hand-rolling the markup, or an upgrade will break you.
  */
 abstract class Editor
@@ -36,7 +36,7 @@ abstract class Editor
      *     toolbar?: bool,
      *     preview?: bool,
      *     highlight?: bool,
-     *     flavor?: string,
+     *     flavour?: string,
      *     fieldUid?: string|null,
      *     fontSize?: int,
      *     minRows?: int,
@@ -53,10 +53,10 @@ abstract class Editor
             'toolbar' => true,
             'preview' => true,
             'highlight' => true,
-            'flavor' => MarkdownField::FLAVOR_GFM,
+            'flavour' => MarkdownField::FLAVOUR_GFM_COMMENT,
             'fieldUid' => null,
-            'fontSize' => 15,
-            'minRows' => 12,
+            'fontSize' => MarkdownField::DEFAULT_FONT_SIZE,
+            'minRows' => MarkdownField::DEFAULT_MIN_ROWS,
             'maxRows' => null,
             'inputAttributes' => [],
         ];
@@ -72,11 +72,11 @@ abstract class Editor
         $id = $config['id'] ?: ($config['name'] ? Html::id((string)$config['name']) : sprintf('wahlberg-%s', mt_rand()));
         $containerId = "$id-editor";
 
-        $flavor = isset(MarkdownField::flavors()[$config['flavor']])
-            ? $config['flavor']
-            : MarkdownField::FLAVOR_GFM;
+        $flavour = in_array($config['flavour'], MarkdownField::parserFlavours(), true)
+            ? $config['flavour']
+            : MarkdownField::FLAVOUR_GFM_COMMENT;
 
-        $minRows = max(3, (int)$config['minRows']);
+        $minRows = max(MarkdownField::MIN_ROWS, (int)$config['minRows']);
         $maxRows = $config['maxRows'] !== null ? max($minRows, (int)$config['maxRows']) : null;
 
         $view->registerJs(sprintf(
@@ -86,7 +86,7 @@ abstract class Editor
             // trusting anything the browser sends
             Json::encode([
                 'fieldUid' => $config['fieldUid'],
-                'flavor' => $flavor,
+                'flavour' => $flavour,
                 'minRows' => $minRows,
                 'maxRows' => $maxRows,
             ]),

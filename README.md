@@ -5,14 +5,16 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - Raw Markdown in, raw Markdown out
 - Server-side preview, parsed with the same parser as Craft’s `|md` filter, so the preview can’t drift from the front end
 - HTML Purifier on the parsed output by default, so inline `<script>` can’t ride in on an author’s Markdown
+- Craft reference tags like `[Read more]({entry:123:url})` resolved on output, and left alone inside code
 - Markdown syntax highlighting in the Write tab, without giving up the plain textarea
 - Formatting toolbar: heading, bold, italic, quote, code, link, bulleted and numbered lists, folding into a menu when the field is too narrow for them
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
 - `⌘B` / `⌘I` / `⌘K` shortcuts, and Enter continues lists and blockquotes
 - Buttons toggle: hit **Bold** on already-bold text and the markers come off
-- Native browser undo — formatting buttons don’t blow away the undo stack
-- No editor library bundled; it’s a textarea, some vanilla JS, and Craft’s own icons
-- Per-field Markdown flavor, starting height, and toolbar visibility
+- Native browser undo, so formatting buttons don’t blow away the undo stack
+- No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
+- Per-field Markdown flavour, starting height, and toolbar visibility
+- Optional Tabler Icons integration: `{icon:star}` tokens render in the Preview tab when that plugin is installed
 - GraphQL support
 
 ## Requirements
@@ -34,13 +36,16 @@ Create a field of type **Markdown** and add it to a field layout.
 
 **Field settings**
 
-- *Markdown Flavor* — which parser the Preview tab and the field’s `html` value use. GitHub-Flavored Markdown (the default) adds fenced code blocks, tables, strikethrough, and autolinking. The “line breaks preserved” variant additionally turns single newlines into `<br>`s. Traditional Markdown and Markdown Extra are also available.
-- *Text Size* — how big the Markdown source is in the editor, 11–20px. Editing comfort only; it has no bearing on the front end.
-- *Minimum Rows* — how short the editor is allowed to get. It grows from there as the author types.
-- *Maximum Rows* — how tall it may grow before it starts scrolling instead. Leave blank to let it keep growing. Dragging the resize handle overrides auto-growing for that session.
-- *Show Preview Tab* — with this off, the editor is source-only and the toolbar moves over to where the tabs were.
-- *Show Formatting Toolbar* — hide the buttons for authors who’d rather just type. The keyboard shortcuts keep working either way.
-- *Purify HTML* — see below.
+- *Markdown Flavour*: which parser the Preview tab and the field’s `html` value use. GitHub-Flavoured Markdown (the default) adds fenced code blocks, tables, strikethrough, and autolinking. Traditional Markdown and Markdown Extra are also available.
+- *Preserve Line Breaks*: GitHub-Flavoured Markdown only, on by default. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do, so an address or a set of credits breaks where the author typed it. Turn it off if your Markdown is hard-wrapped and should reflow into paragraphs. Under the hood this is the parser’s `gfm-comment` flavour, which is what `.flavour` reports and what `|md` will want.
+- *Text Size*: how big the Markdown source is in the editor, 11–20px, defaulting to 14. Editing comfort only. It has no bearing on the front end.
+- *Minimum Rows*: how short the editor is allowed to get, 1 or more, defaulting to 2. It grows from there as the author types.
+- *Maximum Rows*: how tall it may grow before it starts scrolling instead. Leave blank to let it keep growing. Dragging the resize handle overrides auto-growing for that session.
+- *Show Preview Tab*: with this off, the editor is source-only and the toolbar moves over to where the tabs were.
+- *Show Formatting Toolbar*: hide the buttons for authors who’d rather just type. The keyboard shortcuts keep working either way.
+- *Show Syntax Highlighting*: colour the Markdown as it’s typed, on by default. With this off the Write tab is a plain textarea with the same sizing, toolbar and Preview tab, which is the escape hatch if a font stack won’t hold the highlighted layer and the textarea together.
+- *Parse Reference Tags*: see below.
+- *Purify HTML*: see below.
 
 ## Templating
 
@@ -50,7 +55,7 @@ The field value is `null`, or a `MarkdownData` object:
 {{ entry.body.html }}   {# the parsed HTML #}
 {{ entry.body.raw }}    {# the raw Markdown, as typed #}
 {{ entry.body.text }}   {# parsed, then stripped to plain text #}
-{{ entry.body.flavor }} {# the field's configured flavor #}
+{{ entry.body.flavour }} {# the flavour it was parsed with #}
 ```
 
 `{{ entry.body }}` on its own outputs the raw Markdown, so Craft’s own filter still works if you’d rather parse it yourself:
@@ -58,6 +63,33 @@ The field value is `null`, or a `MarkdownData` object:
 ```twig
 {{ entry.body|md('gfm') }}
 {{ entry.body|md(inlineOnly=true) }}
+```
+
+### The `|marky` filter
+
+For Markdown that isn’t in a Markdown field, whether a plain text field, a plugin setting, or a string you built in the template, `|marky` parses it the way the field does: reference tags resolved, HTML purified.
+
+```twig
+{{ entry.summary|marky }}
+{{ entry.summary|marky(flavour='original') }}
+{{ entry.summary|marky(refs=false, purify=false) }}
+```
+
+Arguments are `flavour`, `refs`, `purify`, `purifierConfig` and `siteId`, all optional.
+
+Craft’s `|md` is untouched and still the right choice when plain Markdown parsing is all you want. The difference is what each one does beyond parsing:
+
+| | `\|md` | `\|marky` | `.html` |
+| --- | --- | --- | --- |
+| Parses Markdown | ✅ | ✅ | ✅ |
+| Resolves reference tags | ❌ | ✅ | ✅ |
+| Purifies HTML | ❌ | ✅ | ✅ |
+| Uses the field’s settings | ❌ | only when piped a field value | ✅ |
+
+Piping a field value, `{{ entry.body|marky }}`, is the same as `{{ entry.body.html }}`, since it takes the field’s own settings. It’s worth doing only to override one of them for a single render:
+
+```twig
+{{ entry.body|marky(refs=false) }}
 ```
 
 Empty fields are `null`, so the usual guard applies:
@@ -68,14 +100,37 @@ Empty fields are `null`, so the usual guard applies:
 {% endif %}
 ```
 
+## Reference tags
+
+Craft’s [reference tags](https://craftcms.com/docs/5.x/system/reference-tags.html) work in Markdown fields, and are resolved when the field renders. **Parse Reference Tags** is on by default.
+
+```markdown
+[Read the docs]({entry:123:url}), see also {entry:my-section/some-entry:title}.
+
+![Diagram]({asset:456:url})
+```
+
+They’re resolved on the way out, not on save, so an entry that changes its slug doesn’t leave a trail of dead links behind it. An unresolvable tag falls back to whatever Craft’s fallback syntax says, or to the tag itself:
+
+```markdown
+{entry:999:title || Something else}
+```
+
+Two things worth knowing:
+
+- **Code is left alone.** A reference tag in a fenced block or an inline code span renders as the author typed it, which is what you want when the thing you’re documenting *is* reference tags. This works because tags are resolved after parsing, when the parser has already decided what counts as code, so there’s no second guess at Markdown’s fence rules to get wrong.
+- **Resolved values are purified.** Whatever a tag resolves to goes through HTML Purifier along with the rest of the content, assuming **Purify HTML** is on.
+
+On a multi-site install, tags resolve against the site the element is being rendered in. Override that per tag with Craft’s own `@` syntax, `{entry:123@german:url}`, or for a whole render with `{{ text|marky(siteId=2) }}`.
+
 ## Raw HTML and purification
 
-Markdown lets authors write HTML inline, so a Markdown field is an HTML field wearing a disguise. **Purify HTML** is on by default: `entry.body.html` is run through [HTML Purifier](http://htmlpurifier.org/) after parsing, using the same defaults as Craft’s own HTML fields — which means YouTube and Vimeo iframes survive and `<script>` doesn’t.
+Markdown lets authors write HTML inline, so a Markdown field is an HTML field wearing a disguise. **Purify HTML** is on by default: `entry.body.html` is run through [HTML Purifier](http://htmlpurifier.org/) after parsing, using the same defaults as Craft’s own HTML fields, which means YouTube and Vimeo iframes survive and `<script>` doesn’t.
 
 Two things to know about how that works here:
 
-- **It runs at output, not on save.** Craft’s CKEditor field purifies the value as it’s stored, because what’s stored *is* HTML. Here the stored value is Markdown source, and purifying source would mangle it — autolinks like `<https://example.com>` and `<` inside code fences are not markup. So purification happens each time `.html` is rendered, and the raw Markdown is never touched.
-- **`|md` bypasses it.** `{{ entry.body.html }}` is purified; `{{ entry.body|md }}` runs Craft's filter over the raw value and isn’t. That’s deliberate — `.raw` has to stay pristine — but it means the protection lives on one particular path.
+- **It runs at output, not on save.** Craft’s CKEditor field purifies the value as it’s stored, because what’s stored *is* HTML. Here the stored value is Markdown source, and purifying source would mangle it, since autolinks like `<https://example.com>` and `<` inside code fences are not markup. So purification happens each time `.html` is rendered, and the raw Markdown is never touched.
+- **`|md` bypasses it.** `{{ entry.body.html }}` is purified. `{{ entry.body|md }}` runs Craft's filter over the raw value and isn’t. That’s deliberate, since `.raw` has to stay pristine, but it means the protection lives on one particular path. `|marky` is on that path, `|md` isn’t.
 
 To change what’s allowed through, drop a JSON config file in `config/htmlpurifier/` and select it in the field’s settings, exactly as you would for a CKEditor field:
 
@@ -88,11 +143,25 @@ To change what’s allowed through, drop a JSON config file in `config/htmlpurif
 
 Turning **Purify HTML** off renders exactly what authors type, scripts included. Reasonable when the only people editing are the ones who could edit templates anyway.
 
+## Tabler Icons
+
+If [Tabler Icons](https://github.com/bensomething/craft-tabler-icons) is installed, the Preview tab renders its `{icon:star}` tokens as icons, so authors can see them without leaving the editor. Nothing to configure, and nothing happens if that plugin isn’t installed or is switched off, in which case the token is previewed exactly as typed.
+
+**This is the Preview tab only.** The field’s own value leaves the tokens alone, so it’s still your template that turns them into icons:
+
+```twig
+{{ entry.body.html|tabler }}
+```
+
+That’s the one place in this plugin where the preview is deliberately a step ahead of `entry.body.html`. Pipe the output through `|tabler` and the two agree, and the filter is a no-op on content without tokens, so it’s safe to apply everywhere. It works this way because the icons are inline SVG and HTML Purifier has no notion of SVG: purifying an already-resolved icon strips it back out and leaves an empty wrapper behind. So the preview resolves them *after* purifying, which is safe because the markup comes from Tabler’s own files rather than anything an author typed, but it isn’t something the stored value can honestly do on the way through.
+
+Tokens inside a code fence or an inline code span are left as typed, the same as reference tags, so documenting the syntax works.
+
 ## Using the editor in your own plugin
 
 The editor isn’t tied to the field type. Install Wahlberg as a dependency and you can put it on any textarea in the control panel.
 
-From a template — this wraps it in Craft’s own field chrome, so label, instructions, errors and the required marker all behave as they would for any other field:
+From a template. This wraps it in Craft’s own field chrome, so label, instructions, errors and the required marker all behave as they would for any other field:
 
 ```twig
 {% import 'wahlberg/editor' as wahlberg %}
@@ -117,9 +186,11 @@ echo Editor::inputHtml([
 ]);
 ```
 
-**Options** — `name`, `value`, `id`, `toolbar`, `preview`, `highlight`, `flavor`, `fontSize`, `minRows`, `maxRows`, and `inputAttributes` (merged onto the `<textarea>`, for placeholders and the like). Anything else in the config is passed through to Craft’s field macro.
+**Options**: `name`, `value`, `id`, `toolbar`, `preview`, `highlight`, `flavour`, `fontSize`, `minRows`, `maxRows`, and `inputAttributes` (merged onto the `<textarea>`, for placeholders and the like). Anything else in the config is passed through to Craft’s field macro.
 
-Turn `highlight` off and you get a plain textarea with the same chrome — sizing, toolbar if you want it — but no Markdown colouring:
+The ones you leave out fall back to the same defaults a Markdown field starts with: 14px text, a 2-row minimum, no maximum. An editor rendered from another plugin matches one in a field layout without having to be configured to.
+
+Turn `highlight` off and you get a plain textarea with the same chrome, sizing and toolbar included, but no Markdown colouring:
 
 ```twig
 {{ wahlberg.field({
@@ -132,9 +203,9 @@ Turn `highlight` off and you get a plain textarea with the same chrome — sizin
 }) }}
 ```
 
-The **Preview** tab works without a field behind it — it parses with whatever `flavor` you pass and always purifies, since there are no field settings to consult.
+The **Preview** tab works without a field behind it. It parses with whatever `flavour` you pass and always purifies, since there are no field settings to consult. There’s no *Preserve Line Breaks* option out here: `flavour` takes a parser flavour directly, so pass `gfm` to turn line breaks off and `gfm-comment` (the default) to keep them.
 
-What’s public API here is the three entry points and their options. The markup they generate, the CSS class names, and the data attributes the JS binds to are all internal, and will change without a major version — so render through these rather than hand-rolling the HTML.
+What’s public API here is the three entry points and their options. The markup they generate, the CSS class names, and the data attributes the JS binds to are all internal and will change without a major version, so render through these rather than hand-rolling the HTML.
 
 ## GraphQL
 
@@ -162,18 +233,22 @@ Markdown fields resolve to a `wahlberg_Markdown` type:
 | Italic | `⌘I` / `Ctrl+I` |
 | Link | `⌘K` / `Ctrl+K` |
 
-The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*. Dragging the resize handle takes over from there — once someone has picked a height by hand, it stops resizing itself.
+The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*. Dragging the resize handle takes over from there. Once someone has picked a height by hand, it stops resizing itself.
 
 ### Syntax highlighting
 
-The Write tab highlights Markdown as you type. It's still a plain `<textarea>` — the highlighting is a layer rendered behind it, showing the same text with the syntax picked out, while the textarea's own text is made transparent. That keeps native undo, spellcheck, selection, and form submission working exactly as they would otherwise.
+The Write tab highlights Markdown as you type. It's still a plain `<textarea>`. The highlighting is a layer rendered behind it, showing the same text with the syntax picked out, while the textarea's own text is made transparent. That keeps native undo, spellcheck, selection, and form submission working exactly as they would otherwise.
 
-Two details keep the layers locked together. Trailing spaces are rendered as non-breaking spaces, because `white-space: pre-wrap` lets ordinary trailing spaces hang with no width while the textarea's caret still advances past them. And on load the editor measures a character's rendered width in each layer and corrects any difference with `letter-spacing` — a textarea and a `<pre>` don't reliably resolve the same face from the same font stack. If something still looks off, add the `wahlberg--debug` class to the field to paint the textarea's own text in red over the layer beneath it, and read `data-advance` off the `<pre>` for the two measurements.
+Two details keep the layers locked together. Trailing spaces are rendered as non-breaking spaces, because `white-space: pre-wrap` lets ordinary trailing spaces hang with no width while the textarea's caret still advances past them. And on load the editor measures a character's rendered width in each layer and corrects any difference with `letter-spacing`, because a textarea and a `<pre>` don't reliably resolve the same face from the same font stack. If something still looks off, add the `wahlberg--debug` class to the field to paint the textarea's own text in red over the layer beneath it, and read `data-advance` off the `<pre>` for the two measurements.
 
-The tokens are styled by colour and nothing else. That constraint is load-bearing: a bold or italic cut can resolve to a face with different advance widths than the textarea's regular text, and the two layers then drift apart a fraction of a character at a time until the caret visibly misses the end of a line. Retheme it with the CSS variables on `.wahlberg` — `--wahlberg-mark`, `--wahlberg-heading`, `--wahlberg-strong`, `--wahlberg-em`, `--wahlberg-code`, `--wahlberg-link`, `--wahlberg-url`, `--wahlberg-quote` — but keep to colour if you want the caret to stay put.
+Headings and bold text are bold, italics are italic, and everything else is told apart by colour. Weight and slope are measured before they're used, though, and that check is load-bearing. Every cut of a real monospace family advances identically, which is what makes it monospace, but a browser asked for a cut the family hasn't got fabricates one, and a fabricated bold can come out wider than the textarea's regular text. The layers would then drift apart a fraction of a character at a time until the caret visibly missed the end of a line. So on load the editor measures the bold and italic faces against the regular one and only uses them if they agree. Where they don't, that token stays plain and keeps its colour. Nothing is lost when it falls back, since in Markdown source the `**` and `_` are right there on screen.
+
+Retheme the tokens with the CSS variables on `.wahlberg`: `--wahlberg-mark`, `--wahlberg-heading`, `--wahlberg-strong`, `--wahlberg-em`, `--wahlberg-code`, `--wahlberg-link`, `--wahlberg-url`, `--wahlberg-quote`. Keep to colour, since setting weight or slope through these bypasses the measurement, which is the one thing that will move the caret.
+
+Each one defaults to a step on Craft's own neutral ramp or a semantic colour rather than a fixed hex, and the surfaces do the same. A control panel theme that redeclares Craft's palette, its own dark mode included, moves the ramp, and the editor follows it without needing to know the theme exists.
 
 Pressing Enter at the end of a list item or blockquote carries the marker onto the next line, and numbered lists count up. Pressing Enter on an empty item ends the list. Selecting a URL before hitting the link button (or `⌘K`) drops it straight into the link’s target.
 
 ## Why “Wahlberg”?
 
-Marky Mark. Markdown. Sorry.
+Mark Wahlberg. Marky Mark. Markdown. I hate myself.

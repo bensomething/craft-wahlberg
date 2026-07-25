@@ -3,6 +3,7 @@
 namespace bensomething\wahlberg\models;
 
 use bensomething\wahlberg\helpers\Purifier;
+use bensomething\wahlberg\helpers\ReferenceTags;
 use craft\helpers\Markdown;
 use craft\helpers\Template;
 use JsonSerializable;
@@ -21,9 +22,11 @@ class MarkdownData implements Stringable, JsonSerializable
 
     public function __construct(
         private readonly string $markdown,
-        private readonly string $flavor = 'gfm',
+        private readonly string $flavour = 'gfm-comment',
         private readonly bool $purify = true,
         private readonly ?string $purifierConfig = null,
+        private readonly bool $parseRefs = true,
+        private readonly ?int $siteId = null,
     ) {
     }
 
@@ -33,7 +36,7 @@ class MarkdownData implements Stringable, JsonSerializable
     }
 
     /**
-     * The raw Markdown, as the author typed it. Never purified — this is the source.
+     * The raw Markdown, as the author typed it. Never purified: this is the source.
      */
     public function getRaw(): string
     {
@@ -41,11 +44,12 @@ class MarkdownData implements Stringable, JsonSerializable
     }
 
     /**
-     * The Markdown flavor the field is configured to parse with.
+     * The resolved Markdown flavour this was parsed with, so a GFM field with its
+     * line breaks preserved reports `gfm-comment`. Safe to hand to `|md`.
      */
-    public function getFlavor(): string
+    public function getFlavour(): string
     {
-        return $this->flavor;
+        return $this->flavour;
     }
 
     /**
@@ -57,6 +61,30 @@ class MarkdownData implements Stringable, JsonSerializable
     }
 
     /**
+     * Whether reference tags in the parsed HTML get resolved.
+     */
+    public function getParseRefs(): bool
+    {
+        return $this->parseRefs;
+    }
+
+    /**
+     * The HTML Purifier config file the parsed HTML gets purified with, if any.
+     */
+    public function getPurifierConfig(): ?string
+    {
+        return $this->purifierConfig;
+    }
+
+    /**
+     * The site reference tags resolve against, if it was pinned to one.
+     */
+    public function getSiteId(): ?int
+    {
+        return $this->siteId;
+    }
+
+    /**
      * The parsed HTML, ready to output.
      */
     public function getHtml(): Markup
@@ -65,7 +93,7 @@ class MarkdownData implements Stringable, JsonSerializable
     }
 
     /**
-     * The parsed HTML with tags stripped — handy for meta descriptions and excerpts.
+     * The parsed HTML with tags stripped, handy for meta descriptions and excerpts.
      */
     public function getText(): string
     {
@@ -85,7 +113,13 @@ class MarkdownData implements Stringable, JsonSerializable
             return $this->parsed;
         }
 
-        $html = Markdown::process($this->markdown, $this->flavor);
+        $html = Markdown::process($this->markdown, $this->flavour);
+
+        // Before purification, not after: whatever a reference tag resolves to gets
+        // sanitized along with everything else
+        if ($this->parseRefs) {
+            $html = ReferenceTags::process($html, $this->siteId);
+        }
 
         if ($this->purify) {
             $html = Purifier::process($html, $this->purifierConfig);

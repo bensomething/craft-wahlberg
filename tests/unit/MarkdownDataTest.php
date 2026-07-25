@@ -40,8 +40,8 @@ class MarkdownDataTest extends TestCase
         self::assertStringContainsString('<strong>bold</strong>', (string)$html);
     }
 
-    #[TestDox('the flavor decides what gets parsed')]
-    public function testFlavorIsHonoured(): void
+    #[TestDox('the flavour decides what gets parsed')]
+    public function testFlavourIsHonoured(): void
     {
         $markdown = "```\ncode\n```";
 
@@ -50,7 +50,7 @@ class MarkdownDataTest extends TestCase
         self::assertStringContainsString('<pre>', (string)(new MarkdownData($markdown, 'gfm'))->getHtml());
         self::assertStringNotContainsString('<pre>', (string)(new MarkdownData($markdown, 'original'))->getHtml());
 
-        self::assertSame('original', (new MarkdownData($markdown, 'original'))->getFlavor());
+        self::assertSame('original', (new MarkdownData($markdown, 'original'))->getFlavour());
     }
 
     #[TestDox('gfm-comment turns single newlines into breaks')]
@@ -113,5 +113,35 @@ class MarkdownDataTest extends TestCase
     {
         self::assertTrue((new MarkdownData('hi', 'gfm', true))->getPurified());
         self::assertFalse((new MarkdownData('hi', 'gfm', false))->getPurified());
+    }
+
+    #[TestDox('reference tags are left as typed when the setting is off')]
+    public function testReferenceTagsAreLeftAloneWhenDisabled(): void
+    {
+        $data = new MarkdownData('Link to {entry:123:url} here.', 'gfm', true, null, false);
+
+        // Resolving would need elements, which would need a database — so a test that
+        // got this wrong fails with an unknown-method error rather than a bad assertion
+        self::assertStringContainsString('{entry:123:url}', (string)$data->getHtml());
+        self::assertFalse($data->getParseRefs());
+    }
+
+    #[TestDox('an unresolved reference tag in a link target gets URL-encoded by the purifier')]
+    public function testUnresolvedReferenceTagsInHrefsAreEncoded(): void
+    {
+        // Documenting a corner rather than asking for it. Reference tags are resolved
+        // before purification, so a working one never reaches the purifier — but one
+        // that resolves to nothing does, and `{`/`}` aren't valid in a URL.
+        $data = new MarkdownData('[Read more]({entry:123:url})', 'gfm', true, null, false);
+
+        self::assertStringContainsString('%7Bentry%3A123%3Aurl%7D', (string)$data->getHtml());
+    }
+
+    #[TestDox('a document with no reference tags never goes looking for elements')]
+    public function testParsingSkipsRefsWhenThereAreNone(): void
+    {
+        $data = new MarkdownData("# Heading\n\nNo reference tags here.", 'gfm', true, null, true);
+
+        self::assertStringContainsString('<h1>Heading</h1>', (string)$data->getHtml());
     }
 }

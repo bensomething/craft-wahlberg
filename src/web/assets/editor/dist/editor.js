@@ -122,9 +122,9 @@
      * Swaps trailing spaces for non-breaking ones.
      *
      * `white-space: pre-wrap` lets spaces at the end of a line hang, so they take
-     * up no width — but the textarea's caret still advances past them, and the
-     * two layers part company by exactly that many characters. A non-breaking
-     * space can't hang, and in a monospace font it's the same width as a space.
+     * up no width, but the textarea's caret still advances past them and the two
+     * layers part company by exactly that many characters. A non-breaking space
+     * can't hang, and in a monospace font it's the same width as a space.
      */
     function protectTrailing(line) {
         return line.replace(/ +$/, (spaces) => '\u00a0'.repeat(spaces.length));
@@ -197,8 +197,11 @@
     /**
      * The width of one character as the given element would render it, measured
      * on an off-screen copy so nothing on screen has to be disturbed.
+     *
+     * `overrides` applies styles the element doesn't carry itself, for asking what
+     * a character *would* advance to in another face.
      */
-    function measureAdvance(element, isTextarea, sample) {
+    function measureAdvance(element, isTextarea, sample, overrides) {
         const styles = window.getComputedStyle(element);
         const probe = document.createElement(isTextarea ? 'textarea' : 'div');
 
@@ -215,6 +218,12 @@
                 probe.style[property] = styles[property];
             }
         });
+
+        if (overrides) {
+            Object.keys(overrides).forEach((property) => {
+                probe.style[property] = overrides[property];
+            });
+        }
 
         if (isTextarea) {
             probe.value = sample;
@@ -282,12 +291,17 @@
             this.initOverflow();
             this.initSizing();
             this.alignMetrics();
+            this.alignFaces();
             this.renderHighlight();
             this.syncPreviewTab();
 
-            // Webfonts can land after this runs and change the metrics under us
+            // Webfonts can land after this runs and change the metrics under us,
+            // including whether the family has a real bold and italic at all
             if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(() => this.alignMetrics());
+                document.fonts.ready.then(() => {
+                    this.alignMetrics();
+                    this.alignFaces();
+                });
             }
         }
 
@@ -322,13 +336,70 @@
                 return;
             }
 
+            // The probe copies letter-spacing across with the rest of the metrics, so
+            // the layer was measured through whatever correction is already on it.
+            // What comes out is therefore the drift still left, not the whole of it,
+            // which is what makes a second run safe: a face that now matches reads as
+            // no drift, and the correction already in place has to stay where it is
+            // rather than be cleared out from under the caret.
+            const applied = parseFloat(this.highlight.style.letterSpacing) || 0;
             const drift = source - layer;
 
             // Leave it alone unless the drift would show up within a line or two
-            this.highlight.style.letterSpacing = Math.abs(drift) > 0.005 ? drift.toFixed(4) + 'px' : '';
+            if (Math.abs(drift) > 0.005) {
+                const spacing = applied + drift;
+
+                // Back to no correction at all, rather than a rounded-off 0px
+                this.highlight.style.letterSpacing = Math.abs(spacing) > 0.005
+                    ? spacing.toFixed(4) + 'px'
+                    : '';
+            }
 
             // Handy when something still looks off: compare these two in devtools
             this.highlight.dataset.advance = source.toFixed(4) + '/' + layer.toFixed(4);
+        }
+
+        /**
+         * Decides whether the tokens can carry weight and slope as well as colour.
+         *
+         * They can whenever the face the browser picks advances exactly as the
+         * regular one does, which in a real monospace family it will, since equal
+         * advances across every cut is what makes a font monospace. What can't be
+         * trusted is a fabricated cut: asked for a bold the family hasn't got, the
+         * browser thickens the regular one itself, and depending on the engine that
+         * comes out wider. Wider means the layer creeps out from under the caret.
+         *
+         * So measure the face before using it, and where it doesn't hold fall back
+         * to colour alone, still perfectly legible since the markers are right there
+         * in the text. Measured against the layer rather than the textarea because
+         * the layer is the only side that gets styled.
+         */
+        alignFaces() {
+            if (!this.highlight) {
+                return;
+            }
+
+            const sample = 'M'.repeat(200);
+            const regular = measureAdvance(this.highlight, false, sample);
+
+            if (!regular) {
+                return;
+            }
+
+            // The weight the stylesheet will actually ask for, so this measures the
+            // face that's going to be used and not merely a plausible one
+            const bold = window.getComputedStyle(this.highlight)
+                .getPropertyValue('--font-weight-bold').trim() || '700';
+
+            // Generous next to a whole-pixel scrollWidth, tight enough that a line
+            // of bold drifts by a fraction of a pixel over its full width
+            const holds = (overrides) => {
+                const advance = measureAdvance(this.highlight, false, sample, overrides);
+                return !!advance && Math.abs(advance - regular) < 0.01;
+            };
+
+            this.container.classList.toggle('wahlberg--bold-tokens', holds({fontWeight: bold}));
+            this.container.classList.toggle('wahlberg--italic-tokens', holds({fontStyle: 'italic'}));
         }
 
         /**
@@ -502,7 +573,7 @@
             const selected = source.value.slice(source.selectionStart, source.selectionEnd);
             const trimmed = selected.trim();
 
-            // A URL was selected — put the caret where the link text goes
+            // A URL was selected, so put the caret where the link text goes
             if (trimmed !== '' && /^(https?:\/\/|mailto:|\/)\S*$/i.test(trimmed)) {
                 this.insert('[](' + trimmed + ')', 1, 1);
                 return;
@@ -609,7 +680,7 @@
             }
 
             if (!handled) {
-                // execCommand is gone or refused — write directly and give up on undo
+                // execCommand is gone or refused, so write directly and give up on undo
                 source.setRangeText(text, source.selectionStart, source.selectionEnd, 'end');
                 source.dispatchEvent(new Event('input', {bubbles: true}));
             }
@@ -672,6 +743,12 @@
             const chrome = borderBox ? padding + borders : 0;
             const min = (this.config.minRows || 3) * lineHeight + chrome;
             const max = this.config.maxRows ? this.config.maxRows * lineHeight + chrome : Infinity;
+
+            // The floor lives here rather than in the stylesheet: it depends on the
+            // configured rows and on which box the height applies to, only knowable
+            // once the CP's styles have landed. A CSS `min-height` would also
+            // outrank the height set below, pinning short editors open.
+            source.style.minHeight = min + 'px';
 
             source.style.height = 'auto';
 
@@ -741,7 +818,7 @@
 
         /**
          * Hides buttons from the end of the toolbar, one at a time, until what's
-         * left fits — the hidden ones show up in the overflow menu instead.
+         * left fits. The hidden ones show up in the overflow menu instead.
          */
         layoutToolbar() {
             if (!this.menu || !this.toolbar.clientWidth) {
@@ -767,7 +844,7 @@
                 this.buttons[i].hidden = true;
                 this.setMenuItemHidden(i, false);
 
-                // Don't leave an empty group behind — its divider would hang there
+                // Don't leave an empty group behind, its divider would hang there
                 this.groups.forEach((group) => {
                     group.hidden = !group.querySelector('[data-command]:not([hidden])');
                 });
@@ -865,6 +942,18 @@
             }
         }
 
+        /**
+         * The site the element being edited belongs to, so reference tags in the
+         * preview resolve to the same URLs the front end will render. The element
+         * editor puts it in the form; outside one, fall back to whichever site the
+         * control panel is on.
+         */
+        siteId() {
+            const input = this.container.closest('form')?.querySelector('input[name="siteId"]');
+
+            return input?.value || window.Craft?.siteId || null;
+        }
+
         renderPreview() {
             const markdown = this.source.value;
 
@@ -886,7 +975,8 @@
                 data: {
                     markdown: markdown,
                     fieldUid: this.config.fieldUid,
-                    flavor: this.config.flavor,
+                    flavour: this.config.flavour,
+                    siteId: this.siteId(),
                 },
             }).then((response) => {
                 this.previewEl.innerHTML = response.data.html;

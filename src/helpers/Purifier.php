@@ -66,7 +66,7 @@ abstract class Purifier
 
     /**
      * The same defaults Craft’s HTML fields use, so a Markdown field sanitizes
-     * the way authors expect — including YouTube and Vimeo embeds.
+     * the way authors expect, YouTube and Vimeo embeds included.
      *
      * @return array<string, mixed>
      */
@@ -89,7 +89,7 @@ abstract class Purifier
         $path = Craft::$app->getPath()->getConfigPath() . DIRECTORY_SEPARATOR . self::CONFIG_DIR . DIRECTORY_SEPARATOR . $file;
 
         if (!is_file($path)) {
-            // Named config has gone missing — fall back to Default.json, then to our own defaults
+            // Named config has gone missing, so fall back to Default.json, then our own
             return $file !== self::DEFAULT_CONFIG_FILE ? self::options(null) : null;
         }
 
