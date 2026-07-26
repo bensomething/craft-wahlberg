@@ -62,6 +62,57 @@ class MarkdownDataTest extends TestCase
         self::assertStringNotContainsString('<br', (string)(new MarkdownData($markdown, 'gfm'))->getHtml());
     }
 
+    #[TestDox('inline-only renders without the wrapping paragraph')]
+    public function testInlineOnly(): void
+    {
+        $inline = new MarkdownData('Some **bold** text.', 'gfm', true, null, false, null, true);
+        $block = new MarkdownData('Some **bold** text.', 'gfm', true, null, false, null, false);
+
+        self::assertSame('Some <strong>bold</strong> text.', trim((string)$inline->getHtml()));
+        self::assertStringContainsString('<p>', (string)$block->getHtml());
+
+        self::assertTrue($inline->getInlineOnly());
+        self::assertFalse($block->getInlineOnly());
+    }
+
+    #[TestDox('encoding HTML shows a tag as text rather than rendering it')]
+    public function testEncodeHtml(): void
+    {
+        $markdown = 'A <em>tag</em> and <script>alert(1)</script>.';
+
+        // Purified off, so this is the encoding doing the work and not the purifier
+        $encoded = new MarkdownData($markdown, 'pre-encoded', false, null, false, null, false, true);
+        $html = (string)$encoded->getHtml();
+
+        self::assertStringNotContainsString('<em>', $html);
+        self::assertStringNotContainsString('<script>', $html);
+        self::assertStringContainsString('&lt;em&gt;', $html);
+
+        // Markdown itself still parses: it's the HTML that's been taken away
+        self::assertStringContainsString('<strong>', (string)(new MarkdownData(
+            '**bold** and <em>tag</em>',
+            'pre-encoded',
+            false,
+            null,
+            false,
+            null,
+            false,
+            true,
+        ))->getHtml());
+
+        self::assertTrue($encoded->getEncodeHtml());
+    }
+
+    #[TestDox('the pre-encoded parser leaves code alone rather than encoding it twice')]
+    public function testEncodeHtmlDoesNotDoubleEncodeCode(): void
+    {
+        $data = new MarkdownData('`<b>`', 'pre-encoded', false, null, false, null, false, true);
+
+        // `&amp;lt;` would be the giveaway that it had been through twice
+        self::assertStringContainsString('<code>&lt;b&gt;</code>', (string)$data->getHtml());
+        self::assertStringNotContainsString('&amp;', (string)$data->getHtml());
+    }
+
     public function testTextStripsTagsAndCollapsesWhitespace(): void
     {
         $data = new MarkdownData("# Heading\n\nSome **bold**   text.\n\n- one\n- two\n");

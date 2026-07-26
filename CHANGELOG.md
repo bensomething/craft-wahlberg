@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Added **snippets**: blocks of Markdown authors can drop in from a new toolbar button, defined in `config/wahlberg.php`. `$0` marks where the caret lands and `$SELECTION` is replaced by whatever was selected, so a snippet can wrap an author’s own text. Each takes an optional `icon`. Copy `src/config.php` to start from a working example. A new **Available Snippets** field setting picks which of them a given field offers; with no config file the button and the setting both hide themselves.
+- Plugins can add snippets of their own through `Snippets::EVENT_REGISTER_SNIPPETS`, or pass definitions straight to `Editor::inputHtml()`. A handle defined in `config/wahlberg.php` takes precedence over one a plugin registers.
+- Added an **Inline Only** field setting, off by default, for rendering a value without the paragraph wrapped around it.
+- Added an **Encode HTML** field setting, off by default. Encodes HTML before parsing, so a tag an author types shows up as text rather than as markup — stricter than purifying, which parses the HTML first and then drops what isn’t safe. Enabling it forces Craft’s `pre-encoded` parser, which is what `.flavour` then reports.
+- Added a **Field Limit** field setting, in characters or bytes, enforced on save. It counts the Markdown an author types rather than the HTML it renders to.
+- Added a **Show Stats** field setting, off by default: character, word and line counts under the editor, with the field limit alongside them when there is one.
+- Added a **Placeholder Text** field setting.
+- Added a **Toolbar Buttons** field setting, for choosing which formatting buttons a field offers. The toolbar keeps its own order and grouping however many are turned off.
+- Added **Strikethrough**, **Task list**, **Heading 1**–**Heading 6**, **Entry**, **Asset** and **Markdown guide** toolbar buttons.
+- The **Heading** button is now driven by which levels are turned on, and there’s only ever one of it: none ticked hides it, one applies that level outright, and two or more open a dropdown. It keeps the same plain **H** icon throughout, with the level in the tooltip. New fields start with **Heading 2** alone, since level 1 is usually the element’s own title. This replaces the old button that cycled to `###`.
+- The **Entry** and **Asset** buttons open Craft’s element selector. **Asset** writes an image as `![alt](…)` and anything else as a link, taking the alt text from the asset. With **Parse Reference Tags** on both write `{entry:19:url}` or `{asset:41:url}` rather than a URL, so the link survives a slug change or follows a file that’s replaced.
+- Added **Available Volumes**, **Show unpermitted volumes** and **Show unpermitted files** field settings, which apply to the **Asset** button.
+- The **Markdown guide** button opens a syntax cheatsheet in a popover, the same one Craft opens off a field’s info icon. Each example is a copy-to-clipboard chip.
+- The Preview tab no longer holds the height the editor had grown to. Rendered Markdown is nearly always shorter than its source, so a long document left a large empty panel below the preview.
+- The toolbar now separates the block, link and list buttons into groups of their own, with slimmer dividers between them.
+- The field settings screen is now grouped under **Appearance**, **Parsing** and **Assets** headings.
+- Images in the Preview tab are now capped at the width of the preview and 320px tall. A full-size image was rendering at its natural dimensions and pushing everything else, tabs included, off the screen.
+- The Write/Preview tabs now sit a little tighter to the edge when the formatting toolbar is turned off.
 - Added a **Show Syntax Highlighting** field setting, on by default. Turning it off leaves a plain textarea with the same sizing, toolbar and Preview tab, matching what `highlight: false` already did for the standalone editor.
 - Everything named “flavor” is now spelled **flavour**, including `entry.body.flavour` in templates, the `flavour` argument to `|marky`, and the `flavour` option on the editor macros. Fields saved under the old spelling carry it over on their own. The parser names themselves are untouched, so `gfm` and `gfm-comment` are still what you pass.
 - The “GitHub-Flavoured Markdown (line breaks preserved)” flavour is now a **Preserve Line Breaks** setting alongside the GitHub flavour, on by default, so a single newline becomes a `<br>` the way it does in a GitHub comment box. Turn it off for Markdown that’s hard-wrapped and meant to reflow. Fields saved with the old flavour name carry over on their own.

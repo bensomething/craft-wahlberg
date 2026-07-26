@@ -4,6 +4,7 @@ namespace bensomething\wahlberg\models;
 
 use bensomething\wahlberg\helpers\Purifier;
 use bensomething\wahlberg\helpers\ReferenceTags;
+use craft\helpers\Html;
 use craft\helpers\Markdown;
 use craft\helpers\Template;
 use JsonSerializable;
@@ -27,6 +28,8 @@ class MarkdownData implements Stringable, JsonSerializable
         private readonly ?string $purifierConfig = null,
         private readonly bool $parseRefs = true,
         private readonly ?int $siteId = null,
+        private readonly bool $inlineOnly = false,
+        private readonly bool $encodeHtml = false,
     ) {
     }
 
@@ -85,6 +88,23 @@ class MarkdownData implements Stringable, JsonSerializable
     }
 
     /**
+     * Whether the Markdown renders as inline content, without the wrapping `<p>`.
+     */
+    public function getInlineOnly(): bool
+    {
+        return $this->inlineOnly;
+    }
+
+    /**
+     * Whether HTML gets encoded before parsing, so anything the author typed as a
+     * tag comes out as text.
+     */
+    public function getEncodeHtml(): bool
+    {
+        return $this->encodeHtml;
+    }
+
+    /**
      * The parsed HTML, ready to output.
      */
     public function getHtml(): Markup
@@ -113,7 +133,14 @@ class MarkdownData implements Stringable, JsonSerializable
             return $this->parsed;
         }
 
-        $html = Markdown::process($this->markdown, $this->flavour);
+        // Before the parser sees it, so a `<script>` the author typed reaches the
+        // page as the text they typed rather than as a tag. Purifying would drop it
+        // instead; encoding shows it
+        $markdown = $this->encodeHtml ? Html::encode($this->markdown) : $this->markdown;
+
+        $html = $this->inlineOnly
+            ? Markdown::processParagraph($markdown, $this->flavour)
+            : Markdown::process($markdown, $this->flavour);
 
         // Before purification, not after: whatever a reference tag resolves to gets
         // sanitized along with everything else

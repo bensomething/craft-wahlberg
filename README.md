@@ -38,14 +38,143 @@ Create a field of type **Markdown** and add it to a field layout.
 
 - *Markdown Flavour*: which parser the Preview tab and the field’s `html` value use. GitHub-Flavoured Markdown (the default) adds fenced code blocks, tables, strikethrough, and autolinking. Traditional Markdown and Markdown Extra are also available.
 - *Preserve Line Breaks*: GitHub-Flavoured Markdown only, on by default. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do, so an address or a set of credits breaks where the author typed it. Turn it off if your Markdown is hard-wrapped and should reflow into paragraphs. Under the hood this is the parser’s `gfm-comment` flavour, which is what `.flavour` reports and what `|md` will want.
+- *Inline Only*: render the value without the paragraph wrapped around it, for a heading, a strapline, or anything else going straight into markup of its own. Emphasis, links and code all still parse; it’s the block-level wrapper that goes.
+
+**Appearance**
+
 - *Text Size*: how big the Markdown source is in the editor, 11–20px, defaulting to 14. Editing comfort only. It has no bearing on the front end.
 - *Minimum Rows*: how short the editor is allowed to get, 1 or more, defaulting to 2. It grows from there as the author types.
 - *Maximum Rows*: how tall it may grow before it starts scrolling instead. Leave blank to let it keep growing. Dragging the resize handle overrides auto-growing for that session.
+- *Placeholder Text*: shown in the editor while the field is empty.
 - *Show Preview Tab*: with this off, the editor is source-only and the toolbar moves over to where the tabs were.
 - *Show Formatting Toolbar*: hide the buttons for authors who’d rather just type. The keyboard shortcuts keep working either way.
+- *Toolbar Buttons*: which buttons the toolbar offers. They keep the order and grouping the plugin gives them however many are switched off, and still fold into a menu when the field is too narrow. See [The toolbar](#the-toolbar).
 - *Show Syntax Highlighting*: colour the Markdown as it’s typed, on by default. With this off the Write tab is a plain textarea with the same sizing, toolbar and Preview tab, which is the escape hatch if a font stack won’t hold the highlighted layer and the textarea together.
-- *Parse Reference Tags*: see below.
-- *Purify HTML*: see below.
+- *Show Stats*: character, word and line counts under the editor, off by default. Shows the field limit alongside them when there is one.
+- *Field Limit*: the most characters or bytes of Markdown the field will accept, enforced on save. It counts the source an author types, not the HTML it renders to, since that’s what the column has to hold. Bytes rather than characters matters once the text stops being ASCII: an emoji is one character and four bytes.
+
+**Parsing**
+
+- *Parse Reference Tags*: see [Reference tags](#reference-tags).
+- *Encode HTML*: encode HTML before the Markdown is parsed, so a tag an author types shows up as text rather than as markup. See [Raw HTML and purification](#raw-html-and-purification).
+- *Purify HTML*: see [Raw HTML and purification](#raw-html-and-purification).
+
+**Snippets**
+
+Only shown when `config/wahlberg.php` defines any. See [Snippets](#snippets).
+
+- *Available Snippets*: which of the defined snippets this field’s **Snippets** button offers.
+
+**Assets**
+
+These apply to the toolbar’s **Asset** button.
+
+- *Available Volumes*: which volumes the button may pick from. All of them by default.
+- *Show unpermitted volumes*: whether to offer volumes the author can’t view.
+- *Show unpermitted files*: whether to offer files uploaded by other authors, per Craft’s “View files uploaded by other users” permission.
+
+## The toolbar
+
+Every button is optional, and which ones a field offers is up to *Toolbar Buttons*:
+
+| Button | What it writes |
+| --- | --- |
+| *Heading 1*–*Heading 6* | that level exactly, so clicking **H3** on an H1 line makes it an H3 |
+| *Bold*, *Italic*, *Strikethrough* | `**`, `_`, `~~` around the selection, or the word under the caret |
+| *Quote* | `> ` |
+| *Code* | `` ` `` around a selection on one line, a fence around one spanning several |
+| *Link* | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
+| *Entry*, *Asset* | opens Craft’s element selector — see below |
+| *Bulleted list*, *Numbered list*, *Task list* | `- `, `1. `, `- [ ] `, toggling between each other rather than stacking up |
+| *Markdown guide* | a syntax cheatsheet, in a popover off the button |
+| *Snippets* | blocks of Markdown you define — see [Snippets](#snippets) |
+
+**Bold**, **Italic** and **Link** have the usual <kbd>⌘B</kbd> / <kbd>⌘I</kbd> / <kbd>⌘K</kbd> shortcuts, and those work whether or not the buttons are shown.
+
+### Headings
+
+However many heading levels you tick, the toolbar shows **one** control — six near-identical H icons in a row is a lot of toolbar to say one thing. What changes is its shape:
+
+| Levels ticked | What authors get |
+| --- | --- |
+| None | no heading control at all |
+| One | a button that applies that level outright |
+| Two or more | a dropdown listing them |
+
+The icon is the same plain **H** either way, with the level named in the tooltip, so the toolbar doesn’t shift about between fields. New fields start with **Heading 2** on its own: level 1 is nearly always the element’s own title, so body content starts below it.
+
+The buttons fold into a menu when the field is too narrow to hold them all. **Markdown guide** and **Snippets** are the exceptions: each opens something anchored to itself, so they stay put at the end of the toolbar.
+
+### Entry and Asset
+
+Both open Craft’s element selector. **Entry** writes a link; **Asset** writes an image as `![alt](…)` and anything else as a link, taking the alt text from the asset when it has some.
+
+With *Parse Reference Tags* on, both write a reference tag rather than a URL:
+
+```markdown
+[The Difference Engine]({entry:19:url})
+
+![Ada Lovelace]({asset:41:url})
+```
+
+so the link survives a slug change, or follows the file if it’s replaced or moved. With reference tags off there’s nothing to resolve the tag later, so they write the URL instead — and an entry with no URL of its own writes an empty one.
+
+## Snippets
+
+Blocks of Markdown authors can drop in from the toolbar, defined in `config/wahlberg.php`. Copy [`src/config.php`](src/config.php) to start from a working example.
+
+```php
+return [
+    'snippets' => [
+        'callout' => [
+            'label' => 'Callout',
+            'icon' => 'circle-info',
+            'body' => "> **Note**\n> \$0\n",
+        ],
+
+        // Shorthand: a body on its own, labelled from its key
+        'leadIn' => "**\$SELECTION**\n\n\$0",
+    ],
+];
+```
+
+`icon` is optional — any name from Craft’s set, which is Font Awesome’s solid icons. One that doesn’t name an icon gets a neutral stand-in, so the labels line up either way.
+
+Two markers are understood, both optional:
+
+- **`$0`** is where the caret ends up. Without one it lands at the end.
+- **`$SELECTION`** is replaced by whatever the author had selected, so a snippet can wrap their text rather than only ever landing beside it. It’s empty when nothing was selected, and every occurrence is replaced.
+
+Mind the quoting: inside a double-quoted PHP string, `$0` and `$SELECTION` read as variables, so escape them as `\$0` and `\$SELECTION`. Single quotes avoid that but cost you `\n`. Heredocs interpolate; nowdocs (`<<<'MD'`) don’t.
+
+**Why a config file and not a settings screen?** A snippet is a contract with the templates and CSS that render it — a callout only looks like a callout because your front end styles what it emits. So the person writing one should be the person who can also write that, and the definition should travel with the code in version control. Which snippets a *given field* offers is a field setting, under **Available Snippets** — the same split `config/htmlpurifier/` already uses.
+
+A field that has never been saved against a snippet offers all of them, so adding one to the config file reaches every existing field without editing each one. With no config file the **Snippets** button hides itself rather than opening an empty menu, and the field settings drop the section to match.
+
+**Mind what your fields render.** With *Purify HTML* on — the default — raw HTML in a snippet is sanitised on the way out, and HTML Purifier only knows HTML 4: `<details>` and `<summary>` are dropped entirely, and iframes survive only for the hosts `config/htmlpurifier/` allows. Markdown *inside* a raw HTML block isn’t parsed either, whatever the purifier does. A snippet that emits Markdown works everywhere; one that emits HTML is worth checking in the Preview tab first.
+
+### From a plugin
+
+Plugins can add snippets to the pool every field picks from:
+
+```php
+use bensomething\wahlberg\events\RegisterSnippetsEvent;
+use bensomething\wahlberg\helpers\Snippets;
+use yii\base\Event;
+
+Event::on(
+    Snippets::class,
+    Snippets::EVENT_REGISTER_SNIPPETS,
+    function(RegisterSnippetsEvent $event) {
+        $event->snippets['productSpec'] = [
+            'label' => Craft::t('my-plugin', 'Product spec'),
+            'body' => "{spec:\$0}\n",
+        ];
+    }
+);
+```
+
+A handle already defined in `config/wahlberg.php` wins, so an installation can always overrule a plugin about its own site. Plugins rendering the editor directly can skip the pool entirely and pass definitions to `Editor::inputHtml()` instead — see [Using the editor in your own plugin](#using-the-editor-in-your-own-plugin).
 
 ## Templating
 
@@ -143,6 +272,16 @@ To change what’s allowed through, drop a JSON config file in `config/htmlpurif
 
 Turning **Purify HTML** off renders exactly what authors type, scripts included. Reasonable when the only people editing are the ones who could edit templates anyway.
 
+### Encoding instead
+
+**Encode HTML** is the stricter option, and a different one. Purifying parses the HTML and then drops what isn’t safe; encoding never lets it be HTML at all. An author who types `<em>tag</em>` gets those characters back on the page rather than an emphasis, and a `<script>` shows up as text.
+
+Use it for fields where HTML has no business being — a strapline, a caption, a field authored by people you’d rather not hand an `<iframe>` to. Markdown itself carries on working: `**bold**` is still bold, it’s only the raw HTML that goes.
+
+Encoding forces Craft’s `pre-encoded` parser, which is Traditional Markdown with the escaping it would otherwise do inside code taken out. Without that, a fenced block would come back showing `&amp;lt;` where the author typed `<`. The flavour selector is disabled while **Encode HTML** is on for that reason, and `.flavour` reports `pre-encoded`.
+
+The two settings are independent, and belt-and-braces is fine: encoding removes the HTML, purifying then sanitises whatever the parser itself produced.
+
 ## Tabler Icons
 
 If [Tabler Icons](https://github.com/bensomething/craft-tabler-icons) is installed, the Preview tab renders its `{icon:star}` tokens as icons, so authors can see them without leaving the editor. Nothing to configure, and nothing happens if that plugin isn’t installed or is switched off, in which case the token is previewed exactly as typed.
@@ -186,9 +325,24 @@ echo Editor::inputHtml([
 ]);
 ```
 
-**Options**: `name`, `value`, `id`, `toolbar`, `preview`, `highlight`, `flavour`, `fontSize`, `minRows`, `maxRows`, and `inputAttributes` (merged onto the `<textarea>`, for placeholders and the like). Anything else in the config is passed through to Craft’s field macro.
+**Options**: `name`, `value`, `id`, `toolbar`, `buttons`, `preview`, `highlight`, `stats`, `flavour`, `fontSize`, `minRows`, `maxRows`, `placeholder`, `charLimit`, `byteLimit`, `refTags`, `assetSources`, `assetCriteria`, `snippets`, and `inputAttributes` (merged onto the `<textarea>`). Anything else in the config is passed through to Craft’s field macro.
 
-The ones you leave out fall back to the same defaults a Markdown field starts with: 14px text, a 2-row minimum, no maximum. An editor rendered from another plugin matches one in a field layout without having to be configured to.
+`snippets` takes handles from `config/wahlberg.php`, or `*` for all of them. Pass a map of `handle => {label, body}` instead and the editor uses those directly, for a plugin shipping snippets of its own rather than borrowing the installation’s.
+
+The ones you leave out fall back to the same defaults a Markdown field starts with: 14px text, a 2-row minimum, no maximum, and the same toolbar. An editor rendered from another plugin matches one in a field layout without having to be configured to.
+
+`buttons` takes the command names `Editor::commands()` lists, in any order — the toolbar keeps its own, and drops a group nothing was picked from rather than leaving its divider hanging:
+
+```twig
+{{ wahlberg.field({
+    label: 'Notes'|t('my-plugin'),
+    name: 'notes',
+    value: settings.notes,
+    buttons: ['bold', 'italic', 'link'],
+}) }}
+```
+
+`charLimit` and `byteLimit` only draw the counter, and only when `stats` is on. Enforcing them is the field type’s job, so validate the value yourself out here.
 
 Turn `highlight` off and you get a plain textarea with the same chrome, sizing and toolbar included, but no Markdown colouring:
 

@@ -14,9 +14,15 @@
     `field()` wraps the editor in Craft’s own field chrome: label, instructions,
     errors, required marker. `input()` gives you the bare editor.
 
-    Editor options (`toolbar`, `preview`, `highlight`, `flavour`, `fontSize`,
-    `minRows`, `maxRows`, `inputAttributes`) can go in the same config. Anything
-    else is passed through to Craft’s field macro.
+    Editor options (`toolbar`, `buttons`, `preview`, `highlight`, `stats`,
+    `flavour`, `fontSize`, `minRows`, `maxRows`, `placeholder`, `charLimit`,
+    `byteLimit`, `refTags`, `assetSources`, `assetCriteria`, `snippets`,
+    `inputAttributes`) can go in the same config. Anything else is passed through
+    to Craft’s field macro.
+
+    `buttons` takes the commands `Editor::commands()` lists, in any order — the
+    toolbar keeps its own. Leaving it out gives you the same toolbar a Markdown
+    field starts with.
 #}
 
 {% macro input(config) %}

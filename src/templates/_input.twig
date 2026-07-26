@@ -1,8 +1,12 @@
 {% set hasHeader = showPreview or showToolbar %}
 {% set highlight = highlight ?? true %}
+{% set showStats = showStats ?? false %}
+{% set placeholder = placeholder ?? null %}
+{% set snippetsMenu = snippetsMenu ?? null %}
+{% set guide = guide ?? null %}
 {% set inputAttributes = inputAttributes ?? {} %}
 
-<div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
+<div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not showToolbar ? ' wahlberg--no-toolbar' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
     style="--wahlberg-font-size: {{ fontSize }}px">
     {% if hasHeader %}
         <div class="wahlberg-header">
@@ -20,15 +24,26 @@
                     {% for group in toolbar %}
                         <div class="wahlberg-toolbar-group" data-toolbar-group>
                             {% for button in group %}
-                                <button type="button" class="wahlberg-tool" data-command="{{ button.command }}"
-                                    {%- if button.shortcut %} data-shortcut="{{ button.shortcut }}"{% endif %}
-                                    title="{{ button.label }}" aria-label="{{ button.label }}">{{ button.icon|raw }}</button>
+                                {% if button.menu is defined %}
+                                    {# The heading control, when more than one level is
+                                       available and it's a menu rather than a button #}
+                                    {{ button.menu|raw }}
+                                {% else %}
+                                    <button type="button" class="wahlberg-tool" data-command="{{ button.command }}"
+                                        {%- if button.shortcut %} data-shortcut="{{ button.shortcut }}"{% endif %}
+                                        title="{{ button.label }}" aria-label="{{ button.label }}">{{ button.icon|raw }}</button>
+                                {% endif %}
                             {% endfor %}
                         </div>
                     {% endfor %}
 
                     {# The buttons fold into here when the header runs out of room #}
                     <div class="wahlberg-overflow hidden" data-overflow>{{ overflowMenu|raw }}</div>
+
+                    {# Both pinned rather than folding into that menu: each opens
+                       something anchored to itself, so neither can move #}
+                    {{ snippetsMenu|raw }}
+                    {{ guide|raw }}
                 </div>
             {% endif %}
         </div>
@@ -48,11 +63,18 @@
 
             <textarea id="{{ id }}"{% if name %} name="{{ name }}"{% endif %} rows="{{ rows }}"
                 class="wahlberg-source" data-source spellcheck="true" autocomplete="off"
-                autocapitalize="off"{{ attr(inputAttributes) }}>{{ value }}</textarea>
+                autocapitalize="off"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}
+                {{- attr(inputAttributes) }}>{{ value }}</textarea>
         </div>
 
         {% if showPreview %}
             <div class="wahlberg-preview" data-preview hidden></div>
         {% endif %}
     </div>
+
+    {% if showStats %}
+        {# aria-live, so a screen reader hears the count settle rather than every
+           keystroke on the way there #}
+        <div class="wahlberg-stats" data-stats role="status" aria-live="polite"></div>
+    {% endif %}
 </div>

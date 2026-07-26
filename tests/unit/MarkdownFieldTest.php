@@ -2,6 +2,7 @@
 
 namespace bensomething\wahlberg\tests\unit;
 
+use bensomething\wahlberg\Editor;
 use bensomething\wahlberg\fields\MarkdownField;
 use bensomething\wahlberg\models\MarkdownData;
 use bensomething\wahlberg\tests\TestCase;
@@ -14,8 +15,12 @@ class MarkdownFieldTest extends TestCase
 {
     /** The settings this field adds, as opposed to the ones every field has. */
     private const SETTINGS = [
-        'flavour', 'preserveLineBreaks', 'fontSize', 'minRows', 'maxRows',
-        'showToolbar', 'showPreview', 'showHighlighting', 'parseRefs', 'purifyHtml', 'purifierConfig',
+        'flavour', 'preserveLineBreaks', 'inlineOnly', 'encodeHtml',
+        'fontSize', 'minRows', 'maxRows', 'placeholder',
+        'showToolbar', 'toolbarButtons', 'showPreview', 'showHighlighting', 'showStats',
+        'charLimit', 'byteLimit',
+        'parseRefs', 'purifyHtml', 'purifierConfig',
+        'availableVolumes', 'showUnpermittedVolumes', 'showUnpermittedFiles',
     ];
 
     private function field(array $config = []): MarkdownField
@@ -196,6 +201,9 @@ class MarkdownFieldTest extends TestCase
             'negative rows' => [['minRows' => -1], 'minRows'],
             'too few maximum rows' => [['minRows' => MarkdownField::MIN_ROWS, 'maxRows' => MarkdownField::MIN_ROWS - 1], 'maxRows'],
             'max below min' => [['minRows' => 12, 'maxRows' => 6], 'maxRows'],
+            'limit of nothing' => [['charLimit' => 0], 'charLimit'],
+            'negative limit' => [['byteLimit' => -1], 'byteLimit'],
+            'unknown toolbar button' => [['toolbarButtons' => ['bold', 'blink']], 'toolbarButtons'],
         ];
     }
 
@@ -219,6 +227,12 @@ class MarkdownFieldTest extends TestCase
             'max equal to min' => [['minRows' => 12, 'maxRows' => 12]],
             'as short as it goes' => [['minRows' => MarkdownField::MIN_ROWS]],
             'as short as it goes, fixed' => [['minRows' => MarkdownField::MIN_ROWS, 'maxRows' => MarkdownField::MIN_ROWS]],
+            'no limit' => [['charLimit' => null, 'byteLimit' => null]],
+            'a limit in characters' => [['charLimit' => 500]],
+            'a limit in bytes' => [['byteLimit' => 500]],
+            'no toolbar buttons' => [['toolbarButtons' => []]],
+            'every toolbar button' => [['toolbarButtons' => array_keys(Editor::commands())]],
+            'all volumes' => [['availableVolumes' => '*']],
         ];
     }
 
@@ -243,6 +257,167 @@ class MarkdownFieldTest extends TestCase
         self::assertTrue($field->showToolbar);
         self::assertTrue($field->showPreview);
         self::assertTrue($field->showHighlighting);
+
+        // Except the counts, which are opt-in: most fields don't want them
+        self::assertFalse($field->showStats);
+
+        // And the parsing stays as it was before any of this was configurable
+        self::assertFalse($field->inlineOnly);
+        self::assertFalse($field->encodeHtml);
+        self::assertNull($field->charLimit);
+        self::assertNull($field->byteLimit);
+        self::assertNull($field->placeholder);
+
+        self::assertSame(MarkdownField::DEFAULT_TOOLBAR_BUTTONS, $field->toolbarButtons);
+    }
+
+    #[TestDox('every default toolbar button is a command the editor knows')]
+    public function testDefaultToolbarButtonsAreReal(): void
+    {
+        $commands = array_keys(Editor::commands());
+
+        foreach (MarkdownField::DEFAULT_TOOLBAR_BUTTONS as $button) {
+            self::assertContains($button, $commands, "Unknown command `$button`");
+        }
+    }
+
+    #[DataProvider('headingSelections')]
+    #[TestDox('however many heading levels are on, the toolbar gets one control')]
+    public function testHeadingControl(array $levels, ?string $command, bool $isMenu): void
+    {
+        $groups = Editor::toolbar([...$levels, 'bold']);
+        $first = $groups[0][0] ?? null;
+
+        if ($command === null && !$isMenu) {
+            // No levels, so no heading control — `bold` is all that's left
+            self::assertSame('bold', $first['command']);
+            return;
+        }
+
+        if ($isMenu) {
+            self::assertArrayNotHasKey('command', $first);
+
+            // Every level that was ticked, and nothing that wasn't
+            self::assertSame(
+                array_map(fn(string $level) => (int)substr($level, 1), $levels),
+                $first['headings'],
+            );
+
+            return;
+        }
+
+        self::assertSame($command, $first['command']);
+        self::assertArrayNotHasKey('headings', $first);
+
+        // The plain H whichever level it applies, with the level in the label
+        self::assertSame('heading', $first['iconName']);
+        self::assertSame('Heading ' . substr($command, 1), $first['label']);
+    }
+
+    public static function headingSelections(): array
+    {
+        return [
+            'none' => [[], null, false],
+            'one' => [['h2'], 'h2', false],
+            'one, deep' => [['h6'], 'h6', false],
+            'two' => [['h2', 'h3'], null, true],
+            'all six' => [['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], null, true],
+        ];
+    }
+
+    #[TestDox('the toolbar keeps the order commands() declares, however many are off')]
+    public function testToolbarKeepsItsOrder(): void
+    {
+        // Asked for backwards, and out of two different groups
+        $groups = Editor::toolbar(['ol', 'italic', 'bold']);
+
+        self::assertSame([['bold', 'italic'], ['ol']], array_map(
+            fn(array $group) => array_column($group, 'command'),
+            $groups,
+        ));
+
+        // A group nothing was picked from is dropped rather than left to render
+        // its divider against nothing
+        self::assertSame([['bold']], array_map(
+            fn(array $group) => array_column($group, 'command'),
+            Editor::toolbar(['bold']),
+        ));
+
+        self::assertSame([], Editor::toolbar([]));
+    }
+
+    #[DataProvider('limitSettings')]
+    #[TestDox('the settings screen posts one limit and its units, and the field splits them')]
+    public function testLimitUnits(array $config, ?int $chars, ?int $bytes): void
+    {
+        $field = $this->field($config);
+
+        self::assertSame($chars, $field->charLimit);
+        self::assertSame($bytes, $field->byteLimit);
+    }
+
+    public static function limitSettings(): array
+    {
+        return [
+            'characters' => [['fieldLimit' => '500', 'limitUnit' => 'chars'], 500, null],
+            'bytes' => [['fieldLimit' => '500', 'limitUnit' => 'bytes'], null, 500],
+            'units left off' => [['fieldLimit' => '500'], 500, null],
+            'cleared' => [['fieldLimit' => '', 'limitUnit' => 'chars'], null, null],
+            // Switching units has to clear the other one, or a field would carry
+            // both and validate against whichever was checked first
+            'switched to bytes' => [['charLimit' => 100, 'fieldLimit' => '500', 'limitUnit' => 'bytes'], null, 500],
+            'switched to characters' => [['byteLimit' => 100, 'fieldLimit' => '500', 'limitUnit' => 'chars'], 500, null],
+        ];
+    }
+
+    #[TestDox('a field over its limit fails validation, counted in the units it was set in')]
+    public function testLimitValidation(): void
+    {
+        // Four bytes, one character. A limit in characters lets it through and the
+        // same number in bytes doesn't, which is the whole point of the two units
+        $chars = $this->field(['charLimit' => 1]);
+        $chars->validateLength($element = $this->elementWith('🐟'));
+        self::assertSame([], $element->getErrors());
+
+        // Reported against the bare handle: `Element::addError()` strips the
+        // `field:` prefix validators address it by
+        $bytes = $this->field(['byteLimit' => 1]);
+        $bytes->validateLength($element = $this->elementWith('🐟'));
+        self::assertNotSame([], $element->getErrors('body'));
+
+        // Named the way Craft names it for a Plain Text field over its limit, and
+        // not “the input value”, which is what a validator run outside a model says
+        self::assertSame(
+            'Body should contain at most 1 character.',
+            $element->getFirstError('body'),
+        );
+
+        // Counted against the Markdown an author types, not the HTML it renders to,
+        // which is longer and isn't what the column has to hold
+        $field = $this->field(['charLimit' => 11]);
+        $field->validateLength($element = $this->elementWith($field->normalizeValue('**bold** hi')));
+        self::assertSame([], $element->getErrors());
+    }
+
+    /**
+     * An element that answers with a fixed field value.
+     *
+     * `setFieldValue()` goes through `CustomFieldBehavior`, which Craft generates from
+     * the fields in the database, and there isn't one here.
+     */
+    private function elementWith(mixed $value): Entry
+    {
+        return new class($value) extends Entry {
+            public function __construct(private readonly mixed $value)
+            {
+                parent::__construct();
+            }
+
+            public function getFieldValue(string $fieldHandle): mixed
+            {
+                return $this->value;
+            }
+        };
     }
 
     #[TestDox('settings are labelled the way the settings screen labels them')]

@@ -12,12 +12,30 @@
 
     // Line-prefixing commands: the pattern strips an existing prefix (which is
     // also how we detect a toggle-off), the prefix function builds a new one.
+    //
+    // `test` is what counts as already-applied, when that's looser than the prefix
+    // the command builds: a ticked task still counts as a task.
     const PREFIXES = {
-        heading: {pattern: /^#{1,6} +/, prefix: () => '### '},
         quote: {pattern: /^ {0,3}> ?/, prefix: () => '> '},
-        ul: {pattern: /^ {0,3}[-*+] +/, prefix: () => '- '},
+        // Strips the task box along with the marker, so a bulleted list and a task
+        // list toggle each other rather than stacking up
+        ul: {pattern: /^ {0,3}[-*+] +(?:\[[ xX]\] +)?/, prefix: () => '- '},
         ol: {pattern: /^ {0,3}\d+[.)] +/, prefix: (i) => (i + 1) + '. '},
+        tasklist: {
+            pattern: /^ {0,3}[-*+] +(?:\[[ xX]\] +)?/,
+            prefix: () => '- [ ] ',
+            test: /^ {0,3}[-*+] +\[[ xX]\] +/,
+        },
     };
+
+    // One per level. No `test`: these are exact, so clicking H3 on a line that's
+    // already an H1 makes it an H3 rather than clearing the heading off it
+    for (let level = 1; level <= 6; level++) {
+        PREFIXES['h' + level] = {
+            pattern: /^#{1,6} +/,
+            prefix: () => '#'.repeat(level) + ' ',
+        };
+    }
 
     // -- Syntax highlighting --------------------------------------------------
     //
@@ -260,6 +278,11 @@
             this.groups = Array.from(this.container.querySelectorAll('[data-toolbar-group]'));
             this.buttons = Array.from(this.container.querySelectorAll('[data-toolbar-group] [data-command]'));
             this.overflow = this.container.querySelector('[data-overflow]');
+            this.headingsEl = this.container.querySelector('[data-headings]');
+            this.snippetsEl = this.container.querySelector('[data-snippets]');
+            this.guideBtn = this.container.querySelector('[data-guide-trigger]');
+            this.guideBody = this.container.querySelector('[data-guide]');
+            this.stats = this.container.querySelector('[data-stats]');
 
             // The Markdown the preview currently shows, so switching tabs back
             // and forth doesn't re-request an unchanged document
@@ -289,10 +312,14 @@
             this.source.addEventListener('scroll', () => this.syncScroll());
 
             this.initOverflow();
+            this.initHeadings();
+            this.initSnippets();
+            this.initGuide();
             this.initSizing();
             this.alignMetrics();
             this.alignFaces();
             this.renderHighlight();
+            this.renderStats();
             this.syncPreviewTab();
 
             // Webfonts can land after this runs and change the metrics under us,
@@ -308,6 +335,7 @@
         onInput() {
             this.autoGrow();
             this.renderHighlight();
+            this.renderStats();
             this.syncPreviewTab();
         }
 
@@ -447,7 +475,8 @@
 
         run(command) {
             if (PREFIXES[command]) {
-                this.prefixLines(PREFIXES[command].pattern, PREFIXES[command].prefix);
+                const entry = PREFIXES[command];
+                this.prefixLines(entry.pattern, entry.prefix, entry.test);
             } else {
                 switch (command) {
                     case 'bold':
@@ -456,11 +485,20 @@
                     case 'italic':
                         this.wrap('_', '_');
                         break;
+                    case 'strike':
+                        this.wrap('~~', '~~');
+                        break;
                     case 'code':
                         this.code();
                         break;
                     case 'link':
                         this.link();
+                        break;
+                    case 'entry':
+                        this.entry();
+                        break;
+                    case 'asset':
+                        this.asset();
                         break;
                 }
             }
@@ -518,7 +556,7 @@
         /**
          * Adds (or removes) a prefix on every line the selection touches.
          */
-        prefixLines(pattern, prefix) {
+        prefixLines(pattern, prefix, test) {
             const source = this.source;
             const value = source.value;
             const hadSelection = source.selectionStart !== source.selectionEnd;
@@ -531,8 +569,18 @@
 
             const caretOffset = source.selectionStart - from;
             const lines = value.slice(from, to).split('\n');
+
+            // Already carrying this exact prefix? Then the click means take it off.
+            // Compared against what the command would build rather than against the
+            // pattern it strips, or a level-3 heading button would clear a level-1
+            // heading instead of changing it
+            const applied = (line, i) => (test
+                ? test.test(line)
+                : line === prefix(i) + line.replace(pattern, ''));
+
             const filled = lines.filter((line) => line.trim() !== '');
-            const prefixed = filled.length > 0 && filled.every((line) => pattern.test(line));
+            const prefixed = filled.length > 0 &&
+                lines.every((line, i) => line.trim() === '' || applied(line, i));
 
             const replacement = lines
                 .map((line, i) => {
@@ -587,6 +635,303 @@
                 offset + 1,
                 offset + 1 + placeholder.length
             );
+        }
+
+        /**
+         * Opens Craft's element selector and hands what comes back to `onPick`,
+         * with the caret put back where it was before the modal took focus.
+         */
+        pickElement(type, settings, onPick) {
+            if (typeof Craft === 'undefined' || !Craft.createElementSelectorModal) {
+                return;
+            }
+
+            const start = this.source.selectionStart;
+            const end = this.source.selectionEnd;
+
+            Craft.createElementSelectorModal(type, Object.assign({
+                multiSelect: false,
+                onSelect: (elements) => {
+                    const element = elements && elements[0];
+
+                    if (!element) {
+                        return;
+                    }
+
+                    this.source.focus();
+                    this.source.setSelectionRange(start, end);
+                    onPick(element);
+                    this.autoGrow();
+                },
+            }, settings));
+        }
+
+        /**
+         * Links to an entry.
+         *
+         * With reference tags on, what goes in is `{entry:1:url}` rather than the
+         * URL, so the link survives a slug change. With them off there's nothing to
+         * resolve the tag later, so write the URL.
+         */
+        entry() {
+            // No site criteria: the modal has its own site menu, and a reference tag
+            // resolves against whichever site the value is being rendered for anyway
+            this.pickElement('craft\\elements\\Entry', {
+                storageKey: 'WahlbergEditor.entry',
+            }, (entry) => {
+                const selected = this.source.value.slice(this.source.selectionStart, this.source.selectionEnd);
+                const target = this.config.refTags ? '{entry:' + entry.id + ':url}' : (entry.url || '');
+                const label = selected || entry.label || '';
+                const text = '[' + label + '](' + target + ')';
+
+                this.insert(text, label === '' ? 1 : text.length);
+            });
+        }
+
+        /**
+         * Picks an asset and writes it in as an image if it is one, or as a link if
+         * it isn't. Same reference-tag reasoning as {@see entry}.
+         */
+        asset() {
+            this.pickElement('craft\\elements\\Asset', {
+                storageKey: 'WahlbergEditor.asset',
+                sources: this.config.assetSources || null,
+                criteria: this.config.assetCriteria || {},
+            }, (asset) => this.insertAsset(asset));
+        }
+
+        /**
+         * What the element selector hands back is `{id, siteId, label, status, url,
+         * hasThumb, $element}` — no kind, and no alt text. Both are on the chip
+         * itself, which Craft renders with `data-kind`, `data-alt` and
+         * `data-filename`. Read them there rather than guessing from the URL.
+         */
+        assetData(asset) {
+            const el = asset.$element;
+            const data = (name) => (el && el.data ? el.data(name) : null);
+
+            return {
+                kind: data('kind'),
+                alt: data('alt'),
+                filename: data('filename'),
+            };
+        }
+
+        insertAsset(asset) {
+            const selected = this.source.value.slice(this.source.selectionStart, this.source.selectionEnd);
+            const target = this.config.refTags ? '{asset:' + asset.id + ':url}' : (asset.url || '');
+            const info = this.assetData(asset);
+            const isImage = info.kind === 'image';
+
+            // A selection is the author saying what to call it. Failing that, an
+            // image's own alt text, which is the one that matters for an image and
+            // is often already filled in; then the title, then the filename
+            const label = selected ||
+                (isImage ? info.alt : '') ||
+                asset.label ||
+                info.filename ||
+                '';
+
+            const prefix = isImage ? '!' : '';
+            const text = prefix + '[' + label + '](' + target + ')';
+
+            // Nothing to call it yet? Leave the caret between the brackets, so the
+            // next thing typed is the alt text rather than a stray word after the link
+            this.insert(text, label === '' ? prefix.length + 1 : text.length);
+        }
+
+        // -- Toolbar menus ----------------------------------------------------
+
+        /**
+         * The menu a toolbar disclosure button opens.
+         *
+         * Craft moves it out to the body when it initializes it, so it's found by
+         * the id the trigger points at rather than by looking inside the field.
+         */
+        menuFor(container) {
+            const trigger = container && container.querySelector('[data-disclosure-trigger]');
+            const menuId = trigger && trigger.getAttribute('aria-controls');
+
+            return menuId ? document.getElementById(menuId) : null;
+        }
+
+        closeMenuIn(menu) {
+            if (typeof Garnish === 'undefined' || !window.$ || !menu) {
+                return;
+            }
+
+            const disclosure = window.$(menu).data('disclosureMenu');
+
+            if (disclosure) {
+                disclosure.hide();
+            }
+        }
+
+        /**
+         * The heading menu, when a field offers more than one level. With exactly
+         * one it's an ordinary toolbar button and there's nothing to wire up.
+         */
+        initHeadings() {
+            this.headingsMenu = this.menuFor(this.headingsEl);
+
+            if (!this.headingsMenu) {
+                return;
+            }
+
+            this.headingsMenu.querySelectorAll('[data-command]').forEach((item) => {
+                item.addEventListener('click', () => {
+                    this.run(item.dataset.command);
+                    this.closeMenuIn(this.headingsMenu);
+                });
+            });
+        }
+
+        // -- Snippets ---------------------------------------------------------
+
+        initSnippets() {
+            this.snippetsMenu = this.menuFor(this.snippetsEl);
+
+            if (!this.snippetsMenu) {
+                return;
+            }
+
+            this.snippetsMenu.querySelectorAll('[data-snippet]').forEach((item) => {
+                item.addEventListener('click', () => {
+                    this.insertSnippet(item.dataset.snippet);
+                    this.closeMenuIn(this.snippetsMenu);
+                });
+            });
+        }
+
+        /**
+         * Writes a snippet in, resolving its two markers.
+         *
+         * `$SELECTION` becomes whatever was selected, so a snippet can wrap the
+         * author's own text instead of only ever landing beside it. `$0` is where
+         * the caret ends up; without one it goes to the end, which is what an
+         * author who typed nothing to wrap would want anyway.
+         */
+        insertSnippet(handle) {
+            const body = (this.config.snippets || {})[handle];
+
+            if (typeof body !== 'string') {
+                return;
+            }
+
+            const source = this.source;
+            const selected = source.value.slice(source.selectionStart, source.selectionEnd);
+            const selectionMarker = this.config.selection || '$SELECTION';
+            const caretMarker = this.config.caret || '$0';
+
+            // Every occurrence, so a snippet can use the selection more than once
+            let text = body.split(selectionMarker).join(selected);
+
+            // Found after the selection has gone in, so the offset accounts for it
+            const caret = text.indexOf(caretMarker);
+
+            if (caret !== -1) {
+                text = text.slice(0, caret) + text.slice(caret + caretMarker.length);
+            }
+
+            source.focus();
+            this.insert(text, caret === -1 ? text.length : caret);
+            this.autoGrow();
+        }
+
+        // -- Guide ------------------------------------------------------------
+
+        initGuide() {
+            if (!this.guideBtn || !this.guideBody) {
+                return;
+            }
+
+            this.guideBtn.addEventListener('click', () => this.toggleGuide());
+        }
+
+        /**
+         * Opens the cheatsheet in Craft's own popover, the one a field's info icon
+         * uses. Built on first use rather than on load: most authors never ask for
+         * it, and Garnish moves the panel out to the body when it does.
+         */
+        toggleGuide() {
+            if (typeof Garnish === 'undefined' || !Garnish.HUD) {
+                return;
+            }
+
+            if (this.hud) {
+                // `showing` rather than a class of our own: Garnish owns the state
+                if (this.hud.showing) {
+                    this.hud.hide();
+                } else {
+                    this.hud.show();
+                }
+
+                return;
+            }
+
+            // Hidden so it doesn't flash in the toolbar before Garnish takes it
+            this.guideBody.hidden = false;
+
+            this.hud = new Garnish.HUD(this.guideBtn, this.guideBody, {
+                hudClass: 'hud wahlberg-guide-hud',
+                // An author reading the guide while a field's info HUD is open is
+                // no reason to close theirs
+                closeOtherHUDs: false,
+            });
+
+            this.hud.on('show', () => this.guideBtn.setAttribute('aria-expanded', 'true'));
+            this.hud.on('hide', () => this.guideBtn.setAttribute('aria-expanded', 'false'));
+            this.guideBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        closeGuide() {
+            if (this.hud && this.hud.showing) {
+                this.hud.hide();
+            }
+        }
+
+        // -- Stats ------------------------------------------------------------
+
+        /**
+         * Character, word and line counts, plus how the value sits against the
+         * field's limit if it has one.
+         */
+        renderStats() {
+            if (!this.stats) {
+                return;
+            }
+
+            const value = this.source.value;
+            const words = value.trim() === '' ? 0 : value.trim().split(/\s+/).length;
+
+            // Count what the server counts. Bytes, because a limit in bytes is
+            // about what the column holds; code points otherwise, since that's
+            // what an author means by a character
+            const limit = this.config.byteLimit || this.config.charLimit || null;
+            const counted = this.config.byteLimit
+                ? new TextEncoder().encode(value).length
+                : Array.from(value).length;
+
+            const parts = [];
+
+            if (limit) {
+                parts.push(Craft.t('wahlberg', '{n} of {limit}', {
+                    n: Craft.formatNumber(counted),
+                    limit: Craft.formatNumber(limit),
+                }));
+            } else {
+                parts.push(Craft.t('wahlberg', '{n, plural, =1{1 character} other{# characters}}', {
+                    n: Array.from(value).length,
+                }));
+            }
+
+            parts.push(Craft.t('wahlberg', '{n, plural, =1{1 word} other{# words}}', {n: words}));
+            parts.push(Craft.t('wahlberg', '{n, plural, =1{1 line} other{# lines}}', {
+                n: value === '' ? 0 : value.split('\n').length,
+            }));
+
+            this.stats.textContent = parts.join(' · ');
+            this.stats.classList.toggle('is-over', !!limit && counted > limit);
         }
 
         // -- Typing -----------------------------------------------------------
@@ -844,9 +1189,12 @@
                 this.buttons[i].hidden = true;
                 this.setMenuItemHidden(i, false);
 
-                // Don't leave an empty group behind, its divider would hang there
+                // Don't leave an empty group behind, its divider would hang there.
+                // The heading menu counts as content even though it isn't one of
+                // the buttons that fold, or the group holding it would vanish the
+                // moment its neighbours did
                 this.groups.forEach((group) => {
-                    group.hidden = !group.querySelector('[data-command]:not([hidden])');
+                    group.hidden = !group.querySelector('[data-command]:not([hidden]), [data-headings]');
                 });
 
                 if (this.fits()) {
@@ -912,9 +1260,13 @@
             const previewing = name === 'preview';
 
             if (previewing) {
-                // Hold the height the editor had grown to, so the box doesn't
-                // jump around as the author flips between tabs
-                this.previewEl.style.minHeight = this.source.offsetHeight + 'px';
+                // The field's floor, not the height the editor had grown to.
+                // Enough that the loading spinner doesn't render in a collapsed
+                // box and then drop it open again, while letting the preview take
+                // its own height: rendered Markdown is nearly always shorter than
+                // the source it came from, and holding the editor's height leaves
+                // a large empty panel under it.
+                this.previewEl.style.minHeight = this.source.style.minHeight || '';
             }
 
             this.tabs.forEach((tab) => {
@@ -927,6 +1279,32 @@
             this.buttons.forEach((button) => {
                 button.disabled = previewing;
             });
+
+            // The toolbar's own menus, which aren't in `this.buttons`: their
+            // triggers sit outside the groups it was collected from
+            [[this.headingsEl, this.headingsMenu], [this.snippetsEl, this.snippetsMenu]]
+                .forEach(([el, menu]) => {
+                    if (!el) {
+                        return;
+                    }
+
+                    el.querySelectorAll('button').forEach((button) => {
+                        button.disabled = previewing;
+                    });
+
+                    if (previewing) {
+                        this.closeMenuIn(menu);
+                    }
+                });
+
+            // Nothing to write against while the preview is up, cheatsheet included
+            if (this.guideBtn) {
+                this.guideBtn.disabled = previewing;
+
+                if (previewing) {
+                    this.closeGuide();
+                }
+            }
 
             // Hide the whole stack, not just the textarea, or the highlighted
             // layer would show through the preview
