@@ -283,35 +283,6 @@ Encoding forces Craft’s `pre-encoded` parser, which is Traditional Markdown wi
 
 The two settings are independent, and belt-and-braces is fine: encoding removes the HTML, purifying then sanitises whatever the parser itself produced.
 
-## Hooking the Preview tab
-
-The preview renders with the same parser and purifier settings as the field, so what an author sees is what the page gets. If you need something in there that the purifier would otherwise take back out — inline SVG being the obvious case, since HTML Purifier has no notion of it — there’s an event that runs last of all:
-
-```php
-use bensomething\wahlberg\controllers\PreviewController;
-use bensomething\wahlberg\events\ModifyPreviewEvent;
-use bensomething\wahlberg\helpers\ReferenceTags;
-use yii\base\Event;
-
-Event::on(
-    PreviewController::class,
-    PreviewController::EVENT_MODIFY_PREVIEW,
-    function(ModifyPreviewEvent $event) {
-        // `outsideCode()` isn’t specific to reference tags — it’s there so a token
-        // an author is documenting in a fence stays as they typed it
-        $event->html = ReferenceTags::outsideCode(
-            $event->html,
-            fn(string $segment) => MyPlugin::render($segment),
-        );
-    }
-);
-```
-
-By the time this fires the HTML has been parsed, had its reference tags resolved and been purified, so anything you add is added after the last thing that would remove it. Two consequences worth being deliberate about:
-
-- **Whatever goes in has to be safe on its own account.** Markup from your own files is; anything derived from what an author typed isn’t, and needs escaping first.
-- **The preview is now a step ahead of `entry.body.html`,** which resolves none of this. Either ship a filter that puts it back on the template side, or you’ve made the preview disagree with the page — which is the one thing this field is otherwise careful not to do.
-
 ## Using the editor in your own plugin
 
 The editor isn’t tied to the field type. Install Wahlberg as a dependency and you can put it on any textarea in the control panel.
@@ -376,6 +347,12 @@ Turn `highlight` off and you get a plain textarea with the same chrome, sizing a
 The **Preview** tab works without a field behind it. It parses with whatever `flavour` you pass and always purifies, since there are no field settings to consult. There’s no *Preserve Line Breaks* option out here: `flavour` takes a parser flavour directly, so pass `gfm` to turn line breaks off and `gfm-comment` (the default) to keep them.
 
 What’s public API here is the three entry points and their options. The markup they generate, the CSS class names, and the data attributes the JS binds to are all internal and will change without a major version, so render through these rather than hand-rolling the HTML.
+
+### Hooking the Preview tab
+
+`PreviewController::EVENT_MODIFY_PREVIEW` hands you the preview’s HTML after parsing, reference tags and purification — so a listener can add markup the purifier would otherwise strip, inline SVG being the case it exists for. `ReferenceTags::outsideCode()` is there if you want to leave tokens inside code fences as the author typed them.
+
+Two things to be deliberate about, both because it runs after the sanitiser: what you add has to be safe on its own account, and the preview is now a step ahead of `entry.body.html` unless you ship a filter that puts it back on the template side. [`ModifyPreviewEvent`](src/events/ModifyPreviewEvent.php) has a worked example.
 
 ## GraphQL
 
