@@ -7,14 +7,15 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - HTML Purifier on the parsed output by default, so inline `<script>` can’t ride in on an author’s Markdown
 - Craft reference tags like `[Read more]({entry:123:url})` resolved on output, and left alone inside code
 - Markdown syntax highlighting in the Write tab, without giving up the plain textarea
-- Formatting toolbar: heading, bold, italic, quote, code, link, bulleted and numbered lists, folding into a menu when the field is too narrow for them
+- Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted, numbered and task lists, folding into a menu when the field is too narrow for them
+- Entry and asset links written as reference tags, so they survive a slug change or a replaced file
+- Snippets: blocks of Markdown you define, dropped in from the toolbar
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
 - `⌘B` / `⌘I` / `⌘K` shortcuts, and Enter continues lists and blockquotes
 - Buttons toggle: hit **Bold** on already-bold text and the markers come off
 - Native browser undo, so formatting buttons don’t blow away the undo stack
 - No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
-- Per-field Markdown flavour, starting height, and toolbar visibility
-- Optional Tabler Icons integration: `{icon:star}` tokens render in the Preview tab when that plugin is installed
+- Per-field Markdown flavour, toolbar, sizing, placeholder, character or byte limit, and counts
 - GraphQL support
 
 ## Requirements
@@ -282,19 +283,34 @@ Encoding forces Craft’s `pre-encoded` parser, which is Traditional Markdown wi
 
 The two settings are independent, and belt-and-braces is fine: encoding removes the HTML, purifying then sanitises whatever the parser itself produced.
 
-## Tabler Icons
+## Hooking the Preview tab
 
-If [Tabler Icons](https://github.com/bensomething/craft-tabler-icons) is installed, the Preview tab renders its `{icon:star}` tokens as icons, so authors can see them without leaving the editor. Nothing to configure, and nothing happens if that plugin isn’t installed or is switched off, in which case the token is previewed exactly as typed.
+The preview renders with the same parser and purifier settings as the field, so what an author sees is what the page gets. If you need something in there that the purifier would otherwise take back out — inline SVG being the obvious case, since HTML Purifier has no notion of it — there’s an event that runs last of all:
 
-**This is the Preview tab only.** The field’s own value leaves the tokens alone, so it’s still your template that turns them into icons:
+```php
+use bensomething\wahlberg\controllers\PreviewController;
+use bensomething\wahlberg\events\ModifyPreviewEvent;
+use bensomething\wahlberg\helpers\ReferenceTags;
+use yii\base\Event;
 
-```twig
-{{ entry.body.html|tabler }}
+Event::on(
+    PreviewController::class,
+    PreviewController::EVENT_MODIFY_PREVIEW,
+    function(ModifyPreviewEvent $event) {
+        // `outsideCode()` isn’t specific to reference tags — it’s there so a token
+        // an author is documenting in a fence stays as they typed it
+        $event->html = ReferenceTags::outsideCode(
+            $event->html,
+            fn(string $segment) => MyPlugin::render($segment),
+        );
+    }
+);
 ```
 
-That’s the one place in this plugin where the preview is deliberately a step ahead of `entry.body.html`. Pipe the output through `|tabler` and the two agree, and the filter is a no-op on content without tokens, so it’s safe to apply everywhere. It works this way because the icons are inline SVG and HTML Purifier has no notion of SVG: purifying an already-resolved icon strips it back out and leaves an empty wrapper behind. So the preview resolves them *after* purifying, which is safe because the markup comes from Tabler’s own files rather than anything an author typed, but it isn’t something the stored value can honestly do on the way through.
+By the time this fires the HTML has been parsed, had its reference tags resolved and been purified, so anything you add is added after the last thing that would remove it. Two consequences worth being deliberate about:
 
-Tokens inside a code fence or an inline code span are left as typed, the same as reference tags, so documenting the syntax works.
+- **Whatever goes in has to be safe on its own account.** Markup from your own files is; anything derived from what an author typed isn’t, and needs escaping first.
+- **The preview is now a step ahead of `entry.body.html`,** which resolves none of this. Either ship a filter that puts it back on the template side, or you’ve made the preview disagree with the page — which is the one thing this field is otherwise careful not to do.
 
 ## Using the editor in your own plugin
 

@@ -5,18 +5,3 @@ parameters:
     level: 4
     paths:
         - src
-
-    # Tabler Icons is an optional integration rather than a dependency, so its class
-    # genuinely isn't here to analyse and PHPStan can only conclude it never will be.
-    # Every use of it sits behind `Icons::available()`, which asks `class_exists()`
-    # first. Scoped to that one file so nothing else can hide behind it.
-    ignoreErrors:
-        -
-            message: '#^Instantiated class .+ not found\.$#'
-            path: src/helpers/Icons.php
-        -
-            message: '#^Call to method replaceIcons\(\) on an unknown class#'
-            path: src/helpers/Icons.php
-        -
-            message: '#^Call to function method_exists\(\) with .+ will always evaluate to false\.$#'
-            path: src/helpers/Icons.php

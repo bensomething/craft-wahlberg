@@ -33,7 +33,7 @@
 - Added a **Parse Reference Tags** field setting, on by default.
 - Added a `|marky` filter, for parsing Markdown that doesn’t live in a Markdown field the way the field would: reference tags resolved, HTML purified. Craft’s `|md` is unaffected and still there for plain parsing.
 
-- The Preview tab now renders Tabler Icons’ `{icon:star}` tokens as icons when that plugin is installed, leaving any inside code as typed. The field’s stored value is unchanged, so templates still pipe through `|tabler` themselves, as the README explains. Nothing happens when the plugin isn’t installed or is disabled.
+- The Preview tab can now be post-processed by other plugins, through `PreviewController::EVENT_MODIFY_PREVIEW`. It fires after purification, so a listener can add markup HTML Purifier would otherwise strip — inline SVG being the case it exists for. This replaces the hardcoded Tabler Icons integration, which never shipped: the same thing now belongs in Tabler Icons, and Wahlberg no longer special-cases one plugin or carries a class it can’t analyse or test.
 - Headings and bold text now render bold in the Write tab, and italics italic. The editor measures the bold and italic faces against the regular one on load and only uses them where they advance identically, so a font family without real cuts falls back to colour alone rather than drifting the caret.
 - The editor’s surfaces and syntax colours now come from Craft’s own palette rather than fixed hex values, so the field follows a control panel theme’s dark mode instead of staying a white pane with near-black text on it.
 - Fixed the selected tab’s border rendering a shade lighter than the header’s bottom border beside it.

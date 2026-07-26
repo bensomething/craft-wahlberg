@@ -2,8 +2,8 @@
 
 namespace bensomething\wahlberg\controllers;
 
+use bensomething\wahlberg\events\ModifyPreviewEvent;
 use bensomething\wahlberg\fields\MarkdownField;
-use bensomething\wahlberg\helpers\Icons;
 use bensomething\wahlberg\models\MarkdownData;
 use Craft;
 use craft\web\Controller;
@@ -16,6 +16,12 @@ use yii\web\Response;
  */
 class PreviewController extends Controller
 {
+    /**
+     * @event ModifyPreviewEvent Raised with the finished HTML, for a plugin that
+     * needs to add something purification would otherwise take out.
+     */
+    public const EVENT_MODIFY_PREVIEW = 'modifyPreview';
+
     public function actionIndex(): Response
     {
         $this->requirePostRequest();
@@ -43,11 +49,29 @@ class PreviewController extends Controller
             true,
         );
 
-        // Icons go in last, after the field has purified: the purifier would strip
-        // the SVG back out again. Only the preview does this, see the helper
         return $this->asJson([
-            'html' => Icons::process((string)$value->getHtml()),
+            'html' => $this->modified((string)$value->getHtml()),
         ]);
+    }
+
+    /**
+     * Hands the finished HTML to anything listening before it goes back.
+     *
+     * Last of all, after purification, which is the point: what this is for is
+     * markup the purifier would take out — inline SVG has no place in its idea of
+     * HTML and comes straight back off. Nothing else in the plugin adds anything
+     * here, so with no listeners this is the string it was given.
+     */
+    private function modified(string $html): string
+    {
+        if (!$this->hasEventHandlers(self::EVENT_MODIFY_PREVIEW)) {
+            return $html;
+        }
+
+        $event = new ModifyPreviewEvent(['html' => $html]);
+        $this->trigger(self::EVENT_MODIFY_PREVIEW, $event);
+
+        return $event->html;
     }
 
     private function field(): ?MarkdownField
