@@ -7,6 +7,11 @@
 
 use bensomething\wahlberg\tests\support\Application;
 use bensomething\wahlberg\tests\support\Dir;
+use craft\helpers\Markdown as MarkdownHelper;
+use craft\markdown\GithubMarkdown;
+use craft\markdown\Markdown;
+use craft\markdown\MarkdownExtra;
+use craft\markdown\PreEncodedMarkdown;
 use craft\services\Config;
 use craft\services\Path;
 use yii\i18n\PhpMessageSource;
@@ -40,6 +45,7 @@ Dir::remove($tmp);
 Dir::create($tmp);
 Dir::create($tmp . '/config');
 Dir::create($tmp . '/storage/runtime');
+Dir::create($tmp . '/translations');
 
 new Application([
     'id' => 'craft-wahlberg-tests',
@@ -69,7 +75,31 @@ new Application([
                     'class' => PhpMessageSource::class,
                     'basePath' => '@yii/messages',
                 ],
+                // What Craft translates anything an installation names for itself
+                // through — a section, a field, a snippet in `config/wahlberg.php`.
+                // Pointed at an empty directory, so those come back as written.
+                'site' => [
+                    'class' => PhpMessageSource::class,
+                    'basePath' => $tmp . '/translations',
+                ],
             ],
         ],
     ],
 ]);
+
+// Craft swaps Yii's parsers for its own on boot, and adds `pre-encoded` on top of
+// Yii's four. The fake application doesn't run that, so do it here: the flavour a
+// field with Encode HTML on resolves to only exists once this has happened.
+//
+// Kept in step with `craft\base\ApplicationTrait::_postInit()`.
+foreach ([
+    'original' => Markdown::class,
+    'pre-encoded' => PreEncodedMarkdown::class,
+    'gfm' => GithubMarkdown::class,
+    'gfm-comment' => GithubMarkdown::class,
+    'extra' => MarkdownExtra::class,
+] as $flavour => $class) {
+    if (!isset(MarkdownHelper::$flavors[$flavour]) || !is_object(MarkdownHelper::$flavors[$flavour])) {
+        MarkdownHelper::$flavors[$flavour]['class'] = $class;
+    }
+}

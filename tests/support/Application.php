@@ -2,6 +2,7 @@
 
 namespace bensomething\wahlberg\tests\support;
 
+use craft\i18n\Locale;
 use craft\services\Config;
 use craft\services\Path;
 use yii\console\Application as ConsoleApplication;
@@ -51,5 +52,14 @@ class Application extends ConsoleApplication
         $component = $this->get('path');
 
         return $component;
+    }
+
+    /**
+     * Asked by `Cp::iconSvg()`, which reads the orientation off it to decide whether an
+     * icon should be flipped. Built from the application language, as Craft's own does.
+     */
+    public function getLocale(): Locale
+    {
+        return new Locale($this->language);
     }
 }
