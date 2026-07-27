@@ -10,7 +10,7 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - HTML Purifier on the parsed output by default, so inline `<script>` can’t ride in on an author’s Markdown
 - Craft reference tags like `[Read more]({entry:123:url})` resolved on output, and left alone inside code
 - Markdown syntax highlighting in the Write tab, without giving up the plain textarea
-- Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted, numbered and task lists, folding into a menu when the field is too narrow for them
+- Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted and numbered lists, folding into a menu when the field is too narrow for them
 - Entry and asset links written as reference tags, so they survive a slug change or a replaced file
 - Snippets: blocks of Markdown you define, dropped in from the toolbar
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
@@ -45,33 +45,33 @@ Create a field of type **Markdown** and add it to a field layout.
 
 | Setting | Default | |
 | --- | --- | --- |
-| *Markdown Flavour* | GitHub-Flavoured | Which parser the Preview tab and the `html` value use. GFM adds fenced code blocks, tables, strikethrough and autolinking; Traditional Markdown and Markdown Extra are also available. |
-| *Preserve Line Breaks* | On | GFM only. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do. Turn it off for Markdown that’s hard-wrapped and meant to reflow. This is the parser’s `gfm-comment` flavour, which is what `.flavour` reports. |
-| *Inline Only* | Off | Render without the wrapping `<p>`, for a heading or strapline going into markup of its own. Emphasis, links and code still parse. |
+| **Markdown Flavour** | GitHub-Flavoured | Which parser the Preview tab and the `html` value use. GFM adds fenced code blocks, tables, strikethrough and autolinking; Traditional Markdown and Markdown Extra are also available. |
+| **Preserve Line Breaks** | On | GFM only. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do. Turn it off for Markdown that’s hard-wrapped and meant to reflow. This is the parser’s `gfm-comment` flavour, which is what `.flavour` reports. |
+| **Inline Only** | Off | Render without the wrapping `<p>`, for a heading or strapline going into markup of its own. Emphasis, links and code still parse. |
 
 **Appearance**
 
 | Setting | Default | |
 | --- | --- | --- |
-| *Text Size* | 14px | The Markdown source in the editor, 11–20px. Editing comfort only — no bearing on the front end. |
-| *Minimum Rows* | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
-| *Maximum Rows* | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
-| *Placeholder Text* | none | Shown while the field is empty. |
-| *Show Preview Tab* | On | Off makes the editor source-only, and the toolbar moves to where the tabs were. |
-| *Show Formatting Toolbar* | On | The keyboard shortcuts keep working either way. |
-| *Toolbar Buttons* | all but Heading 1 and 3–6 | Which buttons the toolbar offers — see [The toolbar](#the-toolbar). |
-| *Show Syntax Highlighting* | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
-| *Show Stats* | Off | Character, word and line counts under the editor, with the field limit alongside when there is one. |
-| *Field Limit* | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
+| **Text Size** | 14px | The Markdown source in the editor, 11–20px. Editing comfort only — no bearing on the front end. |
+| **Minimum Rows** | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
+| **Maximum Rows** | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
+| **Placeholder Text** | none | Shown while the field is empty. |
+| **Show Preview Tab** | On | Off makes the editor source-only, and the toolbar moves to where the tabs were. |
+| **Show Formatting Toolbar** | On | The keyboard shortcuts keep working either way. |
+| **Toolbar Buttons** | all but Heading 1, Heading 3–6 and the guide | Which buttons the toolbar offers — see [The toolbar](#the-toolbar). |
+| **Show Syntax Highlighting** | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
+| **Show Stats** | Off | Character, word and line counts under the editor, with the field limit alongside when there is one. |
+| **Field Limit** | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
 
 **Parsing**
 
 | Setting | Default | |
 | --- | --- | --- |
-| *Parse Reference Tags* | On | See [Reference tags](#reference-tags). |
-| *Encode HTML* | Off | Encode HTML before parsing, so a tag an author types shows up as text. See [Raw HTML and purification](#raw-html-and-purification). |
-| *Purify HTML* | On | See [Raw HTML and purification](#raw-html-and-purification). |
-| *HTML Purifier Config* | Default | Which JSON config in `config/htmlpurifier/` to sanitise with. |
+| **Parse Reference Tags** | On | See [Reference tags](#reference-tags). |
+| **Encode HTML** | Off | Encode HTML before parsing, so a tag an author types shows up as text. See [Raw HTML and purification](#raw-html-and-purification). |
+| **Purify HTML** | On | See [Raw HTML and purification](#raw-html-and-purification). |
+| **HTML Purifier Config** | Default | Which JSON config in `config/htmlpurifier/` to sanitise with. |
 
 **Snippets**
 
@@ -79,7 +79,7 @@ Only shown when `config/wahlberg.php` defines any. See [Snippets](#snippets).
 
 | Setting | Default | |
 | --- | --- | --- |
-| *Available Snippets* | all | Which of the defined snippets this field’s **Snippets** button offers. |
+| **Available Snippets** | all | Which of the defined snippets this field’s **Snippets** button offers. |
 
 **Assets**
 
@@ -87,9 +87,9 @@ These apply to the toolbar’s **Asset** button.
 
 | Setting | Default | |
 | --- | --- | --- |
-| *Available Volumes* | all | Which volumes the button may pick from. |
-| *Show unpermitted volumes* | Off | Whether to offer volumes the author can’t view. |
-| *Show unpermitted files* | Off | Whether to offer files uploaded by other authors, per Craft’s “View files uploaded by other users” permission. |
+| **Available Volumes** | all | Which volumes the button may pick from. |
+| **Show unpermitted volumes** | Off | Whether to offer volumes the author can’t view. |
+| **Show unpermitted files** | Off | Whether to offer files uploaded by other authors, per Craft’s “View files uploaded by other users” permission. |
 
 ## The toolbar
 
@@ -97,19 +97,21 @@ Every button is optional, and which ones a field offers is up to *Toolbar Button
 
 | Button | Shortcut | What it writes |
 | --- | --- | --- |
-| *Heading 1*–*Heading 6* | | that level exactly, so clicking **H3** on an H1 line makes it an H3 |
-| *Bold* | <kbd>⌘B</kbd> | `**` around the selection, or the word under the caret |
-| *Italic* | <kbd>⌘I</kbd> | `_` around the selection, or the word under the caret |
-| *Strikethrough* | | `~~` around the selection, or the word under the caret |
-| *Quote* | | `> ` |
-| *Code* | | `` ` `` around a selection on one line, a fence around one spanning several |
-| *Link* | <kbd>⌘K</kbd> | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
-| *Entry*, *Asset* | | opens Craft’s element selector — see below |
-| *Bulleted list*, *Numbered list*, *Task list* | | `- `, `1. `, `- [ ] `, toggling between each other rather than stacking up |
-| *Snippets* | <kbd>⌘⇧K</kbd> | blocks of Markdown you define — see [Snippets](#snippets) |
-| *Markdown guide* | | a syntax cheatsheet, in a popover off the button |
+| **Heading 1**–**Heading 6** | | that level exactly, so clicking **H3** on an H1 line makes it an H3 |
+| **Bold** | <kbd>⌘B</kbd> | `**` around the selection, or the word under the caret |
+| **Italic** | <kbd>⌘I</kbd> | `_` around the selection, or the word under the caret |
+| **Strikethrough** | | `~~` around the selection, or the word under the caret |
+| **Quote** | | `> ` |
+| **Code** | | `` ` `` around a selection on one line, a fence around one spanning several |
+| **Link** | <kbd>⌘K</kbd> | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
+| **Entry**, **Asset** | | opens Craft’s element selector — see below |
+| **Bulleted list**, **Numbered list** | | `- ` and `1. `, toggling between each other rather than stacking up |
+| **Snippets** | <kbd>⌘⇧K</kbd> | blocks of Markdown you define — see [Snippets](#snippets) |
+| **Markdown guide** | | a syntax cheatsheet, in a popover off the button |
 
 Shortcuts work whether or not the button is shown, so a field with the toolbar switched off still has all of them. On Windows and Linux, <kbd>Ctrl</kbd> stands in for <kbd>⌘</kbd>.
+
+The buttons fold into a menu when the field is too narrow to hold them all. **Snippets** and **Markdown guide** are the exceptions: each opens a panel rather than writing anything, so they stay put at the end of the toolbar.
 
 ### Headings
 
@@ -122,8 +124,6 @@ However many heading levels you tick, the toolbar shows **one** control — six 
 | Two or more | a dropdown listing them |
 
 The icon is the same plain **H** either way, with the level named in the tooltip, so the toolbar doesn’t shift about between fields. New fields start with **Heading 2** on its own: level 1 is nearly always the element’s own title, so body content starts below it.
-
-The buttons fold into a menu when the field is too narrow to hold them all. **Markdown guide** and **Snippets** are the exceptions: each opens something anchored to itself, so they stay put at the end of the toolbar.
 
 ### Entry and Asset
 
