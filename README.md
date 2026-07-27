@@ -2,6 +2,9 @@
 
 A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab, and a formatting toolbar.
 
+> [!NOTE]
+> Wahlberg is in beta. The templating surface, `|marky` filter, `wahlberg_Markdown` GraphQL type, `Editor::inputHtml()` options, both events, and the `config/wahlberg.php` snippet format are settled. The field’s own settings may still move.
+
 - Raw Markdown in, raw Markdown out
 - Server-side preview, parsed with the same parser as Craft’s `|md` filter, so the preview can’t drift from the front end
 - HTML Purifier on the parsed output by default, so inline `<script>` can’t ride in on an author’s Markdown
@@ -20,7 +23,7 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 
 ## Requirements
 
-- Craft CMS 5.0+
+- Craft CMS 5
 - PHP 8.2+
 
 ## Installation
