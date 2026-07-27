@@ -40,42 +40,53 @@ Create a field of type **Markdown** and add it to a field layout.
 
 **Field settings**
 
-- *Markdown Flavour*: which parser the Preview tab and the field’s `html` value use. GitHub-Flavoured Markdown (the default) adds fenced code blocks, tables, strikethrough, and autolinking. Traditional Markdown and Markdown Extra are also available.
-- *Preserve Line Breaks*: GitHub-Flavoured Markdown only, on by default. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do, so an address or a set of credits breaks where the author typed it. Turn it off if your Markdown is hard-wrapped and should reflow into paragraphs. Under the hood this is the parser’s `gfm-comment` flavour, which is what `.flavour` reports and what `|md` will want.
-- *Inline Only*: render the value without the paragraph wrapped around it, for a heading, a strapline, or anything else going straight into markup of its own. Emphasis, links and code all still parse; it’s the block-level wrapper that goes.
+| Setting | Default | |
+| --- | --- | --- |
+| *Markdown Flavour* | GitHub-Flavoured | Which parser the Preview tab and the `html` value use. GFM adds fenced code blocks, tables, strikethrough and autolinking; Traditional Markdown and Markdown Extra are also available. |
+| *Preserve Line Breaks* | On | GFM only. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do. Turn it off for Markdown that’s hard-wrapped and meant to reflow. This is the parser’s `gfm-comment` flavour, which is what `.flavour` reports. |
+| *Inline Only* | Off | Render without the wrapping `<p>`, for a heading or strapline going into markup of its own. Emphasis, links and code still parse. |
 
 **Appearance**
 
-- *Text Size*: how big the Markdown source is in the editor, 11–20px, defaulting to 14. Editing comfort only. It has no bearing on the front end.
-- *Minimum Rows*: how short the editor is allowed to get, 1 or more, defaulting to 2. It grows from there as the author types.
-- *Maximum Rows*: how tall it may grow before it starts scrolling instead. Leave blank to let it keep growing. Dragging the resize handle overrides auto-growing for that session.
-- *Placeholder Text*: shown in the editor while the field is empty.
-- *Show Preview Tab*: with this off, the editor is source-only and the toolbar moves over to where the tabs were.
-- *Show Formatting Toolbar*: hide the buttons for authors who’d rather just type. The keyboard shortcuts keep working either way.
-- *Toolbar Buttons*: which buttons the toolbar offers. They keep the order and grouping the plugin gives them however many are switched off, and still fold into a menu when the field is too narrow. See [The toolbar](#the-toolbar).
-- *Show Syntax Highlighting*: colour the Markdown as it’s typed, on by default. With this off the Write tab is a plain textarea with the same sizing, toolbar and Preview tab, which is the escape hatch if a font stack won’t hold the highlighted layer and the textarea together.
-- *Show Stats*: character, word and line counts under the editor, off by default. Shows the field limit alongside them when there is one.
-- *Field Limit*: the most characters or bytes of Markdown the field will accept, enforced on save. It counts the source an author types, not the HTML it renders to, since that’s what the column has to hold. Bytes rather than characters matters once the text stops being ASCII: an emoji is one character and four bytes.
+| Setting | Default | |
+| --- | --- | --- |
+| *Text Size* | 14px | The Markdown source in the editor, 11–20px. Editing comfort only — no bearing on the front end. |
+| *Minimum Rows* | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
+| *Maximum Rows* | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
+| *Placeholder Text* | none | Shown while the field is empty. |
+| *Show Preview Tab* | On | Off makes the editor source-only, and the toolbar moves to where the tabs were. |
+| *Show Formatting Toolbar* | On | The keyboard shortcuts keep working either way. |
+| *Toolbar Buttons* | all but Heading 1 and 3–6 | Which buttons the toolbar offers — see [The toolbar](#the-toolbar). |
+| *Show Syntax Highlighting* | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
+| *Show Stats* | Off | Character, word and line counts under the editor, with the field limit alongside when there is one. |
+| *Field Limit* | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
 
 **Parsing**
 
-- *Parse Reference Tags*: see [Reference tags](#reference-tags).
-- *Encode HTML*: encode HTML before the Markdown is parsed, so a tag an author types shows up as text rather than as markup. See [Raw HTML and purification](#raw-html-and-purification).
-- *Purify HTML*: see [Raw HTML and purification](#raw-html-and-purification).
+| Setting | Default | |
+| --- | --- | --- |
+| *Parse Reference Tags* | On | See [Reference tags](#reference-tags). |
+| *Encode HTML* | Off | Encode HTML before parsing, so a tag an author types shows up as text. See [Raw HTML and purification](#raw-html-and-purification). |
+| *Purify HTML* | On | See [Raw HTML and purification](#raw-html-and-purification). |
+| *HTML Purifier Config* | Default | Which JSON config in `config/htmlpurifier/` to sanitise with. |
 
 **Snippets**
 
 Only shown when `config/wahlberg.php` defines any. See [Snippets](#snippets).
 
-- *Available Snippets*: which of the defined snippets this field’s **Snippets** button offers.
+| Setting | Default | |
+| --- | --- | --- |
+| *Available Snippets* | all | Which of the defined snippets this field’s **Snippets** button offers. |
 
 **Assets**
 
 These apply to the toolbar’s **Asset** button.
 
-- *Available Volumes*: which volumes the button may pick from. All of them by default.
-- *Show unpermitted volumes*: whether to offer volumes the author can’t view.
-- *Show unpermitted files*: whether to offer files uploaded by other authors, per Craft’s “View files uploaded by other users” permission.
+| Setting | Default | |
+| --- | --- | --- |
+| *Available Volumes* | all | Which volumes the button may pick from. |
+| *Show unpermitted volumes* | Off | Whether to offer volumes the author can’t view. |
+| *Show unpermitted files* | Off | Whether to offer files uploaded by other authors, per Craft’s “View files uploaded by other users” permission. |
 
 ## The toolbar
 
