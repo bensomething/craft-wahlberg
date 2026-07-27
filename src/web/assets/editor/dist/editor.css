@@ -34,6 +34,9 @@
     /* Derived from the link colour so it tracks whatever the palette calls blue */
     --wahlberg-selection: hsl(from var(--link-color, #2563eb) h s l / 22%);
 
+    /* What the snippet menu is positioned against, so it can sit under the caret
+       or under the button that opened it wherever the field itself sits */
+    position: relative;
     border: 1px solid var(--hairline-color);
     border-radius: var(--large-border-radius, 5px);
     background-color: var(--gray-050, #f9fafb);
@@ -342,6 +345,26 @@
 .wahlberg-preview[hidden],
 .wahlberg-guide[hidden] {
     display: none;
+}
+
+/* Snippets. Craft's `.menu` classes carry the chrome, including the `visible`
+   class that shows it — `.menu:not(.visible)` is `display: none`, and outranks
+   anything this file says about display. So the JS toggles `visible` the way
+   Garnish would, and this only positions it. */
+
+.wahlberg-snippet-menu {
+    position: absolute;
+    z-index: 10;
+    margin: 0;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+/* The keyboard's current item. Craft's own focus ring covers the common case,
+   but the highlight shouldn't depend on focus having landed where we asked. */
+.wahlberg-snippet-menu .menu-item.is-highlighted {
+    background-color: var(--gray-100);
+    color: var(--text-color);
 }
 
 /* Markdown guide. The chrome comes from Garnish's `.hud`, so this only lays the

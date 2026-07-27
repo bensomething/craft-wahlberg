@@ -2,6 +2,7 @@
 {% set highlight = highlight ?? true %}
 {% set showStats = showStats ?? false %}
 {% set placeholder = placeholder ?? null %}
+{% set snippetsButton = snippetsButton ?? null %}
 {% set snippetsMenu = snippetsMenu ?? null %}
 {% set guide = guide ?? null %}
 {% set inputAttributes = inputAttributes ?? {} %}
@@ -40,7 +41,7 @@
                     <div class="wahlberg-overflow hidden" data-overflow>{{ overflowMenu|raw }}</div>
 
                     {# Pinned: each opens something anchored to itself #}
-                    {{ snippetsMenu|raw }}
+                    {{ snippetsButton|raw }}
                     {{ guide|raw }}
                 </div>
             {% endif %}
@@ -69,6 +70,10 @@
             <div class="wahlberg-preview" data-preview hidden></div>
         {% endif %}
     </div>
+
+    {# Outside the toolbar, and positioned at the caret when opened, so the
+       shortcut works whether or not the button above is there #}
+    {{ snippetsMenu|raw }}
 
     {% if showStats %}
         {# aria-live polite, so a screen reader hears the count settle rather than

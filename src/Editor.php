@@ -124,13 +124,13 @@ abstract class Editor
 
         $buttons = array_values(array_intersect(array_keys(self::commands()), (array)$config['buttons']));
         $toolbar = self::toolbar($buttons);
-        $snippetsMenu = self::snippetsMenuHtml($snippets, $buttons);
+        $snippetsButton = self::snippetsButtonHtml($snippets, $buttons);
         $guide = self::guideHtml($buttons);
 
         // Nothing ticked means no toolbar rather than an empty strip. The menus
         // count, though neither is one of the groups
         $showToolbar = (bool)$config['toolbar'] &&
-            ($toolbar !== [] || $snippetsMenu !== '' || $guide !== '');
+            ($toolbar !== [] || $snippetsButton !== '' || $guide !== '');
 
         $view->registerJs(sprintf(
             'new WahlbergEditor(%s, %s);',
@@ -174,7 +174,10 @@ abstract class Editor
             'placeholder' => $config['placeholder'],
             'toolbar' => self::renderMenus($toolbar),
             'overflowMenu' => $showToolbar ? self::overflowMenuHtml($buttons) : null,
-            'snippetsMenu' => $showToolbar ? $snippetsMenu : null,
+            'snippetsButton' => $showToolbar ? $snippetsButton : null,
+            // Outside the toolbar: the shortcut opens it whether or not the button
+            // is there, and it's positioned at the caret rather than at either
+            'snippetsMenu' => self::snippetsMenuHtml($snippets),
             'guide' => $showToolbar ? $guide : null,
             'inputAttributes' => $config['inputAttributes'],
         ], View::TEMPLATE_MODE_CP);
@@ -212,39 +215,64 @@ abstract class Editor
     }
 
     /**
-     * The Snippets button. Nothing at all when none are defined, rather than a
-     * button opening an empty menu.
+     * The Snippets button, for the toolbar. The menu it opens is rendered
+     * separately, since the shortcut has to work whether or not this is on the
+     * toolbar at all.
      *
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
      * @param list<string>|null $only Commands the toolbar is showing
      */
-    public static function snippetsMenuHtml(array $snippets, ?array $only = null): string
+    public static function snippetsButtonHtml(array $snippets, ?array $only = null): string
     {
         if ($snippets === [] || ($only !== null && !in_array('snippets', $only, true))) {
             return '';
         }
 
-        $items = array_map(fn(string $handle, array $snippet) => [
-            'label' => $snippet['label'],
-            // Everything gets one, so the labels line up. Applied here rather than
-            // stored, so the config keeps saying what was actually set
-            'icon' => $snippet['icon'] ?? self::DEFAULT_SNIPPET_ICON,
-            'attributes' => [
-                'type' => 'button',
-                'data' => ['snippet' => $handle],
-            ],
-        ], array_keys($snippets), array_values($snippets));
-
         $label = Craft::t('wahlberg', 'Snippets');
 
-        return Html::tag('div', Cp::disclosureMenu($items, [
-            'buttonHtml' => (string)Cp::iconSvg('scissors'),
-            'buttonAttributes' => [
-                'class' => ['wahlberg-tool', 'wahlberg-more'],
-                'title' => $label,
-                'aria' => ['label' => $label],
-            ],
-        ]), ['class' => 'wahlberg-snippets', 'data' => ['snippets' => true]]);
+        return Html::tag('div', Html::button((string)Cp::iconSvg('scissors'), [
+            'class' => ['wahlberg-tool', 'wahlberg-snippets-btn'],
+            'title' => $label,
+            'aria' => ['label' => $label, 'expanded' => 'false'],
+            'data' => ['snippets-trigger' => true],
+        ]), ['class' => 'wahlberg-snippets']);
+    }
+
+    /**
+     * The snippets menu, rendered hidden and opened at the caret.
+     *
+     * Craft's disclosure menu anchors to the button that opens it, which is the
+     * wrong place: a snippet goes in where the author is typing, and the shortcut
+     * has to work when the button isn't on the toolbar. Same markup Craft's menus
+     * use, so the classes carry the styling, but driven by the editor itself.
+     *
+     * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
+     */
+    public static function snippetsMenuHtml(array $snippets): string
+    {
+        if ($snippets === []) {
+            return '';
+        }
+
+        $items = array_map(function(string $handle, array $snippet) {
+            // Everything gets an icon, so the labels line up. Applied here rather
+            // than stored, so the config keeps saying what was actually set
+            $icon = Html::tag('span', (string)Cp::iconSvg($snippet['icon'] ?? self::DEFAULT_SNIPPET_ICON), [
+                'class' => 'icon',
+                'aria' => ['hidden' => 'true'],
+            ]);
+
+            return Html::tag('li', Html::button($icon . Html::encode($snippet['label']), [
+                'class' => 'menu-item',
+                'type' => 'button',
+                'data' => ['snippet' => $handle],
+            ]));
+        }, array_keys($snippets), array_values($snippets));
+
+        return Html::tag('div', Html::tag('ul', implode('', $items)), [
+            'class' => ['menu', 'menu--disclosure', 'wahlberg-snippet-menu'],
+            'data' => ['snippet-menu' => true],
+        ]);
     }
 
     /**

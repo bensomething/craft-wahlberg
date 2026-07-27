@@ -5,6 +5,7 @@
     const IS_MAC = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
     const MOD_KEY = IS_MAC ? 'metaKey' : 'ctrlKey';
     const MOD_LABEL = IS_MAC ? '⌘' : 'Ctrl+';
+    const MOD_SHIFT_LABEL = IS_MAC ? '⌘⇧' : 'Ctrl+Shift+';
 
     // A list item, split into indent / marker / spacing / content
     const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])(\s+)(.*)$/;
@@ -202,6 +203,17 @@
         return out.join('\n') + '\n';
     }
 
+    // Copied onto the mirror that finds the caret, so it wraps the same text at the
+    // same width in the same face
+    const CARET_STYLES = [
+        'fontFamily', 'fontSize', 'fontStyle', 'fontWeight', 'fontVariant', 'fontStretch',
+        'letterSpacing', 'wordSpacing', 'lineHeight', 'textTransform', 'textIndent',
+        'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+        'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+        'boxSizing', 'tabSize', 'fontKerning', 'fontVariantLigatures', 'fontFeatureSettings',
+        'textRendering',
+    ];
+
     // Copied onto the probe so it renders the sample exactly as the real element would
     const METRIC_STYLES = [
         'fontFamily', 'fontSize', 'fontStyle', 'fontWeight', 'fontStretch', 'fontVariant',
@@ -276,7 +288,6 @@
             this.buttons = Array.from(this.container.querySelectorAll('[data-toolbar-group] [data-command]'));
             this.overflow = this.container.querySelector('[data-overflow]');
             this.headingsEl = this.container.querySelector('[data-headings]');
-            this.snippetsEl = this.container.querySelector('[data-snippets]');
             this.guideBtn = this.container.querySelector('[data-guide-trigger]');
             this.guideBody = this.container.querySelector('[data-guide]');
             this.stats = this.container.querySelector('[data-stats]');
@@ -740,16 +751,95 @@
             return menuId ? document.getElementById(menuId) : null;
         }
 
-        closeMenuIn(menu) {
+        disclosureFor(menu) {
             if (typeof Garnish === 'undefined' || !window.$ || !menu) {
+                return null;
+            }
+
+            return window.$(menu).data('disclosureMenu') || null;
+        }
+
+        closeMenuIn(menu) {
+            this.disclosureFor(menu)?.hide();
+        }
+
+        /**
+         * Drives a menu from the keyboard for as long as it's open.
+         *
+         * Garnish has all of this already, bound to the menu container and working
+         * off whatever is focused inside it. Opened from a shortcut rather than a
+         * click, focus doesn't reliably land there, and everything downstream of
+         * that assumption then does nothing. Rather than keep guessing at why, this
+         * listens at the document and tracks the highlighted item itself, so it
+         * behaves the same wherever focus actually is.
+         */
+        driveMenu(menu, close) {
+            const items = Array.from(menu.querySelectorAll('.menu-item:not(.disabled)'));
+
+            if (!items.length) {
                 return;
             }
 
-            const disclosure = window.$(menu).data('disclosureMenu');
+            let index = -1;
 
-            if (disclosure) {
-                disclosure.hide();
-            }
+            const highlight = (to) => {
+                index = (to + items.length) % items.length;
+
+                items.forEach((item, i) => item.classList.toggle('is-highlighted', i === index));
+
+                // Best effort: it's what gives Craft's focus ring, but the class
+                // above is what guarantees the highlight is visible either way
+                items[index].focus();
+            };
+
+            const stop = () => {
+                document.removeEventListener('keydown', onKeydown, true);
+                items.forEach((item) => item.classList.remove('is-highlighted'));
+                this.drivenMenu = null;
+            };
+
+            const onKeydown = (event) => {
+                // Closed by a click elsewhere
+                if (menu.hidden) {
+                    stop();
+                    return;
+                }
+
+                const keys = {
+                    ArrowDown: () => highlight(index + 1),
+                    ArrowUp: () => highlight(index - 1),
+                    Home: () => highlight(0),
+                    End: () => highlight(items.length - 1),
+                    Tab: () => highlight(index + (event.shiftKey ? -1 : 1)),
+                };
+
+                if (keys[event.key]) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    keys[event.key]();
+                    return;
+                }
+
+                if (event.key === 'Enter' && index !== -1) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    stop();
+                    items[index].click();
+                    return;
+                }
+
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    stop();
+                    close();
+                    this.source.focus();
+                }
+            };
+
+            this.drivenMenu = menu;
+            document.addEventListener('keydown', onKeydown, true);
+            highlight(0);
         }
 
         /**
@@ -774,18 +864,157 @@
         // -- Snippets ---------------------------------------------------------
 
         initSnippets() {
-            this.snippetsMenu = this.menuFor(this.snippetsEl);
+            this.snippetMenu = this.container.querySelector('[data-snippet-menu]');
 
-            if (!this.snippetsMenu) {
+            if (!this.snippetMenu) {
                 return;
             }
 
-            this.snippetsMenu.querySelectorAll('[data-snippet]').forEach((item) => {
+            const trigger = this.container.querySelector('[data-snippets-trigger]');
+
+            if (trigger) {
+                trigger.title += ' (' + MOD_SHIFT_LABEL + 'K)';
+                trigger.addEventListener('mousedown', (event) => event.preventDefault());
+                // Anchored to itself when clicked, at the caret from the shortcut:
+                // a click comes from the toolbar, so that's where the eye is
+                trigger.addEventListener('click', () => {
+                    if (this.snippetsOpen()) {
+                        this.closeSnippets();
+                    } else {
+                        this.openSnippets(trigger);
+                    }
+                });
+            }
+
+            this.snippetMenu.querySelectorAll('[data-snippet]').forEach((item) => {
+                item.addEventListener('mousedown', (event) => event.preventDefault());
                 item.addEventListener('click', () => {
+                    this.closeSnippets();
                     this.insertSnippet(item.dataset.snippet);
-                    this.closeMenuIn(this.snippetsMenu);
                 });
             });
+
+            document.addEventListener('mousedown', (event) => {
+                if (this.snippetsOpen() && !this.snippetMenu.contains(event.target) &&
+                    event.target !== trigger && !trigger?.contains(event.target)
+                ) {
+                    this.closeSnippets();
+                }
+            });
+        }
+
+        snippetsOpen() {
+            return !!this.snippetMenu && this.snippetMenu.classList.contains('visible');
+        }
+
+        /**
+         * Opens the snippet menu, at the caret or under whatever opened it.
+         *
+         * The caret is the default because that's where the snippet is going, and
+         * because the shortcut has to work when the button isn't on the toolbar at
+         * all. `visible` rather than an attribute of our own: Craft hides
+         * `.menu:not(.visible)` outright, and that outranks anything the plugin's
+         * own stylesheet says about display.
+         */
+        openSnippets(anchor) {
+            if (!this.snippetMenu || this.snippetsOpen()) {
+                return;
+            }
+
+            this.snippetMenu.classList.add('visible');
+
+            const at = anchor ? this.below(anchor) : this.atCaret();
+            const width = this.snippetMenu.offsetWidth;
+
+            // Right-aligned under a toolbar button, which sits at the end of the
+            // header and would otherwise push the menu off the edge
+            const left = anchor ? at.right - width : at.left;
+            const room = this.container.clientWidth - width;
+
+            this.snippetMenu.style.top = at.top + 'px';
+            this.snippetMenu.style.left = Math.max(0, Math.min(left, room)) + 'px';
+
+            this.container.querySelectorAll('[data-snippets-trigger]')
+                .forEach((button) => button.setAttribute('aria-expanded', 'true'));
+
+            this.driveMenu(this.snippetMenu, () => this.closeSnippets());
+        }
+
+        closeSnippets() {
+            if (!this.snippetsOpen()) {
+                return;
+            }
+
+            this.snippetMenu.classList.remove('visible');
+
+            this.container.querySelectorAll('[data-snippets-trigger]')
+                .forEach((button) => button.setAttribute('aria-expanded', 'false'));
+        }
+
+        /**
+         * Just below an element, in the field's own coordinates.
+         */
+        below(element) {
+            const container = this.container.getBoundingClientRect();
+            const rect = element.getBoundingClientRect();
+
+            return {
+                top: rect.bottom - container.top + 2,
+                left: rect.left - container.left,
+                right: rect.right - container.left,
+            };
+        }
+
+        /**
+         * Just below the caret, in the field's own coordinates.
+         *
+         * Measured on a throwaway copy of the textarea holding everything up to the
+         * caret: a marker at the end of that lands exactly where the caret is, since
+         * the copy wraps the same text at the same width in the same face. The same
+         * trick the highlighted layer is built on, for one character rather than all
+         * of them.
+         */
+        atCaret() {
+            const source = this.source;
+            const styles = window.getComputedStyle(source);
+            const mirror = document.createElement('div');
+
+            CARET_STYLES.forEach((property) => {
+                mirror.style[property] = styles[property];
+            });
+
+            mirror.style.position = 'absolute';
+            mirror.style.top = '0';
+            mirror.style.left = '0';
+            mirror.style.height = 'auto';
+            mirror.style.visibility = 'hidden';
+            mirror.style.whiteSpace = 'pre-wrap';
+            mirror.style.overflowWrap = 'break-word';
+            mirror.style.width = source.offsetWidth + 'px';
+
+            mirror.textContent = source.value.slice(0, source.selectionStart);
+
+            // Zero-width, so it can't wrap onto a line of its own
+            const marker = document.createElement('span');
+            marker.textContent = '\u200b';
+            mirror.appendChild(marker);
+
+            this.editorEl.appendChild(mirror);
+
+            const top = marker.offsetTop - source.scrollTop + parseFloat(styles.lineHeight || 20);
+            const left = marker.offsetLeft - source.scrollLeft;
+
+            mirror.remove();
+
+            // Out of the writing surface and into the field, which is what the menu
+            // is positioned against
+            const container = this.container.getBoundingClientRect();
+            const editor = this.editorEl.getBoundingClientRect();
+
+            return {
+                top: Math.round(editor.top - container.top + top),
+                left: Math.round(editor.left - container.left + left),
+            };
         }
 
         /**
@@ -913,7 +1142,17 @@
         // -- Typing -----------------------------------------------------------
 
         onKeydown(event) {
-            if (event[MOD_KEY] && !event.altKey) {
+            if (event[MOD_KEY] && event.shiftKey && !event.altKey &&
+                event.key.toLowerCase() === 'k' && this.snippetMenu
+            ) {
+                event.preventDefault();
+                this.openSnippets();
+                return;
+            }
+
+            // Shift excluded, or the shifted shortcut above would lowercase into
+            // this one and insert a link instead
+            if (event[MOD_KEY] && !event.altKey && !event.shiftKey) {
                 const command = {b: 'bold', i: 'italic', k: 'link'}[event.key.toLowerCase()];
 
                 if (command) {
@@ -1253,20 +1492,15 @@
             });
 
             // The toolbar's menus, whose triggers sit outside the button groups
-            [[this.headingsEl, this.headingsMenu], [this.snippetsEl, this.snippetsMenu]]
-                .forEach(([el, menu]) => {
-                    if (!el) {
-                        return;
-                    }
-
-                    el.querySelectorAll('button').forEach((button) => {
-                        button.disabled = previewing;
-                    });
-
-                    if (previewing) {
-                        this.closeMenuIn(menu);
-                    }
+            this.container.querySelectorAll('[data-headings] button, [data-snippets-trigger]')
+                .forEach((button) => {
+                    button.disabled = previewing;
                 });
+
+            if (previewing) {
+                this.closeMenuIn(this.headingsMenu);
+                this.closeSnippets();
+            }
 
             // Nothing to write against while the preview is up, cheatsheet included
             if (this.guideBtn) {
