@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-beta.2 - 2026-07-27
 
 - The **Write** and **Preview** tabs have slightly less rounded top corners, so they sit inside the field’s own corner rather than matching it.
 - The **Markdown guide** button uses a plain question mark rather than one in a circle.
