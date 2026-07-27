@@ -404,17 +404,13 @@ The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*.
 
 ### Syntax highlighting
 
-The Write tab highlights Markdown as you type. It's still a plain `<textarea>`. The highlighting is a layer rendered behind it, showing the same text with the syntax picked out, while the textarea's own text is made transparent. That keeps native undo, spellcheck, selection, and form submission working exactly as they would otherwise.
+The Write tab highlights Markdown as you type, and it’s still a plain `<textarea>` — the colour comes from a layer rendered behind it, with the textarea’s own text made transparent. Native undo, spellcheck, selection and form submission all behave as they otherwise would.
 
-Two details keep the layers locked together. Trailing spaces are rendered as non-breaking spaces, because `white-space: pre-wrap` lets ordinary trailing spaces hang with no width while the textarea's caret still advances past them. And on load the editor measures a character's rendered width in each layer and corrects any difference with `letter-spacing`, because a textarea and a `<pre>` don't reliably resolve the same face from the same font stack. If something still looks off, add the `wahlberg--debug` class to the field to paint the textarea's own text in red over the layer beneath it, and read `data-advance` off the `<pre>` for the two measurements.
+Bold and italic are used only where the font family has real cuts for them. The editor measures on load and falls back to colour alone where a fabricated cut would advance wider and pull the two layers apart. Nothing is lost by that: in Markdown source the `**` and `_` are on screen anyway.
 
-Headings and bold text are bold, italics are italic, and everything else is told apart by colour. Weight and slope are measured before they're used, though, and that check is load-bearing. Every cut of a real monospace family advances identically, which is what makes it monospace, but a browser asked for a cut the family hasn't got fabricates one, and a fabricated bold can come out wider than the textarea's regular text. The layers would then drift apart a fraction of a character at a time until the caret visibly missed the end of a line. So on load the editor measures the bold and italic faces against the regular one and only uses them if they agree. Where they don't, that token stays plain and keeps its colour. Nothing is lost when it falls back, since in Markdown source the `**` and `_` are right there on screen.
+Retheme with the CSS variables on `.wahlberg`: `--wahlberg-mark`, `--wahlberg-heading`, `--wahlberg-strong`, `--wahlberg-em`, `--wahlberg-code`, `--wahlberg-link`, `--wahlberg-url`, `--wahlberg-quote`. Keep to colour, since setting weight or slope here goes around that measurement. Each defaults to a step on Craft’s own ramp rather than a fixed hex, so a control panel theme that redeclares the palette — its dark mode included — moves the editor with it.
 
-Retheme the tokens with the CSS variables on `.wahlberg`: `--wahlberg-mark`, `--wahlberg-heading`, `--wahlberg-strong`, `--wahlberg-em`, `--wahlberg-code`, `--wahlberg-link`, `--wahlberg-url`, `--wahlberg-quote`. Keep to colour, since setting weight or slope through these bypasses the measurement, which is the one thing that will move the caret.
-
-Each one defaults to a step on Craft's own neutral ramp or a semantic colour rather than a fixed hex, and the surfaces do the same. A control panel theme that redeclares Craft's palette, its own dark mode included, moves the ramp, and the editor follows it without needing to know the theme exists.
-
-Pressing Enter at the end of a list item or blockquote carries the marker onto the next line, and numbered lists count up. Pressing Enter on an empty item ends the list. Selecting a URL before hitting the link button (or `⌘K`) drops it straight into the link’s target.
+If the two layers ever look out of step, add the `wahlberg--debug` class to the field to paint the textarea’s own text in red over the layer beneath it.
 
 ## Why “Wahlberg”?
 
