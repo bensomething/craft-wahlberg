@@ -11,6 +11,12 @@
     --wahlberg-surface: var(--input-bg, var(--white, #fff));
     --wahlberg-tab-border: var(--hairline-color);
 
+    /* The row. Both text layers take it from here, since a row of one height
+       under a row of another is the one mismatch that can't be corrected for.
+       It's also what the caret and the selection are drawn to, so loosening it
+       gives both of them more height than the text they're marking. */
+    --wahlberg-line-height: 1.6;
+
     /* Syntax palette. Override these to retheme the editor. Colour only, on
        purpose: see the note by the token styles.
 
@@ -33,6 +39,18 @@
 
     /* Derived from the link colour so it tracks whatever the palette calls blue */
     --wahlberg-selection: hsl(from var(--link-color, #2563eb) h s l / 22%);
+
+    /* The band behind the line being written. The step on the ramp the field's own
+       header sits on, so the two tones in the field are the same tone. Dark mode
+       lifts off its own surface instead, whatever a theme has put there. Set it
+       to `transparent` to do without. */
+    --wahlberg-active-line: light-dark(var(--gray-050, #f3f7fc), rgb(255 255 255 / 3%));
+
+    /* How far the band stands proud of the row it covers, top and bottom. The
+       row is what the caret and the selection are drawn to, so at 0 the three
+       agree exactly; anything more eats into the leading around the lines
+       either side. */
+    --wahlberg-active-line-pad: 1px;
 
     /* What the snippet menu is positioned against, so it can sit under the caret
        or under the button that opened it wherever the field itself sits */
@@ -250,6 +268,9 @@
 
 .wahlberg-editor {
     position: relative;
+    /* Clips the active line where the textarea scrolls under its own maximum
+       height, so a half-scrolled band ends with the text rather than the box */
+    overflow: hidden;
     background-color: var(--wahlberg-surface);
     border-radius: 0 0 var(--large-border-radius, 5px) var(--large-border-radius, 5px);
 }
@@ -265,7 +286,7 @@
     border: 0;
     font-family: var(--wahlberg-mono);
     font-size: var(--wahlberg-font-size, 14px);
-    line-height: 1.7;
+    line-height: var(--wahlberg-line-height);
     letter-spacing: normal;
     tab-size: 4;
     white-space: pre-wrap;
@@ -288,6 +309,27 @@
     pointer-events: none;
     color: var(--text-color);
     background: none;
+}
+
+/* The line being written. First child of the editor, so it paints under the
+   highlighted layer as well as the textarea: it's a background, and text on
+   either layer has to read over it. */
+.wahlberg-active-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+
+    /* Taller than the rows it covers, so the text sits in the band rather than
+       filling it. Padded out and pulled back up by the same amount, which keeps
+       the JS setting the height of the rows and nothing else; `content-box`
+       because the CP sets `border-box` on everything, and that would swallow
+       the padding instead of adding it. */
+    box-sizing: content-box;
+    padding-block: var(--wahlberg-active-line-pad);
+    margin-block: calc(var(--wahlberg-active-line-pad) * -1);
+
+    pointer-events: none;
+    background-color: var(--wahlberg-active-line);
 }
 
 .wahlberg-source {

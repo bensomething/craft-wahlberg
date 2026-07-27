@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added `⌘⇧P`, which swaps between the **Write** and **Preview** tabs from anywhere in the field.
+- The line being written now carries a band behind it, over every row a wrapped line takes. `--wahlberg-active-line` and `--wahlberg-active-line-pad` retheme it, `transparent` removes it.
+- The editor’s line height can now be set with `--wahlberg-line-height`.
+
 ## 1.0.0-beta.2 - 2026-07-27
 
 - The **Write** and **Preview** tabs have slightly less rounded top corners, so they sit inside the field’s own corner rather than matching it.

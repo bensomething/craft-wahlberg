@@ -209,6 +209,37 @@
         'textRendering',
     ];
 
+    /**
+     * A throwaway copy of a textarea holding `text`, appended to `parent`.
+     *
+     * It wraps that text exactly as the real one does — same width, same face,
+     * same padding — so anything measured inside it is in the textarea's own
+     * coordinates. `parent` has to be the element the textarea sits at the top
+     * left of, since the copy is positioned there.
+     */
+    function mirror(source, parent, text) {
+        const styles = window.getComputedStyle(source);
+        const el = document.createElement('div');
+
+        CARET_STYLES.forEach((property) => {
+            el.style[property] = styles[property];
+        });
+
+        el.style.position = 'absolute';
+        el.style.top = '0';
+        el.style.left = '0';
+        el.style.height = 'auto';
+        el.style.visibility = 'hidden';
+        el.style.whiteSpace = 'pre-wrap';
+        el.style.overflowWrap = 'break-word';
+        el.style.width = source.offsetWidth + 'px';
+        el.textContent = text;
+
+        parent.appendChild(el);
+
+        return el;
+    }
+
     // Copied onto the probe so it renders the sample exactly as the real element would
     const METRIC_STYLES = [
         'fontFamily', 'fontSize', 'fontStyle', 'fontWeight', 'fontStretch', 'fontVariant',
@@ -295,7 +326,20 @@
             // second-guessing them
             this.manuallySized = false;
 
+            // The band behind the line being written. Built here rather than in the
+            // template because it's decoration: nothing outside this class needs to
+            // know it exists, and a field that themes it away pays for nothing.
+            // First child, so it paints under both text layers
+            this.activeLine = document.createElement('div');
+            this.activeLine.className = 'wahlberg-active-line';
+            this.activeLine.hidden = true;
+            this.activeLine.setAttribute('aria-hidden', 'true');
+            this.editorEl.prepend(this.activeLine);
+
             this.tabs.forEach((tab) => {
+                // The tabs carry no title of their own, so this is the only place
+                // the shortcut announces itself
+                tab.title = tab.textContent.trim() + ' (' + MOD_SHIFT_LABEL + 'P)';
                 tab.addEventListener('click', () => this.showTab(tab.dataset.tab));
                 tab.addEventListener('keydown', (event) => this.onTabKeydown(event));
             });
@@ -313,6 +357,18 @@
             this.source.addEventListener('keydown', (event) => this.onKeydown(event));
             this.source.addEventListener('input', () => this.onInput());
             this.source.addEventListener('scroll', () => this.syncScroll());
+
+            // On the field rather than the textarea, which is hidden while the
+            // preview is up: the key that leaves the writing surface is the same
+            // one that has to bring it back
+            this.container.addEventListener('keydown', (event) => this.onFieldKeydown(event));
+
+            // Every way the caret can move raises `selectionchange`, typing and
+            // clicking included; what it doesn't cover is the caret going away,
+            // hence the other two
+            document.addEventListener('selectionchange', () => this.syncActiveLine());
+            this.source.addEventListener('focus', () => this.syncActiveLine());
+            this.source.addEventListener('blur', () => this.syncActiveLine());
 
             this.initOverflow();
             this.initHeadings();
@@ -339,6 +395,7 @@
             this.autoGrow();
             this.renderHighlight();
             this.renderStats();
+            this.syncActiveLine();
             this.syncPreviewTab();
         }
 
@@ -454,6 +511,8 @@
                 this.highlight.scrollTop = this.source.scrollTop;
                 this.highlight.scrollLeft = this.source.scrollLeft;
             }
+
+            this.positionActiveLine();
         }
 
         /**
@@ -472,6 +531,117 @@
             this.highlight.style.paddingInlineEnd = gutter
                 ? 'calc(' + styles.paddingInlineEnd + ' + ' + gutter + 'px)'
                 : '';
+        }
+
+        // -- Active line ------------------------------------------------------
+
+        /**
+         * Repaints the band behind the line being written. Coalesced like the
+         * highlighted layer is, since the caret can move on every keystroke.
+         */
+        syncActiveLine() {
+            if (this.activeLineFrame) {
+                return;
+            }
+
+            this.activeLineFrame = requestAnimationFrame(() => {
+                this.activeLineFrame = null;
+                this.renderActiveLine();
+            });
+        }
+
+        /**
+         * Up only while the field has focus and nothing is selected: a selection
+         * already says where the author is, and a band on every editor on the
+         * page says nothing at all.
+         */
+        renderActiveLine() {
+            const source = this.source;
+
+            // A frame late, by which time focus has landed — during a blur it's
+            // still on its way, and the toolbar's menus take it for as long as
+            // they're open
+            const show = this.container.contains(document.activeElement) &&
+                source.selectionStart === source.selectionEnd &&
+                // Nothing to measure against while the preview is up
+                !!source.offsetParent;
+
+            const rows = show ? this.lineRows() : null;
+
+            if (!rows) {
+                this.activeLine.hidden = true;
+                return;
+            }
+
+            this.activeLineTop = rows.top;
+            this.activeLine.style.height = rows.height + 'px';
+            this.activeLine.hidden = false;
+            this.positionActiveLine();
+        }
+
+        /**
+         * Where the caret's line sits, and how tall it is, in the textarea's own
+         * coordinates.
+         *
+         * A long line wraps over several rows and the band covers all of them, so
+         * what's wanted is the block the line occupies rather than the one row the
+         * caret is on. Measured on a copy of the textarea with the line in a span
+         * of its own: an inline element reports one client rect per row it takes,
+         * which is the question being asked, and asking beats working out where
+         * the text would break from the width and the face.
+         */
+        lineRows() {
+            const source = this.source;
+            const value = source.value;
+
+            const from = value.lastIndexOf('\n', source.selectionStart - 1) + 1;
+            let to = value.indexOf('\n', source.selectionStart);
+
+            if (to === -1) {
+                to = value.length;
+            }
+
+            // Only the text above the line affects where it lands, so the rest of
+            // the document is left out of the copy
+            const copy = mirror(source, this.editorEl, value.slice(0, from));
+            const line = document.createElement('span');
+
+            // Zero-width filler, so an empty line still has a row to report
+            line.textContent = value.slice(from, to) || '​';
+            copy.appendChild(line);
+
+            const rects = line.getClientRects();
+            const first = rects[0];
+            const top = copy.getBoundingClientRect().top;
+
+            copy.remove();
+
+            if (!first) {
+                return null;
+            }
+
+            // A client rect covers the text's own height, ascent to descent, and
+            // not the row it sits in. The leading is the difference, half of it
+            // above and half below, so it goes back on here: without it the band
+            // comes out shorter than the caret, which is drawn to the row.
+            const lineHeight = parseFloat(window.getComputedStyle(source).lineHeight) || first.height;
+            const leading = (lineHeight - first.height) / 2;
+
+            return {
+                top: first.top - top - leading,
+                // One rect per row, each of them a whole row tall
+                height: rects.length * lineHeight,
+            };
+        }
+
+        /**
+         * The band is positioned in the editor, not in the text, so it has to be
+         * moved by however far the text has scrolled under it.
+         */
+        positionActiveLine() {
+            if (!this.activeLine.hidden) {
+                this.activeLine.style.top = (this.activeLineTop - this.source.scrollTop) + 'px';
+            }
         }
 
         // -- Commands ---------------------------------------------------------
@@ -972,34 +1142,17 @@
         atCaret() {
             const source = this.source;
             const styles = window.getComputedStyle(source);
-            const mirror = document.createElement('div');
-
-            CARET_STYLES.forEach((property) => {
-                mirror.style[property] = styles[property];
-            });
-
-            mirror.style.position = 'absolute';
-            mirror.style.top = '0';
-            mirror.style.left = '0';
-            mirror.style.height = 'auto';
-            mirror.style.visibility = 'hidden';
-            mirror.style.whiteSpace = 'pre-wrap';
-            mirror.style.overflowWrap = 'break-word';
-            mirror.style.width = source.offsetWidth + 'px';
-
-            mirror.textContent = source.value.slice(0, source.selectionStart);
+            const copy = mirror(source, this.editorEl, source.value.slice(0, source.selectionStart));
 
             // Zero-width, so it can't wrap onto a line of its own
             const marker = document.createElement('span');
             marker.textContent = '\u200b';
-            mirror.appendChild(marker);
-
-            this.editorEl.appendChild(mirror);
+            copy.appendChild(marker);
 
             const top = marker.offsetTop - source.scrollTop + parseFloat(styles.lineHeight || 20);
             const left = marker.offsetLeft - source.scrollLeft;
 
-            mirror.remove();
+            copy.remove();
 
             // Out of the writing surface and into the field, which is what the menu
             // is positioned against
@@ -1266,6 +1419,9 @@
                 if (width !== lastWidth) {
                     lastWidth = width;
                     this.autoGrow();
+                    // Narrower or wider wraps the lines differently, and the band
+                    // is the height of however many rows its line now takes
+                    this.syncActiveLine();
                     return;
                 }
 
@@ -1425,6 +1581,29 @@
 
         // -- Tabs -------------------------------------------------------------
 
+        /**
+         * Swaps between writing and previewing, from anywhere in the field.
+         */
+        onFieldKeydown(event) {
+            if (!event[MOD_KEY] || !event.shiftKey || event.altKey ||
+                event.key.toLowerCase() !== 'p'
+            ) {
+                return;
+            }
+
+            // Source-only field, or nothing written to preview yet
+            if (!this.previewTab || this.previewTab.disabled) {
+                return;
+            }
+
+            event.preventDefault();
+            this.showTab(this.previewing() ? 'write' : 'preview');
+        }
+
+        previewing() {
+            return !!this.previewTab && this.previewTab.getAttribute('aria-selected') === 'true';
+        }
+
         onTabKeydown(event) {
             if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
                 return;
@@ -1455,7 +1634,7 @@
 
             this.previewTab.disabled = empty;
 
-            if (empty && this.previewTab.getAttribute('aria-selected') === 'true') {
+            if (empty && this.previewing()) {
                 this.showTab('write');
             }
         }
@@ -1512,6 +1691,9 @@
             this.previewEl.hidden = !previewing;
 
             if (previewing) {
+                // Focus follows the author out of the textarea, so the shortcut
+                // that got here is still inside the field on the way back
+                this.previewTab.focus();
                 this.renderPreview();
             } else {
                 this.source.focus();

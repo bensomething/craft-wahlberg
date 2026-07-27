@@ -10,11 +10,12 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - HTML Purifier on the parsed output by default, so inline `<script>` can’t ride in on an author’s Markdown
 - Craft reference tags like `[Read more]({entry:123:url})` resolved on output, and left alone inside code
 - Markdown syntax highlighting in the Write tab, without giving up the plain textarea
+- A band behind the line being written, over every row a wrapped line takes
 - Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted and numbered lists, folding into a menu when the field is too narrow for them
 - Entry and asset links written as reference tags, so they survive a slug change or a replaced file
 - Snippets: blocks of Markdown you define, dropped in from the toolbar
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
-- `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧K` for snippets, and Enter continues lists and blockquotes
+- `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧K` for snippets, `⌘⇧P` to preview, and Enter continues lists and blockquotes
 - Buttons toggle: hit **Bold** on already-bold text and the markers come off
 - Native browser undo, so formatting buttons don’t blow away the undo stack
 - No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
@@ -401,7 +402,27 @@ Markdown fields resolve to a `wahlberg_Markdown` type:
 
 Enter continues a list or a blockquote onto the next line, and ends it on an empty item. The formatting shortcuts are in [The toolbar](#the-toolbar).
 
+<kbd>⌘⇧P</kbd> swaps between **Write** and **Preview**, from anywhere in the field, and puts the caret back where it was on the way in. It does nothing on a field with *Show Preview Tab* off, or while there’s nothing written to preview.
+
 The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*. Dragging the resize handle takes over from there. Once someone has picked a height by hand, it stops resizing itself.
+
+### The current line
+
+The line being written carries a band behind it, the way a code editor does. A long line wraps over several rows and the band covers all of them, since what it marks is the line the author is on rather than the row the caret is in — in Markdown that block is usually the paragraph.
+
+It’s up only while the field has focus and nothing is selected: a selection already says where the author is, and a page of fields each wearing a band says nothing at all.
+
+In light mode it’s `--gray-050`, the same step on Craft’s ramp the field’s header strip sits on; in dark, a 3% lift off whatever the surface is. Nothing else about the field’s colours changes.
+
+There’s no setting for it. Retheme or switch it off with the CSS variables on `.wahlberg`:
+
+| Variable | Default | |
+| --- | --- | --- |
+| `--wahlberg-active-line` | `--gray-050`, or a 3% lift in dark mode | `transparent` to do without |
+| `--wahlberg-active-line-pad` | `1px` | how far the band stands proud of the row, top and bottom |
+| `--wahlberg-line-height` | `1.6` | the row itself, which the caret and the selection are drawn to as well |
+
+`--wahlberg-line-height` is the one to reach for if the caret looks too tall for the text: a browser draws it to the full row, so the only way to shorten it is to tighten the row. Both text layers take it from the same place on purpose — two layers on different line heights is the one mismatch the editor can’t measure its way out of.
 
 ### Syntax highlighting
 
