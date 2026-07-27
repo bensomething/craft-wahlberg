@@ -504,7 +504,7 @@ abstract class Editor
 
         // Wrapped, so the divider sits on something other than the button, which
         // is a fixed square with a centred icon
-        return Html::tag('div', Html::button((string)Cp::iconSvg('circle-question'), [
+        return Html::tag('div', Html::button((string)Cp::iconSvg('question'), [
             'class' => ['wahlberg-tool', 'wahlberg-guide-btn'],
             'title' => $label,
             'aria' => ['label' => $label, 'expanded' => 'false'],
