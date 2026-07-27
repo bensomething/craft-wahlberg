@@ -56,6 +56,9 @@ new Application([
     // HTML Purifier writes its compiled definitions here, by way of Yii's helper.
     'runtimePath' => $tmp . '/storage/runtime',
     'aliases' => [
+        // Where `Cp::iconSvg()` looks: Craft's bootstrap points this at the solid
+        // set, and without it every icon comes back as an empty string
+        '@appicons' => $root . '/vendor/craftcms/cms/src/icons/solid',
         '@root' => $tmp,
         '@config' => $tmp . '/config',
         '@storage' => $tmp . '/storage',
