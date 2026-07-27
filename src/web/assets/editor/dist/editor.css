@@ -399,11 +399,19 @@
     white-space: nowrap;
 }
 
-/* `craft-copy-attribute` brings the chip, the monospace face and the clipboard
-   icon with it. Inline code in the descriptions stays plain `code` on purpose —
-   chipping those too would put competing chips in most rows. */
+/* `craft-copy-attribute` brings the chip and the monospace face with it. The
+   clipboard icon it also brings is dropped: thirteen of them down one column is a
+   lot of furniture for an affordance the chip already carries. The visually-hidden
+   label stays, so it's still announced, and clicking still copies.
+
+   Inline code in the descriptions stays plain `code` on purpose — chipping those
+   too would put competing chips in most rows. */
 .wahlberg-guide-hud .wahlberg-guide-table craft-copy-attribute {
     color: var(--text-color);
+}
+
+.wahlberg-guide-hud .wahlberg-guide-table craft-copy-attribute [data-icon] {
+    display: none;
 }
 
 /* Stats. A footer strip mirroring the header rather than loose text under the
