@@ -14,7 +14,7 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - Entry and asset links written as reference tags, so they survive a slug change or a replaced file
 - Snippets: blocks of Markdown you define, dropped in from the toolbar
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
-- `⌘B` / `⌘I` / `⌘K` shortcuts, and Enter continues lists and blockquotes
+- `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧K` for snippets, and Enter continues lists and blockquotes
 - Buttons toggle: hit **Bold** on already-bold text and the markers come off
 - Native browser undo, so formatting buttons don’t blow away the undo stack
 - No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
@@ -29,8 +29,10 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 ## Installation
 
 ```bash
-composer require bensomething/craft-wahlberg
+composer require bensomething/craft-wahlberg:^1.0.0-beta
 ```
+
+The `-beta` in the constraint is what lets Composer install it under a project’s default `stable` minimum stability.
 
 Or install from the control panel: **Settings → Plugins**.
 
@@ -92,19 +94,21 @@ These apply to the toolbar’s **Asset** button.
 
 Every button is optional, and which ones a field offers is up to *Toolbar Buttons*:
 
-| Button | What it writes |
-| --- | --- |
-| *Heading 1*–*Heading 6* | that level exactly, so clicking **H3** on an H1 line makes it an H3 |
-| *Bold*, *Italic*, *Strikethrough* | `**`, `_`, `~~` around the selection, or the word under the caret |
-| *Quote* | `> ` |
-| *Code* | `` ` `` around a selection on one line, a fence around one spanning several |
-| *Link* | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
-| *Entry*, *Asset* | opens Craft’s element selector — see below |
-| *Bulleted list*, *Numbered list*, *Task list* | `- `, `1. `, `- [ ] `, toggling between each other rather than stacking up |
-| *Markdown guide* | a syntax cheatsheet, in a popover off the button |
-| *Snippets* | blocks of Markdown you define — see [Snippets](#snippets) |
+| Button | Shortcut | What it writes |
+| --- | --- | --- |
+| *Heading 1*–*Heading 6* | | that level exactly, so clicking **H3** on an H1 line makes it an H3 |
+| *Bold* | <kbd>⌘B</kbd> | `**` around the selection, or the word under the caret |
+| *Italic* | <kbd>⌘I</kbd> | `_` around the selection, or the word under the caret |
+| *Strikethrough* | | `~~` around the selection, or the word under the caret |
+| *Quote* | | `> ` |
+| *Code* | | `` ` `` around a selection on one line, a fence around one spanning several |
+| *Link* | <kbd>⌘K</kbd> | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
+| *Entry*, *Asset* | | opens Craft’s element selector — see below |
+| *Bulleted list*, *Numbered list*, *Task list* | | `- `, `1. `, `- [ ] `, toggling between each other rather than stacking up |
+| *Snippets* | <kbd>⌘⇧K</kbd> | blocks of Markdown you define — see [Snippets](#snippets) |
+| *Markdown guide* | | a syntax cheatsheet, in a popover off the button |
 
-**Bold**, **Italic** and **Link** have the usual <kbd>⌘B</kbd> / <kbd>⌘I</kbd> / <kbd>⌘K</kbd> shortcuts, and those work whether or not the buttons are shown.
+Shortcuts work whether or not the button is shown, so a field with the toolbar switched off still has all of them. On Windows and Linux, <kbd>Ctrl</kbd> stands in for <kbd>⌘</kbd>.
 
 ### Headings
 
@@ -165,6 +169,12 @@ Mind the quoting: inside a double-quoted PHP string, `$0` and `$SELECTION` read 
 **Why a config file and not a settings screen?** A snippet is a contract with the templates and CSS that render it — a callout only looks like a callout because your front end styles what it emits. So the person writing one should be the person who can also write that, and the definition should travel with the code in version control. Which snippets a *given field* offers is a field setting, under **Available Snippets** — the same split `config/htmlpurifier/` already uses.
 
 A field that has never been saved against a snippet offers all of them, so adding one to the config file reaches every existing field without editing each one. With no config file the **Snippets** button hides itself rather than opening an empty menu, and the field settings drop the section to match.
+
+### Opening the menu
+
+<kbd>⌘⇧K</kbd> opens it **at the caret**, which is where the snippet is going. Clicking the toolbar button opens it under the button instead, since that's where the eye already is.
+
+The shortcut doesn't need the button: it works with **Snippets** unticked in *Toolbar Buttons*, and with the toolbar switched off altogether. Arrows and <kbd>Tab</kbd> move through the list, <kbd>Enter</kbd> inserts, <kbd>Esc</kbd> closes and puts the caret back.
 
 **Mind what your fields render.** With *Purify HTML* on — the default — raw HTML in a snippet is sanitised on the way out, and HTML Purifier only knows HTML 4: `<details>` and `<summary>` are dropped entirely, and iframes survive only for the hosts `config/htmlpurifier/` allows. Markdown *inside* a raw HTML block isn’t parsed either, whatever the purifier does. A snippet that emits Markdown works everywhere; one that emits HTML is worth checking in the Preview tab first.
 
@@ -388,11 +398,7 @@ Markdown fields resolve to a `wahlberg_Markdown` type:
 
 ## Editing
 
-| Action | Shortcut |
-| --- | --- |
-| Bold | `⌘B` / `Ctrl+B` |
-| Italic | `⌘I` / `Ctrl+I` |
-| Link | `⌘K` / `Ctrl+K` |
+Enter continues a list or a blockquote onto the next line, and ends it on an empty item. The formatting shortcuts are in [The toolbar](#the-toolbar).
 
 The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*. Dragging the resize handle takes over from there. Once someone has picked a height by hand, it stops resizing itself.
 

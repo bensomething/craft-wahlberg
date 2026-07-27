@@ -9,7 +9,7 @@ First public release.
 - Craft reference tags resolved on output, and left alone inside code
 - HTML Purifier on the parsed output by default, with per-field config files, plus an **Encode HTML** option for fields that shouldn’t take markup at all
 - Entry and asset pickers that write reference tags, so links survive a slug change or a replaced file
-- Snippets: blocks of Markdown defined in `config/wahlberg.php` and dropped in from the toolbar
+- Snippets: blocks of Markdown defined in `config/wahlberg.php`, dropped in from the toolbar or with `⌘⇧K`, which opens the list at the caret
 - Per-field control over the flavour, toolbar buttons, sizing, placeholder, character or byte limit, and counts
 - The editor is usable outside the field type, from Twig or PHP
 - GraphQL support
