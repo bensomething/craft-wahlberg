@@ -81,7 +81,10 @@
     padding: 6px 16px;
     border: 1px solid transparent;
     border-bottom: none;
-    border-radius: var(--large-border-radius, 5px) var(--large-border-radius, 5px) 0 0;
+    /* A step down from the field's own, not the same: the tab sits a few pixels
+       inside that corner, and corners nested inside another read as too round when
+       they match it rather than following it in */
+    border-radius: var(--small-border-radius, 3px) var(--small-border-radius, 3px) 0 0;
     background: none;
     color: var(--medium-text-color);
     font-size: 13px;
