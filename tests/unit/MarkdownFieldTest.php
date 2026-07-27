@@ -297,7 +297,7 @@ class MarkdownFieldTest extends TestCase
         if ($isMenu) {
             self::assertArrayNotHasKey('command', $first);
 
-            // Every level that was ticked, and nothing that wasn't
+            // Every level ticked, and nothing that wasn't
             self::assertSame(
                 array_map(fn(string $level) => (int)substr($level, 1), $levels),
                 $first['headings'],
@@ -309,7 +309,7 @@ class MarkdownFieldTest extends TestCase
         self::assertSame($command, $first['command']);
         self::assertArrayNotHasKey('headings', $first);
 
-        // The plain H whichever level it applies, with the level in the label
+        // The plain H whichever level, with the level in the label
         self::assertSame('heading', $first['iconName']);
         self::assertSame('Heading ' . substr($command, 1), $first['label']);
     }
@@ -328,7 +328,7 @@ class MarkdownFieldTest extends TestCase
     #[TestDox('the toolbar keeps the order commands() declares, however many are off')]
     public function testToolbarKeepsItsOrder(): void
     {
-        // Asked for backwards, and out of two different groups
+        // Asked for backwards, out of two groups
         $groups = Editor::toolbar(['ol', 'italic', 'bold']);
 
         self::assertSame([['bold', 'italic'], ['ol']], array_map(
@@ -336,8 +336,7 @@ class MarkdownFieldTest extends TestCase
             $groups,
         ));
 
-        // A group nothing was picked from is dropped rather than left to render
-        // its divider against nothing
+        // A group nothing was picked from is dropped, divider and all
         self::assertSame([['bold']], array_map(
             fn(array $group) => array_column($group, 'command'),
             Editor::toolbar(['bold']),
@@ -363,8 +362,7 @@ class MarkdownFieldTest extends TestCase
             'bytes' => [['fieldLimit' => '500', 'limitUnit' => 'bytes'], null, 500],
             'units left off' => [['fieldLimit' => '500'], 500, null],
             'cleared' => [['fieldLimit' => '', 'limitUnit' => 'chars'], null, null],
-            // Switching units has to clear the other one, or a field would carry
-            // both and validate against whichever was checked first
+            // Switching units clears the other, or a field carries both
             'switched to bytes' => [['charLimit' => 100, 'fieldLimit' => '500', 'limitUnit' => 'bytes'], null, 500],
             'switched to characters' => [['byteLimit' => 100, 'fieldLimit' => '500', 'limitUnit' => 'chars'], 500, null],
         ];
@@ -373,14 +371,12 @@ class MarkdownFieldTest extends TestCase
     #[TestDox('a field over its limit fails validation, counted in the units it was set in')]
     public function testLimitValidation(): void
     {
-        // Four bytes, one character. A limit in characters lets it through and the
-        // same number in bytes doesn't, which is the whole point of the two units
+        // Four bytes, one character — which is the point of having two units
         $chars = $this->field(['charLimit' => 1]);
         $chars->validateLength($element = $this->elementWith('🐟'));
         self::assertSame([], $element->getErrors());
 
-        // Reported against the bare handle: `Element::addError()` strips the
-        // `field:` prefix validators address it by
+        // `Element::addError()` strips the `field:` prefix validators use
         $bytes = $this->field(['byteLimit' => 1]);
         $bytes->validateLength($element = $this->elementWith('🐟'));
         self::assertNotSame([], $element->getErrors('body'));
@@ -392,18 +388,15 @@ class MarkdownFieldTest extends TestCase
             $element->getFirstError('body'),
         );
 
-        // Counted against the Markdown an author types, not the HTML it renders to,
-        // which is longer and isn't what the column has to hold
+        // Counted against the Markdown typed, not the longer HTML it renders to
         $field = $this->field(['charLimit' => 11]);
         $field->validateLength($element = $this->elementWith($field->normalizeValue('**bold** hi')));
         self::assertSame([], $element->getErrors());
     }
 
     /**
-     * An element that answers with a fixed field value.
-     *
-     * `setFieldValue()` goes through `CustomFieldBehavior`, which Craft generates from
-     * the fields in the database, and there isn't one here.
+     * An element answering with a fixed value. `setFieldValue()` goes through
+     * `CustomFieldBehavior`, which Craft generates from the database.
      */
     private function elementWith(mixed $value): Entry
     {

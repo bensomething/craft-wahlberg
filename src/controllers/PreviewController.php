@@ -55,12 +55,8 @@ class PreviewController extends Controller
     }
 
     /**
-     * Hands the finished HTML to anything listening before it goes back.
-     *
-     * Last of all, after purification, which is the point: what this is for is
-     * markup the purifier would take out — inline SVG has no place in its idea of
-     * HTML and comes straight back off. Nothing else in the plugin adds anything
-     * here, so with no listeners this is the string it was given.
+     * Hands the finished HTML to anything listening. After purification, which is
+     * the point: this is for markup the purifier would otherwise take out.
      */
     private function modified(string $html): string
     {

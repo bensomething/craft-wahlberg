@@ -63,13 +63,9 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public const DEFAULT_MIN_ROWS = 2;
 
     /**
-     * The toolbar a field gets before anyone touches the setting.
-     *
-     * Everything [[\bensomething\wahlberg\Editor::commands()]] offers bar the
-     * headings, where only level 2 is on: the page’s level 1 is nearly always the
-     * element’s own title, so body content starts below it. One level means the
-     * toolbar gets a button that applies it outright rather than a menu, which is
-     * the right default for a field nobody has configured yet.
+     * The toolbar before anyone touches the setting: everything
+     * [[\bensomething\wahlberg\Editor::commands()]] offers bar the headings, where
+     * only level 2 is on, since level 1 is nearly always the element’s own title.
      *
      * @var list<string>
      */
@@ -97,11 +93,9 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public bool $inlineOnly = false;
 
     /**
-     * @var bool Whether HTML should be encoded before the Markdown is parsed, so a
-     * tag an author types comes out as visible text.
-     *
-     * Distinct from [[$purifyHtml]], which parses the HTML and then drops what
-     * isn’t safe. This never lets it be HTML in the first place.
+     * @var bool Whether HTML should be encoded before parsing, so a tag an author
+     * types comes out as text. Distinct from [[$purifyHtml]], which parses the HTML
+     * and then drops what isn’t safe; this never lets it be HTML at all.
      */
     public bool $encodeHtml = false;
 
@@ -156,12 +150,9 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public ?int $byteLimit = null;
 
     /**
-     * @var string|list<string> Which of the snippets defined in
-     * `config/wahlberg.php` the Snippets button offers, or `*` for all of them.
-     *
-     * A field that has never been saved against a snippet gets all of them, so
-     * adding one to the config file puts it in front of authors without every
-     * field having to be edited.
+     * @var string|list<string> Which snippets the button offers, or `*` for all of
+     * them — which is what a field never saved against one gets, so adding to the
+     * config file reaches existing fields.
      */
     public string|array $availableSnippets = '*';
 
@@ -229,8 +220,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             $config['preserveLineBreaks'] ??= true;
         }
 
-        // The settings screen posts one limit plus the units it’s counted in, the
-        // way Plain Text does, since an author sets one or the other and never both
+        // One limit plus its units, the way Plain Text posts them
         if (array_key_exists('fieldLimit', $config)) {
             $limit = (int)$config['fieldLimit'] ?: null;
 
@@ -245,8 +235,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             unset($config['fieldLimit'], $config['limitUnit']);
         }
 
-        // An empty toolbar is what `showToolbar` is for, and a posted form with
-        // nothing ticked arrives as '' rather than []
+        // Nothing ticked posts as '' rather than []
         if (isset($config['toolbarButtons']) && !is_array($config['toolbarButtons'])) {
             $config['toolbarButtons'] = [];
         }
@@ -288,13 +277,9 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
-     * The flavour to actually parse with: GFM with its line breaks preserved is
-     * Yii’s `gfm-comment`.
-     *
-     * Encoding forces Craft’s `pre-encoded` parser, which is Traditional Markdown
-     * with the escaping it would do inside code taken out. The text arriving has
-     * already been encoded, so a fenced block run through a normal parser would
-     * come out showing `&amp;lt;` where the author typed `<`.
+     * The flavour to actually parse with: GFM with line breaks preserved is Yii’s
+     * `gfm-comment`, and encoding forces Craft’s `pre-encoded` parser — without it
+     * a fenced block comes out showing `&amp;lt;` where the author typed `<`.
      */
     public function getParserFlavour(): string
     {
@@ -394,18 +379,13 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
-     * Holds the value to the field’s limit.
+     * Holds the value to the field’s limit, counting the raw Markdown. A string
+     * validator can’t go straight into [[getElementValidationRules()]] the way Plain
+     * Text does, because the value here is a [[MarkdownData]].
      *
-     * Counts the raw Markdown, since that’s what the author is typing and what the
-     * column has to hold. A string validator can’t be handed straight to
-     * [[getElementValidationRules()]] the way Plain Text does it, because the value
-     * here is a [[MarkdownData]] rather than a string.
-     *
-     * The message is the validator’s own, formatted against the field’s label
-     * rather than through [[\yii\validators\Validator::validate()]], which hard-codes
-     * “the input value” for a value validated outside a model. That way a Markdown
-     * field over its limit reads exactly as a Plain Text field over its own, in
-     * whatever language the control panel is in.
+     * The message is the validator’s own but formatted against the field’s label,
+     * since [[\yii\validators\Validator::validate()]] hard-codes “the input value”
+     * outside a model.
      */
     public function validateLength(ElementInterface $element): void
     {
@@ -510,11 +490,9 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
-     * The volumes the Asset button’s element selector may pick from, as source keys.
-     *
-     * Resolved to a list even when the setting is `*`, so the permission filter
-     * below has something to filter and the browser is never handed a wildcard to
-     * interpret for itself.
+     * The volumes the Asset button may pick from. Always a list, even for `*`, so
+     * the permission filter has something to work on and the browser is never handed
+     * a wildcard to interpret.
      *
      * @return list<string>
      */
@@ -556,7 +534,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
         $criteria = [];
 
         // Null rather than absent: it clears the restriction the index would
-        // otherwise apply for authors without the peer-files permission
+        // otherwise apply without the peer-files permission
         if ($this->showUnpermittedFiles) {
             $criteria['uploaderId'] = null;
         }
@@ -741,9 +719,8 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
 
         // -- Snippets --------------------------------------------------------
         //
-        // Only when there are some. A section explaining that a config file this
-        // installation hasn't got could define something is documentation, and
-        // documentation doesn't belong in a settings screen
+        // Only when there are some: a section explaining what a config file this
+        // installation hasn't got could define is documentation, not a setting
 
         $snippets = Snippets::options();
 
@@ -780,8 +757,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
-     * The Available Volumes setting, as the same all-or-some checkbox list Craft’s
-     * own element fields use for their sources.
+     * The same all-or-some checkbox list Craft’s element fields use for sources.
      */
     private function volumesFieldHtml(): string
     {
@@ -813,11 +789,8 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
-     * The Field Limit setting: one number, plus the units it’s counted in.
-     *
-     * Posted as `fieldLimit` and `limitUnit` and split into [[$charLimit]] and
-     * [[$byteLimit]] on the way in, which is how Plain Text does it, so the two
-     * fields read the same in the CP and in project config.
+     * The Field Limit setting: one number plus its units, posted as `fieldLimit` and
+     * `limitUnit` and split into [[$charLimit]]/[[$byteLimit]], as Plain Text does.
      */
     private function limitFieldHtml(): string
     {

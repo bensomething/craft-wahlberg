@@ -1,6 +1,6 @@
 {
     "name": "bensomething/craft-wahlberg",
-    "description": "A Markdown field with a GitHub-style Write/Preview editor.",
+    "description": "A Markdown field with a GitHub-style editor.",
     "type": "craft-plugin",
     "license": "MIT",
     "keywords": [

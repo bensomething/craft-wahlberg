@@ -94,8 +94,8 @@ abstract class Editor
             'inputAttributes' => [],
         ];
 
-        // Handles, or `*`, resolve against the config file. An array of definitions
-        // is taken as-is, so a plugin rendering the editor can supply its own
+        // A map of definitions is taken as-is; handles and `*` resolve against
+        // the config file
         $snippets = is_array($config['snippets']) && !array_is_list($config['snippets'])
             ? $config['snippets']
             : Snippets::only($config['snippets']);
@@ -127,8 +127,8 @@ abstract class Editor
         $snippetsMenu = self::snippetsMenuHtml($snippets, $buttons);
         $guide = self::guideHtml($buttons);
 
-        // Nothing ticked is the same as no toolbar, rather than an empty strip.
-        // The two menus count even though neither is one of the groups
+        // Nothing ticked means no toolbar rather than an empty strip. The menus
+        // count, though neither is one of the groups
         $showToolbar = (bool)$config['toolbar'] &&
             ($toolbar !== [] || $snippetsMenu !== '' || $guide !== '');
 
@@ -147,8 +147,7 @@ abstract class Editor
                 'refTags' => (bool)$config['refTags'],
                 'assetSources' => $config['assetSources'],
                 'assetCriteria' => (object)$config['assetCriteria'],
-                // Bodies only. The labels are already in the menu, and the caret
-                // and selection markers are resolved browser-side
+                // Bodies only: the labels are already in the menu
                 'snippets' => (object)array_map(
                     fn(array $snippet) => $snippet['body'],
                     $snippets,
@@ -182,10 +181,8 @@ abstract class Editor
     }
 
     /**
-     * Every formatting command the toolbar can offer, as `command => label`.
-     *
-     * The order here is the order they appear in, so a field turning half of them
-     * off still gets a toolbar that reads the way this one does.
+     * Every formatting command, as `command => label`. This order is the display
+     * order, so a field turning half of them off still reads the same way.
      *
      * @return array<string, string>
      */
@@ -215,11 +212,8 @@ abstract class Editor
     }
 
     /**
-     * The Snippets button, as a menu of whatever’s been defined.
-     *
-     * Nothing at all when there are none: an installation with no
-     * `config/wahlberg.php` shouldn’t be showing authors a button that opens an
-     * empty menu, and the field settings hide the section to match.
+     * The Snippets button. Nothing at all when none are defined, rather than a
+     * button opening an empty menu.
      *
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
      * @param list<string>|null $only Commands the toolbar is showing
@@ -232,9 +226,8 @@ abstract class Editor
 
         $items = array_map(fn(string $handle, array $snippet) => [
             'label' => $snippet['label'],
-            // Everything gets one, so the labels line up in a column whether or not
-            // a snippet named an icon. Applied here rather than stored, so the
-            // config keeps saying what was actually set
+            // Everything gets one, so the labels line up. Applied here rather than
+            // stored, so the config keeps saying what was actually set
             'icon' => $snippet['icon'] ?? self::DEFAULT_SNIPPET_ICON,
             'attributes' => [
                 'type' => 'button',
@@ -255,12 +248,9 @@ abstract class Editor
     }
 
     /**
-     * The heading control: always at most one, whatever’s been ticked.
-     *
-     * Six near-identical H icons in a row is a lot of toolbar to say one thing, so
-     * the levels an author is allowed decide the shape of a single control rather
-     * than each earning a button. One level applies straight away, several open a
-     * menu, none leaves the toolbar without a heading control at all.
+     * The heading control: at most one, whatever’s ticked, since six near-identical
+     * H icons is a lot of toolbar to say one thing. One level applies straight
+     * away, several open a menu, none shows nothing.
      *
      * @param list<string>|null $only Commands to keep, or null for all of them
      * @return array<int, array<string, mixed>>
@@ -283,10 +273,8 @@ abstract class Editor
 
             return [[
                 'command' => $command,
-                // The plain H, not the numbered one. The toolbar shows the same
-                // mark whichever level a field was set to, and which level it is
-                // belongs in the tooltip rather than in an icon an author has to
-                // read the small print of
+                // The plain H whichever level it applies, so the toolbar doesn't
+                // shift between fields. The level is in the tooltip
                 'iconName' => 'heading',
                 'icon' => (string)Cp::iconSvg('heading'),
                 'label' => $labels[$command],
@@ -294,15 +282,14 @@ abstract class Editor
             ]];
         }
 
-        // The levels, not the menu they'll become. Rendering one needs the view,
-        // and `toolbar()` stays data so it can be read without one
+        // The levels, not the menu: rendering one needs the view, and `toolbar()`
+        // stays readable without one
         return [['headings' => $levels]];
     }
 
     /**
-     * Renders the menus a toolbar’s entries only describe, leaving the buttons
-     * alone. Kept out of [[toolbar()]] so that stays a plain description of what a
-     * field offers rather than something that needs a view to call.
+     * Renders the menus a toolbar’s entries only describe. Kept out of [[toolbar()]]
+     * so that stays callable without a view.
      *
      * @param array<int, array<int, array<string, mixed>>> $groups
      * @return array<int, array<int, array<string, mixed>>>
@@ -349,11 +336,8 @@ abstract class Editor
     }
 
     /**
-     * The toolbar buttons, in display order, split into the groups the divider
-     * separates. Empty groups are dropped, so a divider never hangs on its own.
-     *
-     * Every entry is a button, except the heading control when more than one level
-     * is available, which is a menu carried as pre-rendered `menu` HTML.
+     * The buttons in display order, split into the groups the dividers separate.
+     * Empty groups are dropped so a divider never hangs on its own.
      *
      * @param list<string>|null $only Commands to keep, or null for all of them
      * @return array<int, array<int, array<string, string|null>>>
@@ -393,9 +377,8 @@ abstract class Editor
             ],
         ];
 
-        // `guide` and `snippets` are deliberately absent: each opens something
-        // anchored to itself, so both are pinned beside the overflow button rather
-        // than folding into it. See `guideHtml()` and `snippetsMenuHtml()`.
+        // `guide` and `snippets` are absent on purpose: each opens something
+        // anchored to itself, so both are pinned rather than folding
 
         if ($only === null) {
             return $groups;
@@ -404,8 +387,7 @@ abstract class Editor
         $groups = array_map(
             fn(array $group) => array_values(array_filter(
                 $group,
-                // The heading control has already been cut to the levels that were
-                // ticked, and carries no single command to check
+                // Already cut to the ticked levels, and has no single command
                 fn(array $button) => isset($button['headings']) ||
                     in_array($button['command'], $only, true),
             )),
@@ -416,8 +398,8 @@ abstract class Editor
     }
 
     /**
-     * The same commands as the toolbar, as a disclosure menu the buttons fold
-     * into when the header runs out of room.
+     * The same commands as a menu, for the buttons to fold into when the header
+     * runs out of room.
      *
      * @param list<string>|null $only Commands to keep, or null for all of them
      */
@@ -431,8 +413,7 @@ abstract class Editor
             }
 
             foreach ($group as $button) {
-                // A menu of its own, which never folds, so it has nothing to
-                // contribute here
+                // A menu of its own, which never folds
                 if (isset($button['headings'])) {
                     continue;
                 }
@@ -463,13 +444,9 @@ abstract class Editor
     }
 
     /**
-     * The Markdown guide button, and the cheatsheet it opens.
-     *
-     * The panel is rendered hidden and handed to `Garnish.HUD` on first click,
-     * which is the popover Craft opens off a field’s info icon: arrow pointing back
-     * at the button, positioned against the viewport, closing on Escape or a click
-     * outside. Anchoring it to the button is the point — a bar under the editor is
-     * a long way from the toolbar once there’s more than a paragraph in the field.
+     * The Markdown guide button and the cheatsheet it opens. Rendered hidden and
+     * handed to `Garnish.HUD` on first click — the popover Craft opens off a field’s
+     * info icon, anchored to the button rather than stranded under a tall editor.
      *
      * @param list<string>|null $only Commands the toolbar is showing
      */
@@ -483,27 +460,22 @@ abstract class Editor
 
         $rows = array_map(
             fn(array $row) => Html::tag('tr', implode('', [
-                // A row header rather than a plain cell: the syntax is what names
-                // the row, and it saves the table needing a header row to be read.
-                //
-                // `craft-copy-attribute` is Craft's own copy-to-clipboard element,
-                // which brings the chip, the clipboard icon and the announcement
-                // with it. It replaces its children with a button of its own on
-                // connect, so there's no wrapping this around a `<code>`
+                // `craft-copy-attribute` brings the chip and the clipboard icon
+                // with it. It replaces its children on connect, so this can't wrap
+                // a `<code>`
                 Html::tag('th', Html::tag(
                     'craft-copy-attribute',
                     Html::encode($row['syntax']),
                     ['value' => $row['syntax']],
                 ), ['scope' => 'row']),
-                // Parsed, so a label can mark up the bit of syntax it's naming.
-                // These are the plugin's own strings, not anything an author typed
+                // Parsed, so a label can mark up the syntax it names. Our strings
                 Html::tag('td', Markdown::processParagraph($row['label'])),
             ])),
             self::guide(),
         );
 
-        // Wrapped, so the divider before it can sit on something other than the
-        // button, which is a fixed 28px square with its icon centred in it
+        // Wrapped, so the divider sits on something other than the button, which
+        // is a fixed square with a centred icon
         return Html::tag('div', Html::button((string)Cp::iconSvg('circle-question'), [
             'class' => ['wahlberg-tool', 'wahlberg-guide-btn'],
             'title' => $label,
@@ -521,12 +493,9 @@ abstract class Editor
     }
 
     /**
-     * The cheatsheet the Markdown guide button opens, as syntax/description pairs.
-     *
-     * Deliberately short and local rather than a link out to a third-party site:
-     * an author wanting to remember how a link is written shouldn’t have to leave
-     * the page, and a control panel behind a firewall shouldn’t be offering them a
-     * link that won’t load.
+     * The cheatsheet, as syntax/description pairs. Local rather than a link out: an
+     * author shouldn’t have to leave the page, and a control panel behind a firewall
+     * shouldn’t be offered a link that won’t load.
      *
      * @return array<int, array{syntax: string, label: string}>
      */

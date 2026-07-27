@@ -133,9 +133,8 @@ class MarkdownData implements Stringable, JsonSerializable
             return $this->parsed;
         }
 
-        // Before the parser sees it, so a `<script>` the author typed reaches the
-        // page as the text they typed rather than as a tag. Purifying would drop it
-        // instead; encoding shows it
+        // Before the parser sees it, so a tag reaches the page as text. Purifying
+        // would drop it instead; encoding shows it
         $markdown = $this->encodeHtml ? Html::encode($this->markdown) : $this->markdown;
 
         $html = $this->inlineOnly

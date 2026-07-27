@@ -86,9 +86,8 @@
     cursor: pointer;
 }
 
-/* With no toolbar on the other side of the header, the tabs are the whole of it,
-   and the width they were holding to balance against the buttons reads as a gap.
-   Pull them in so they sit closer to the edge they're aligned to. */
+/* With no toolbar beside them the tabs are the whole header, and the width they
+   held to balance against the buttons reads as a gap. */
 .wahlberg--no-toolbar .wahlberg-tab {
     padding-inline: 10px;
 }
@@ -180,16 +179,12 @@
     justify-content: center;
 }
 
-/* Dividers: between the groups, and before whichever of the trailing controls
-   comes first — the overflow menu when it’s showing, otherwise the snippets menu,
-   or the guide when there are no snippets. One rule for the lot of them, so the
-   snippets and guide buttons read as a pair rather than being fenced off from
-   each other.
+/* Dividers: between the groups, and before whichever trailing control comes
+   first, so the snippets and guide buttons read as a pair rather than being
+   fenced off from each other.
 
-   A flex child rather than a border, so it can be shorter than the buttons it
-   sits between: a full-height rule reads as a wall, and a toolbar with several
-   groups ends up mostly wall. The margin is 2px against the 2px flex gap either
-   side of it, so the buttons keep a little more air than the rule does. */
+   A flex child rather than a border, so it can be shorter than the buttons: a
+   full-height rule reads as a wall, and several groups make it mostly wall. */
 .wahlberg-toolbar-group + .wahlberg-toolbar-group::before,
 .wahlberg-overflow:not(.hidden)::before,
 .wahlberg-overflow.hidden + .wahlberg-guide-wrap::before,
@@ -231,8 +226,7 @@
     color: var(--medium-text-color);
 }
 
-/* The guide button, while its popover is open. Keyed off the ARIA state the HUD
-   keeps in step, rather than a class of our own to forget to remove. */
+/* Keyed off the ARIA state the HUD keeps in step, not a class of our own. */
 .wahlberg-tool[aria-expanded='true'] {
     background-color: var(--gray-200);
     color: var(--text-color);
@@ -309,10 +303,9 @@
     background-color: var(--wahlberg-selection);
 }
 
-/* The textarea's own `color` is transparent so the layer behind shows through,
-   and a placeholder inherits that. Give it a colour of its own, or the setting
-   would render nothing at all. `-webkit-text-fill-color` too: WebKit resolves the
-   placeholder through the fill colour and would otherwise keep it invisible. */
+/* The textarea's `color` is transparent so the layer behind shows through, and a
+   placeholder inherits that — without a colour of its own it renders nothing.
+   WebKit resolves it through the fill colour, hence both. */
 .wahlberg-source::placeholder {
     color: var(--medium-text-color);
     -webkit-text-fill-color: var(--medium-text-color);
@@ -351,20 +344,17 @@
     display: none;
 }
 
-/* Markdown guide. Lives in a Garnish HUD, the popover Craft opens off a field’s
-   info icon, so the chrome — arrow, shadow, padding — comes from `.hud` and this
-   only has to lay the cheatsheet out inside it.
-
-   Scoped to the HUD rather than to `.wahlberg`, because Garnish moves the panel
-   out to the end of the body when it opens it. */
+/* Markdown guide. The chrome comes from Garnish's `.hud`, so this only lays the
+   cheatsheet out. Scoped to the HUD rather than `.wahlberg`, since Garnish moves
+   the panel out to the body. */
 
 .wahlberg-guide-hud .wahlberg-guide {
     font-size: 12px;
     color: var(--medium-text-color);
 }
 
-/* A table, so the descriptions line up in a column of their own instead of
-   starting wherever the syntax beside them happened to end. */
+/* A table, so the descriptions line up rather than starting wherever the syntax
+   beside them ended. */
 .wahlberg-guide-hud .wahlberg-guide-table {
     border-collapse: collapse;
     margin: 0;
@@ -386,19 +376,15 @@
     white-space: nowrap;
 }
 
-/* The syntax column needs almost nothing of its own: `craft-copy-attribute`
-   brings Craft's chip, the monospace face and the clipboard icon with it.
-
-   Inline code in the descriptions — the `#` in “one # per level” — is left as
-   Craft's plain `code` on purpose: chipping those as well would put two
-   competing chips in most rows. */
+/* `craft-copy-attribute` brings the chip, the monospace face and the clipboard
+   icon with it. Inline code in the descriptions stays plain `code` on purpose —
+   chipping those too would put competing chips in most rows. */
 .wahlberg-guide-hud .wahlberg-guide-table craft-copy-attribute {
     color: var(--text-color);
 }
 
-/* Stats. A footer strip mirroring the header, rather than loose text under the
-   field: the whole editor is one bordered box, and a counter floating outside it
-   would come adrift wherever `Editor::inputHtml()` is used on its own. */
+/* Stats. A footer strip mirroring the header rather than loose text under the
+   field, since the editor is one bordered box wherever it's rendered. */
 
 .wahlberg-stats {
     padding: 5px 14px;
@@ -413,8 +399,7 @@
     font-weight: var(--font-weight-bold, 700);
 }
 
-/* The rounded bottom belongs to whatever's last, so the stats strip takes it and
-   the writing surface above squares off. */
+/* The rounded bottom belongs to whatever's last. */
 .wahlberg:has(.wahlberg-stats) .wahlberg-editor,
 .wahlberg:has(.wahlberg-stats) .wahlberg-preview {
     border-radius: 0;
@@ -575,14 +560,10 @@
     text-decoration: underline;
 }
 
-/* A full-size image would otherwise render at its natural dimensions and push the
-   preview to whatever height that comes to, burying the rest of the document and
-   scrolling the tabs off the top. Both maxima together, with auto on each axis, so
-   the browser scales it down on whichever side is the binding one and keeps the
-   aspect ratio doing it.
-
-   The preview is a reading view, not the front end: this keeps the tab usable and
-   says nothing about how the image renders once it's published. */
+/* A full-size image would otherwise render at its natural dimensions and scroll
+   the tabs off the top. Both maxima with auto on each axis, so the browser scales
+   down whichever side binds and keeps the ratio. Reading view only — this says
+   nothing about how the image renders once published. */
 .wahlberg-preview img {
     display: block;
     width: auto;

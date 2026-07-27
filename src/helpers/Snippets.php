@@ -10,25 +10,10 @@ use yii\base\Event;
 /**
  * The snippets a Markdown field can offer, read from `config/wahlberg.php`.
  *
- * ```php
- * return [
- *     'snippets' => [
- *         'callout' => [
- *             'label' => 'Callout',
- *             'body' => "> **Note**\n> \$0\n",
- *         ],
- *         // Shorthand: a body on its own, labelled from its key
- *         'figure' => "![\$SELECTION]({asset::url})\n*\$0*",
- *     ],
- * ];
- * ```
- *
- * A config file rather than a settings screen, on purpose, and for the same reason
+ * A config file rather than a settings screen for the same reason
  * `config/htmlpurifier/` is one: a snippet is a contract with the templates and CSS
- * that render it. A callout only looks like a callout because the front end styles
- * what it emits, so the person who should be writing one is the person who can also
- * write that. Which of them a given field offers is a field setting, the same split
- * the purifier configs already use.
+ * that render it, so it belongs to whoever can write those, in version control.
+ * Which of them a given field offers is a field setting.
  *
  * Plugins can add their own through [[EVENT_REGISTER_SNIPPETS]].
  */
@@ -42,15 +27,13 @@ abstract class Snippets
     public const CONFIG_FILE = 'wahlberg';
 
     /**
-     * Where the caret ends up once a snippet is inserted. The first one wins; a
-     * snippet without one leaves the caret at the end.
+     * Where the caret ends up. The first one wins; without one it goes to the end.
      */
     public const CARET = '$0';
 
     /**
-     * Replaced by whatever was selected when the snippet was chosen, so a snippet
-     * can wrap the author’s text rather than only ever being dropped in beside it.
-     * Empty when nothing was selected.
+     * Replaced by whatever was selected, so a snippet can wrap an author’s text
+     * rather than only ever landing beside it. Empty when nothing was selected.
      */
     public const SELECTION = '$SELECTION';
 
@@ -73,20 +56,16 @@ abstract class Snippets
         $config = Craft::$app->getConfig()->getConfigFromFile(self::CONFIG_FILE);
         $defined = is_array($config) ? ($config['snippets'] ?? []) : [];
 
-        // Plugins get theirs in first, so a handle the installation has defined
-        // for itself wins over one a plugin brought with it
         $event = new RegisterSnippetsEvent();
         Event::trigger(self::class, self::EVENT_REGISTER_SNIPPETS, $event);
 
+        // Plugins first, so a handle the installation defined for itself wins
         $defined = array_merge($event->snippets, is_array($defined) ? $defined : []);
 
         return self::$snippets = self::normalize($defined);
     }
 
     /**
-     * Turns whatever was defined into `handle => [label, body]` pairs, dropping
-     * anything that couldn’t be inserted.
-     *
      * @param array<mixed> $defined
      * @return array<string, array{label: string, body: string, icon: string|null}>
      */
@@ -102,8 +81,6 @@ abstract class Snippets
 
             $body = is_array($snippet) ? ($snippet['body'] ?? null) : $snippet;
 
-            // Nothing to insert isn't a snippet, and a button that does nothing is
-            // worse than no button
             if (!is_string($body) || $body === '') {
                 continue;
             }
@@ -112,8 +89,6 @@ abstract class Snippets
             $icon = is_array($snippet) ? ($snippet['icon'] ?? null) : null;
 
             $snippets[$handle] = [
-                // Through `site`, the way Craft translates anything else an
-                // installation names for itself
                 'label' => Craft::t('site', is_string($label) && $label !== ''
                     ? $label
                     : self::labelFor($handle)),
@@ -126,9 +101,7 @@ abstract class Snippets
     }
 
     /**
-     * A readable name for a snippet that didn’t give itself one, out of whichever
-     * convention its handle was written in: `figureCaption`, `figure-caption` and
-     * `figure_caption` all come out as “Figure Caption”.
+     * `figureCaption`, `figure-caption` and `figure_caption` all give “Figure Caption”.
      */
     private static function labelFor(string $handle): string
     {
@@ -138,11 +111,8 @@ abstract class Snippets
     }
 
     /**
-     * The snippets with the given handles, in the order they were defined in, so a
-     * field’s toolbar reads the way the config file does however they were ticked.
-     *
-     * `*` is every one of them, which is what a field that has never been saved
-     * against a snippet gets.
+     * The given snippets, in the order the config file defined them. `*` is all of
+     * them, which is what a field that has never been saved against one gets.
      *
      * @param string|list<string> $handles
      * @return array<string, array{label: string, body: string, icon: string|null}>

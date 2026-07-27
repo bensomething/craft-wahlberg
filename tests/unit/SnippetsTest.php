@@ -45,7 +45,7 @@ class SnippetsTest extends TestCase
 
         self::assertSame('circle-info', $snippets['callout']['icon']);
 
-        // Null rather than absent, so a menu item can pass it straight through
+        // Null rather than absent, so a menu item passes it straight through
         self::assertNull($snippets['plain']['icon']);
         self::assertNull($snippets['blank']['icon']);
     }
@@ -88,7 +88,7 @@ class SnippetsTest extends TestCase
         $this->writePluginConfig(['snippets' => 'not an array']);
         self::assertSame([], Snippets::all());
 
-        // A list has no handles to key by, so there's nothing to select in a field
+        // A list has no handles to key by
         $this->writePluginConfig(['snippets' => ['body one', 'body two']]);
         self::assertSame([], Snippets::all());
     }
@@ -102,11 +102,10 @@ class SnippetsTest extends TestCase
             'third' => 'three',
         ]]);
 
-        // Asked for backwards, and still comes back in config order
+        // Asked for backwards, comes back in config order
         self::assertSame(['first', 'third'], array_keys(Snippets::only(['third', 'first'])));
 
-        // A field that has never been saved against a snippet gets all of them, so
-        // adding one to the config file reaches every field already out there
+        // Never saved against one? All of them, so config additions reach it
         self::assertSame(['first', 'second', 'third'], array_keys(Snippets::only('*')));
 
         self::assertSame([], Snippets::only([]));
@@ -152,8 +151,8 @@ class SnippetsTest extends TestCase
     }
 
     /**
-     * Registers a handler for this test and takes it off again afterwards, since
-     * Yii keeps class-level handlers for the life of the process.
+     * Registered for this test only — Yii keeps class-level handlers for the life
+     * of the process.
      */
     private function onRegisterSnippets(callable $handler): void
     {
@@ -199,13 +198,11 @@ class SnippetsTest extends TestCase
         foreach ($snippets as $handle => $snippet) {
             self::assertNotSame('', $snippet['label'], "`$handle` has no label");
 
-            // The markers have to survive PHP's own double-quoted interpolation,
-            // which is the thing the template is most likely to get wrong
+            // The markers must survive PHP's double-quoted interpolation
             self::assertStringNotContainsString('${', $snippet['body'], "`$handle` mangled a marker");
         }
 
-        // And between them they demonstrate both markers, since the template is
-        // where anyone writing their first snippet will look
+        // Between them they demonstrate both markers
         $bodies = implode('', array_column($snippets, 'body'));
         self::assertStringContainsString(Snippets::CARET, $bodies);
         self::assertStringContainsString(Snippets::SELECTION, $bodies);
@@ -219,24 +216,21 @@ class SnippetsTest extends TestCase
         $this->writePluginConfig($config);
 
         foreach (Snippets::all() as $handle => $snippet) {
-            // What an author would be left holding: the markers resolved away, with
-            // nothing selected
+            // What an author is left holding, with nothing selected
             $body = str_replace(
                 [Snippets::CARET, Snippets::SELECTION],
                 ['Something', 'Selected text'],
                 $snippet['body'],
             );
 
-            // Purified, since that's the default a field ships with. An example
-            // that comes out empty here is one that quietly does nothing on a
-            // stock install, which is the last thing a copy-me file should do.
-            // Reference tags off: resolving one wants a database
+            // Purified, as a field ships. An example that comes out empty is one
+            // that does nothing on a stock install. Refs off: they want a database
             $html = trim((string)(new MarkdownData($body, 'gfm-comment', true, null, false))->getHtml());
 
             self::assertNotSame('', $html, "`$handle` renders to nothing");
 
-            // Nor should it survive only as the bare text of the markup it meant to
-            // emit — `<details>` is stripped wholesale, and takes its meaning with it
+            // Nor survive as bare text of the markup it meant to emit: `<details>`
+            // is stripped wholesale and takes its meaning with it
             self::assertMatchesRegularExpression(
                 '/<[a-z]/i',
                 $html,

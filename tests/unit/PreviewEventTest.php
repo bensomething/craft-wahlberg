@@ -71,8 +71,7 @@ class PreviewEventTest extends TestCase
     #[TestDox('a listener runs after purification, which is the whole point of it')]
     public function testRunsAfterPurification(): void
     {
-        // Inline SVG is the case this exists for: added before the purifier it comes
-        // straight back off, so a listener has to be able to add it afterwards
+        // Inline SVG comes straight back off if added before the purifier
         $this->on(function(ModifyPreviewEvent $event) {
             $event->html .= '<svg></svg>';
         });
@@ -90,7 +89,7 @@ class PreviewEventTest extends TestCase
             );
         });
 
-        // The token in the code span is an author documenting the syntax, and stays
+        // The token in the code span is documentation, and stays
         self::assertSame(
             '<p>ICON and <code>{icon:star}</code></p>',
             $this->modify('<p>{icon:star} and <code>{icon:star}</code></p>'),

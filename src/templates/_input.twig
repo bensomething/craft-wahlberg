@@ -25,8 +25,7 @@
                         <div class="wahlberg-toolbar-group" data-toolbar-group>
                             {% for button in group %}
                                 {% if button.menu is defined %}
-                                    {# The heading control, when more than one level is
-                                       available and it's a menu rather than a button #}
+                                    {# The heading control, when it's a menu #}
                                     {{ button.menu|raw }}
                                 {% else %}
                                     <button type="button" class="wahlberg-tool" data-command="{{ button.command }}"
@@ -40,8 +39,7 @@
                     {# The buttons fold into here when the header runs out of room #}
                     <div class="wahlberg-overflow hidden" data-overflow>{{ overflowMenu|raw }}</div>
 
-                    {# Both pinned rather than folding into that menu: each opens
-                       something anchored to itself, so neither can move #}
+                    {# Pinned: each opens something anchored to itself #}
                     {{ snippetsMenu|raw }}
                     {{ guide|raw }}
                 </div>
@@ -73,8 +71,8 @@
     </div>
 
     {% if showStats %}
-        {# aria-live, so a screen reader hears the count settle rather than every
-           keystroke on the way there #}
+        {# aria-live polite, so a screen reader hears the count settle rather than
+           every keystroke on the way there #}
         <div class="wahlberg-stats" data-stats role="status" aria-live="polite"></div>
     {% endif %}
 </div>

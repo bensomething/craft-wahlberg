@@ -12,13 +12,11 @@
 
     // Line-prefixing commands: the pattern strips an existing prefix (which is
     // also how we detect a toggle-off), the prefix function builds a new one.
-    //
-    // `test` is what counts as already-applied, when that's looser than the prefix
-    // the command builds: a ticked task still counts as a task.
+    // `test` is what counts as already-applied when that's looser than the prefix
+    // the command builds: a ticked task is still a task.
     const PREFIXES = {
         quote: {pattern: /^ {0,3}> ?/, prefix: () => '> '},
-        // Strips the task box along with the marker, so a bulleted list and a task
-        // list toggle each other rather than stacking up
+        // Strips the task box too, so lists toggle each other rather than stacking
         ul: {pattern: /^ {0,3}[-*+] +(?:\[[ xX]\] +)?/, prefix: () => '- '},
         ol: {pattern: /^ {0,3}\d+[.)] +/, prefix: (i) => (i + 1) + '. '},
         tasklist: {
@@ -28,8 +26,7 @@
         },
     };
 
-    // One per level. No `test`: these are exact, so clicking H3 on a line that's
-    // already an H1 makes it an H3 rather than clearing the heading off it
+    // No `test`: exact, so H3 on an H1 line makes it an H3 rather than clearing it
     for (let level = 1; level <= 6; level++) {
         PREFIXES['h' + level] = {
             pattern: /^#{1,6} +/,
@@ -570,10 +567,8 @@
             const caretOffset = source.selectionStart - from;
             const lines = value.slice(from, to).split('\n');
 
-            // Already carrying this exact prefix? Then the click means take it off.
-            // Compared against what the command would build rather than against the
-            // pattern it strips, or a level-3 heading button would clear a level-1
-            // heading instead of changing it
+            // Compared against what the command builds, not the pattern it strips,
+            // or an H3 button would clear an H1 instead of changing it
             const applied = (line, i) => (test
                 ? test.test(line)
                 : line === prefix(i) + line.replace(pattern, ''));
@@ -638,8 +633,8 @@
         }
 
         /**
-         * Opens Craft's element selector and hands what comes back to `onPick`,
-         * with the caret put back where it was before the modal took focus.
+         * Craft's element selector, with the caret put back where the modal took it
+         * from.
          */
         pickElement(type, settings, onPick) {
             if (typeof Craft === 'undefined' || !Craft.createElementSelectorModal) {
@@ -667,11 +662,8 @@
         }
 
         /**
-         * Links to an entry.
-         *
-         * With reference tags on, what goes in is `{entry:1:url}` rather than the
-         * URL, so the link survives a slug change. With them off there's nothing to
-         * resolve the tag later, so write the URL.
+         * Links to an entry. With reference tags on it writes `{entry:1:url}` rather
+         * than the URL, so the link survives a slug change.
          */
         entry() {
             // No site criteria: the modal has its own site menu, and a reference tag
@@ -689,8 +681,7 @@
         }
 
         /**
-         * Picks an asset and writes it in as an image if it is one, or as a link if
-         * it isn't. Same reference-tag reasoning as {@see entry}.
+         * An image if it is one, a link if it isn't. Reference tags as {@see entry}.
          */
         asset() {
             this.pickElement('craft\\elements\\Asset', {
@@ -701,10 +692,8 @@
         }
 
         /**
-         * What the element selector hands back is `{id, siteId, label, status, url,
-         * hasThumb, $element}` — no kind, and no alt text. Both are on the chip
-         * itself, which Craft renders with `data-kind`, `data-alt` and
-         * `data-filename`. Read them there rather than guessing from the URL.
+         * The selector hands back no kind and no alt text. Both are on the chip, as
+         * `data-kind`, `data-alt` and `data-filename`.
          */
         assetData(asset) {
             const el = asset.$element;
@@ -723,9 +712,8 @@
             const info = this.assetData(asset);
             const isImage = info.kind === 'image';
 
-            // A selection is the author saying what to call it. Failing that, an
-            // image's own alt text, which is the one that matters for an image and
-            // is often already filled in; then the title, then the filename
+            // A selection is the author naming it; failing that an image's own alt
+            // text, then the title, then the filename
             const label = selected ||
                 (isImage ? info.alt : '') ||
                 asset.label ||
@@ -735,18 +723,15 @@
             const prefix = isImage ? '!' : '';
             const text = prefix + '[' + label + '](' + target + ')';
 
-            // Nothing to call it yet? Leave the caret between the brackets, so the
-            // next thing typed is the alt text rather than a stray word after the link
+            // Unnamed? Caret between the brackets, so what's typed next is the label
             this.insert(text, label === '' ? prefix.length + 1 : text.length);
         }
 
         // -- Toolbar menus ----------------------------------------------------
 
         /**
-         * The menu a toolbar disclosure button opens.
-         *
-         * Craft moves it out to the body when it initializes it, so it's found by
-         * the id the trigger points at rather than by looking inside the field.
+         * The menu a disclosure button opens. Craft moves it out to the body on init,
+         * so it's found by id rather than inside the field.
          */
         menuFor(container) {
             const trigger = container && container.querySelector('[data-disclosure-trigger]');
@@ -768,8 +753,8 @@
         }
 
         /**
-         * The heading menu, when a field offers more than one level. With exactly
-         * one it's an ordinary toolbar button and there's nothing to wire up.
+         * The heading menu, when a field offers more than one level. With one it's an
+         * ordinary button and there's nothing to wire up.
          */
         initHeadings() {
             this.headingsMenu = this.menuFor(this.headingsEl);
@@ -804,12 +789,8 @@
         }
 
         /**
-         * Writes a snippet in, resolving its two markers.
-         *
-         * `$SELECTION` becomes whatever was selected, so a snippet can wrap the
-         * author's own text instead of only ever landing beside it. `$0` is where
-         * the caret ends up; without one it goes to the end, which is what an
-         * author who typed nothing to wrap would want anyway.
+         * Writes a snippet in. `$SELECTION` becomes what was selected, `$0` is where
+         * the caret ends up, and without one it goes to the end.
          */
         insertSnippet(handle) {
             const body = (this.config.snippets || {})[handle];
@@ -823,7 +804,7 @@
             const selectionMarker = this.config.selection || '$SELECTION';
             const caretMarker = this.config.caret || '$0';
 
-            // Every occurrence, so a snippet can use the selection more than once
+            // Every occurrence, so a snippet can use the selection twice
             let text = body.split(selectionMarker).join(selected);
 
             // Found after the selection has gone in, so the offset accounts for it
@@ -849,9 +830,8 @@
         }
 
         /**
-         * Opens the cheatsheet in Craft's own popover, the one a field's info icon
-         * uses. Built on first use rather than on load: most authors never ask for
-         * it, and Garnish moves the panel out to the body when it does.
+         * The cheatsheet, in the popover a field's info icon uses. Built on first
+         * use, since most authors never open it.
          */
         toggleGuide() {
             if (typeof Garnish === 'undefined' || !Garnish.HUD) {
@@ -874,8 +854,7 @@
 
             this.hud = new Garnish.HUD(this.guideBtn, this.guideBody, {
                 hudClass: 'hud wahlberg-guide-hud',
-                // An author reading the guide while a field's info HUD is open is
-                // no reason to close theirs
+                // No reason reading this should close a field's info HUD
                 closeOtherHUDs: false,
             });
 
@@ -893,8 +872,7 @@
         // -- Stats ------------------------------------------------------------
 
         /**
-         * Character, word and line counts, plus how the value sits against the
-         * field's limit if it has one.
+         * Character, word and line counts, against the field's limit if it has one.
          */
         renderStats() {
             if (!this.stats) {
@@ -904,9 +882,7 @@
             const value = this.source.value;
             const words = value.trim() === '' ? 0 : value.trim().split(/\s+/).length;
 
-            // Count what the server counts. Bytes, because a limit in bytes is
-            // about what the column holds; code points otherwise, since that's
-            // what an author means by a character
+            // What the server counts: bytes for a byte limit, code points otherwise
             const limit = this.config.byteLimit || this.config.charLimit || null;
             const counted = this.config.byteLimit
                 ? new TextEncoder().encode(value).length
@@ -1189,10 +1165,8 @@
                 this.buttons[i].hidden = true;
                 this.setMenuItemHidden(i, false);
 
-                // Don't leave an empty group behind, its divider would hang there.
-                // The heading menu counts as content even though it isn't one of
-                // the buttons that fold, or the group holding it would vanish the
-                // moment its neighbours did
+                // Don't leave an empty group behind — its divider would hang there.
+                // The heading menu counts as content though it never folds
                 this.groups.forEach((group) => {
                     group.hidden = !group.querySelector('[data-command]:not([hidden]), [data-headings]');
                 });
@@ -1260,12 +1234,10 @@
             const previewing = name === 'preview';
 
             if (previewing) {
-                // The field's floor, not the height the editor had grown to.
-                // Enough that the loading spinner doesn't render in a collapsed
-                // box and then drop it open again, while letting the preview take
-                // its own height: rendered Markdown is nearly always shorter than
-                // the source it came from, and holding the editor's height leaves
-                // a large empty panel under it.
+                // The field's floor, not the height the editor had grown to: enough
+                // that the spinner doesn't collapse the box, while letting the
+                // preview take its own height. Rendered Markdown is nearly always
+                // shorter than its source
                 this.previewEl.style.minHeight = this.source.style.minHeight || '';
             }
 
@@ -1280,8 +1252,7 @@
                 button.disabled = previewing;
             });
 
-            // The toolbar's own menus, which aren't in `this.buttons`: their
-            // triggers sit outside the groups it was collected from
+            // The toolbar's menus, whose triggers sit outside the button groups
             [[this.headingsEl, this.headingsMenu], [this.snippetsEl, this.snippetsMenu]]
                 .forEach(([el, menu]) => {
                     if (!el) {
