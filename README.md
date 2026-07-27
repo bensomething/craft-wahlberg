@@ -20,6 +20,7 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
 - Per-field Markdown flavour, toolbar, sizing, placeholder, character or byte limit, and counts
 - GraphQL support
+- Reusable outside the field type: drop the editor into your own plugin’s settings from Twig or PHP
 
 ## Requirements
 

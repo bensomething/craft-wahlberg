@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The **Write** and **Preview** tabs have slightly less rounded top corners, so they sit inside the field’s own corner rather than matching it.
+
 ## 1.0.0-beta.1 - 2026-07-27
 
 First public release.
