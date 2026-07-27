@@ -17,14 +17,9 @@
     // the command builds: a ticked task is still a task.
     const PREFIXES = {
         quote: {pattern: /^ {0,3}> ?/, prefix: () => '> '},
-        // Strips the task box too, so lists toggle each other rather than stacking
+        // Strips a task box too, so a list pasted from elsewhere comes out clean
         ul: {pattern: /^ {0,3}[-*+] +(?:\[[ xX]\] +)?/, prefix: () => '- '},
         ol: {pattern: /^ {0,3}\d+[.)] +/, prefix: (i) => (i + 1) + '. '},
-        tasklist: {
-            pattern: /^ {0,3}[-*+] +(?:\[[ xX]\] +)?/,
-            prefix: () => '- [ ] ',
-            test: /^ {0,3}[-*+] +\[[ xX]\] +/,
-        },
     };
 
     // No `test`: exact, so H3 on an H1 line makes it an H3 rather than clearing it

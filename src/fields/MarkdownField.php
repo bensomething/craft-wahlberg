@@ -63,15 +63,17 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public const DEFAULT_MIN_ROWS = 2;
 
     /**
-     * The toolbar before anyone touches the setting: everything
-     * [[\bensomething\wahlberg\Editor::commands()]] offers bar the headings, where
-     * only level 2 is on, since level 1 is nearly always the element’s own title.
+     * The toolbar before anyone touches the setting: what
+     * [[\bensomething\wahlberg\Editor::commands()]] offers, minus the headings
+     * other than level 2 — level 1 is nearly always the element’s own title — and
+     * minus the guide, which is for authors new to Markdown rather than the ones
+     * who write it all day.
      *
      * @var list<string>
      */
     public const DEFAULT_TOOLBAR_BUTTONS = [
         'h2', 'bold', 'italic', 'strike', 'quote', 'code',
-        'ul', 'ol', 'tasklist', 'link', 'entry', 'asset', 'snippets', 'guide',
+        'ul', 'ol', 'link', 'entry', 'asset', 'snippets',
     ];
 
     /**

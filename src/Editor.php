@@ -205,7 +205,6 @@ abstract class Editor
             'code' => Craft::t('wahlberg', 'Code'),
             'ul' => Craft::t('wahlberg', 'Bulleted list'),
             'ol' => Craft::t('wahlberg', 'Numbered list'),
-            'tasklist' => Craft::t('wahlberg', 'Task list'),
             'link' => Craft::t('wahlberg', 'Link'),
             'entry' => Craft::t('wahlberg', 'Entry'),
             'asset' => Craft::t('wahlberg', 'Asset'),
@@ -396,7 +395,6 @@ abstract class Editor
             [
                 $button('ul', 'list-ul'),
                 $button('ol', 'list-ol'),
-                $button('tasklist', 'list-check'),
             ],
             [
                 $button('link', 'link', 'K'),
@@ -540,7 +538,6 @@ abstract class Editor
             '![alt](https://…)' => Craft::t('wahlberg', 'Image'),
             '- item' => Craft::t('wahlberg', 'Bulleted list'),
             '1. item' => Craft::t('wahlberg', 'Numbered list'),
-            '- [ ] task' => Craft::t('wahlberg', 'Task list'),
             '> quote' => Craft::t('wahlberg', 'Blockquote'),
             '---' => Craft::t('wahlberg', 'Horizontal rule'),
         ];
