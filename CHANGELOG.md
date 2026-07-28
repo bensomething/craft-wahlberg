@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0-beta.3 - 2026-07-27
+## 1.0.0-beta.3 - 2026-07-28
 
 - Added `⌘⇧P`, which swaps between the **Write** and **Preview** tabs from anywhere in the field.
 - The line being written now carries a band behind it, over every row a wrapped line takes. `--wahlberg-active-line` and `--wahlberg-active-line-pad` retheme it, `transparent` removes it.
