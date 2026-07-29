@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-beta.4 - 2026-07-29
+
+- Fixed a bug where a Markdown field showed nothing when it was rendered read-only (like when viewing a revision). The field now has a static rendering of its own.
+- Added `Editor::staticHtml()`, which is that rendering, for anywhere else a value is being shown rather than edited.
+
 ## 1.0.0-beta.3 - 2026-07-28
 
 - Added `⌘⇧P`, which swaps between the **Write** and **Preview** tabs from anywhere in the field.

@@ -374,6 +374,24 @@
     box-shadow: none;
 }
 
+/* The read-only rendering, for a revision or a disabled form. It stands in for
+   both layers at once — there's no textarea to sit over it — so it takes the
+   metrics they share and draws its own text. A row's worth of minimum height, so
+   a value that was empty still reads as the field it was rather than a hairline. */
+.wahlberg-static {
+    margin: 0;
+    padding: 12px 14px;
+    min-height: 1lh;
+    font-family: var(--wahlberg-mono);
+    font-size: var(--wahlberg-font-size, 14px);
+    line-height: var(--wahlberg-line-height);
+    tab-size: 4;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: normal;
+    color: var(--text-color);
+}
+
 .wahlberg-preview {
     position: relative;
     display: block;

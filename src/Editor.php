@@ -184,6 +184,51 @@ abstract class Editor
     }
 
     /**
+     * The editor’s read-only twin: the same surface and the same type, showing the
+     * Markdown as it was written, with no textarea, no toolbar and nothing to run.
+     *
+     * For anywhere a value is being shown rather than edited — a revision, a
+     * disabled form, a slideout that only reports. Craft renders those by disabling
+     * a field’s inputs and throwing away the JS registered alongside them, which the
+     * editor can’t survive: the textarea paints its own text transparent so the
+     * highlighted layer behind it shows through, and that layer is filled by the JS
+     * that never ran. What’s left is a box that looks empty. Hence no editor here at
+     * all, rather than a disabled one.
+     *
+     * @param array{
+     *     value?: string,
+     *     fontSize?: int,
+     * } $config
+     */
+    public static function staticHtml(array $config = []): string
+    {
+        $config += [
+            'value' => '',
+            'fontSize' => MarkdownField::DEFAULT_FONT_SIZE,
+        ];
+
+        // For the CSS. The bundle brings the editor's JS with it, which has nothing
+        // to do here but defines a class and stops
+        Craft::$app->getView()->registerAssetBundle(EditorAsset::class);
+
+        $fontSize = min(
+            MarkdownField::MAX_FONT_SIZE,
+            max(MarkdownField::MIN_FONT_SIZE, (int)$config['fontSize']),
+        );
+
+        $text = Html::tag('div', Html::encode((string)$config['value']), [
+            'class' => 'wahlberg-static',
+        ]);
+
+        return Html::tag('div', Html::tag('div', $text, ['class' => 'wahlberg-editor']), [
+            // `--bare` because there's no header for the editor's square top corners
+            // to sit under
+            'class' => ['wahlberg', 'wahlberg--bare'],
+            'style' => ['--wahlberg-font-size' => "{$fontSize}px"],
+        ]);
+    }
+
+    /**
      * Every formatting command, as `command => label`. This order is the display
      * order, so a field turning half of them off still reads the same way.
      *

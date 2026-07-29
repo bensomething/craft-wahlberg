@@ -372,7 +372,19 @@ Turn `highlight` off and you get a plain textarea with the same chrome, sizing a
 
 The **Preview** tab works without a field behind it. It parses with whatever `flavour` you pass and always purifies, since there are no field settings to consult. There’s no *Preserve Line Breaks* option out here: `flavour` takes a parser flavour directly, so pass `gfm` to turn line breaks off and `gfm-comment` (the default) to keep them.
 
-What’s public API here is the three entry points and their options. The markup they generate, the CSS class names, and the data attributes the JS binds to are all internal and will change without a major version, so render through these rather than hand-rolling the HTML.
+For somewhere a value is shown rather than edited, `Editor::staticHtml([ ... ])` renders the Markdown as it was written on the same surface, in the same type, with no textarea and nothing to run:
+
+```php
+echo Editor::staticHtml([
+    'value' => $model->notes,
+]);
+```
+
+**Options**: `value` and `fontSize`.
+
+Reach for it anywhere the JavaScript won’t be there. Disabling the editor’s inputs isn’t enough on its own: the textarea paints its own text transparent so the highlighted layer behind it shows through, and that layer is filled by the JS. This is what a Markdown field renders in a revision, and in any other read-only form Craft builds.
+
+What’s public API here is the four entry points and their options. The markup they generate, the CSS class names, and the data attributes the JS binds to are all internal and will change without a major version, so render through these rather than hand-rolling the HTML.
 
 ### Hooking the Preview tab
 

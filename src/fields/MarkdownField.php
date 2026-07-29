@@ -492,6 +492,22 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
+     * The field as a revision, or any other read-only form, sees it: the Markdown as
+     * it was written, and none of the editor.
+     *
+     * Craft’s default would hand back [[inputHtml()]] with its inputs disabled and
+     * the JS that came with it discarded, which leaves the editor showing nothing —
+     * see [[Editor::staticHtml()]].
+     */
+    public function getStaticHtml(mixed $value, ElementInterface $element): string
+    {
+        return Editor::staticHtml([
+            'value' => $value instanceof MarkdownData ? $value->getRaw() : '',
+            'fontSize' => $this->fontSize,
+        ]);
+    }
+
+    /**
      * The volumes the Asset button may pick from. Always a list, even for `*`, so
      * the permission filter has something to work on and the browser is never handed
      * a wildcard to interpret.
