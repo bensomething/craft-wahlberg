@@ -162,7 +162,8 @@ abstract class Editor
             'id' => $id,
             'name' => $config['name'],
             'value' => (string)$config['value'],
-            'rows' => $minRows,
+            'minRows' => $minRows,
+            'maxRows' => $maxRows,
             'fontSize' => min(
                 MarkdownField::MAX_FONT_SIZE,
                 max(MarkdownField::MIN_FONT_SIZE, (int)$config['fontSize']),

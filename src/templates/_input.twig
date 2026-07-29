@@ -7,8 +7,11 @@
 {% set guide = guide ?? null %}
 {% set inputAttributes = inputAttributes ?? {} %}
 
+{# The rows go out as custom properties as well as on the textarea: the attribute
+   is a floor the browser applies before it knows what the value wraps to, and
+   these are what size the field to its content on the first paint. #}
 <div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not showToolbar ? ' wahlberg--no-toolbar' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
-    style="--wahlberg-font-size: {{ fontSize }}px">
+    style="--wahlberg-font-size: {{ fontSize }}px; --wahlberg-min-rows: {{ minRows }}{{ maxRows ? "; --wahlberg-max-rows: #{maxRows}" }}">
     {% if hasHeader %}
         <div class="wahlberg-header">
             {% if showPreview %}
@@ -60,7 +63,7 @@
                 <div class="wahlberg-highlight" data-highlight aria-hidden="true"></div>
             {% endif %}
 
-            <textarea id="{{ id }}"{% if name %} name="{{ name }}"{% endif %} rows="{{ rows }}"
+            <textarea id="{{ id }}"{% if name %} name="{{ name }}"{% endif %} rows="{{ minRows }}"
                 class="wahlberg-source" data-source spellcheck="true" autocomplete="off"
                 autocapitalize="off"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}
                 {{- attr(inputAttributes) }}>{{ value }}</textarea>

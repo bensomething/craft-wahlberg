@@ -17,6 +17,13 @@
        gives both of them more height than the text they're marking. */
     --wahlberg-line-height: 1.6;
 
+    /* The writing surface's own padding. A token rather than a literal because
+       the height the field opens at is a number of rows plus this, and a padding
+       that only half the sum knew about would open every field at the wrong
+       height. */
+    --wahlberg-pad-block: 12px;
+    --wahlberg-pad-inline: 14px;
+
     /* Syntax palette. Override these to retheme the editor. Colour only, on
        purpose: see the note by the token styles.
 
@@ -282,7 +289,7 @@
 .wahlberg-source,
 .wahlberg-highlight {
     margin: 0;
-    padding: 12px 14px;
+    padding: var(--wahlberg-pad-block) var(--wahlberg-pad-inline);
     border: 0;
     font-family: var(--wahlberg-mono);
     font-size: var(--wahlberg-font-size, 14px);
@@ -341,6 +348,23 @@
     color: var(--text-color);
     caret-color: var(--text-color);
     resize: vertical;
+
+    /* The height the field opens at, worked out by the browser rather than
+       measured by `autoGrow()` a paint later. How many rows a value takes depends
+       on the width, the face and the words, so the server can't know it and the
+       `rows` attribute is only ever a floor — which is what had a long value open
+       two rows tall and jump.
+
+       These are what `autoGrow()` computes, in the same terms: `1lh` is the row
+       it measures off the computed line height, and the padding is the chrome it
+       adds because the CP puts `border-box` on everything. It sets a height of
+       its own from then on, which outranks all three. Where `field-sizing` isn't
+       supported the field opens at `rows` and grows as it always did. */
+    field-sizing: content;
+    min-height: calc(var(--wahlberg-min-rows, 2) * 1lh + var(--wahlberg-pad-block) * 2);
+    /* No maximum is a maximum too large to reach, the way `autoGrow()` reads an
+       absent `maxRows` as Infinity */
+    max-height: calc(var(--wahlberg-max-rows, infinity) * 1lh + var(--wahlberg-pad-block) * 2);
 }
 
 /* Handing the text over to the layer behind, which the JS adds once that layer
@@ -389,7 +413,7 @@
    alone: a revision is a thing to copy out of. */
 .wahlberg-static {
     margin: 0;
-    padding: 12px 14px;
+    padding: var(--wahlberg-pad-block) var(--wahlberg-pad-inline);
     min-height: 1lh;
     font-family: var(--wahlberg-mono);
     font-size: var(--wahlberg-font-size, 14px);

@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Fixed a bug where a field flashed empty on load before its content appeared. The editor now shows the textarea’s own text until the layer behind it is ready to take over, rather than hiding it in the hope that something will.
-- The read-only field takes the cursor the control panel gives a disabled input.
+- Fixed a bug where a field flashed empty on load before its content appeared. The editor now shows the textarea’s own text until the layer behind it is ready to take over.
+- The read-only field shows the disabled input cursor on hover.
+- A field now opens at the height its content needs, rather than opening at its minimum rows and growing a paint later. Browsers without `field-sizing` keep the old behaviour.
 
 ## 1.0.0-beta.4 - 2026-07-29
 
