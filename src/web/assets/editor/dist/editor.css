@@ -377,7 +377,11 @@
 /* The read-only rendering, for a revision or a disabled form. It stands in for
    both layers at once — there's no textarea to sit over it — so it takes the
    metrics they share and draws its own text. A row's worth of minimum height, so
-   a value that was empty still reads as the field it was rather than a hairline. */
+   a value that was empty still reads as the field it was rather than a hairline.
+
+   The cursor is the one the CP puts on a disabled input, which is what this
+   would have been had the editor survived being disabled. Selection is left
+   alone: a revision is a thing to copy out of. */
 .wahlberg-static {
     margin: 0;
     padding: 12px 14px;
@@ -390,6 +394,7 @@
     overflow-wrap: break-word;
     word-break: normal;
     color: var(--text-color);
+    cursor: not-allowed;
 }
 
 .wahlberg-preview {
