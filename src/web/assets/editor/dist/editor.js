@@ -502,6 +502,12 @@
             this.highlightFrame = requestAnimationFrame(() => {
                 this.highlightFrame = null;
                 this.highlight.innerHTML = highlightMarkdown(this.source.value);
+
+                // Only now does the textarea hand its text over. Setting this any
+                // earlier — in the constructor, or in the stylesheet — is a field
+                // that reads as empty until this paint lands
+                this.container.classList.add('wahlberg--highlighted');
+
                 this.syncScroll();
             });
         }

@@ -338,35 +338,40 @@
     width: 100%;
     box-shadow: none;
     background-color: transparent;
-    /* The text underneath is what gets read; this layer only carries the caret,
-       the selection and the spellcheck squiggles */
-    color: transparent;
+    color: var(--text-color);
     caret-color: var(--text-color);
     resize: vertical;
 }
 
+/* Handing the text over to the layer behind, which the JS adds once that layer
+   has something in it. Until then the textarea shows its own text: the two are
+   styled to the same metrics, so what changes on the way through is the colour
+   and nothing else — where every character sits is already settled.
+
+   Not the other way round, with the text transparent from the start and the
+   class turning it back on. That's a field that reads as empty for as long as it
+   takes the stylesheet to land and the JS to run — on a refresh, visibly — and
+   one that stays empty for good if the JS never arrives at all. */
+.wahlberg--highlighted .wahlberg-source {
+    /* The text underneath is what gets read; this layer only carries the caret,
+       the selection and the spellcheck squiggles */
+    color: transparent;
+}
+
 /* Has to stay translucent, or selecting text would paint over the highlighted
-   text sitting behind it */
-.wahlberg-source::selection {
+   text sitting behind it. The textarea's own text has nothing behind it to hide,
+   so it takes the native selection. */
+.wahlberg--highlighted .wahlberg-source::selection {
     background-color: var(--wahlberg-selection);
 }
 
-/* The textarea's `color` is transparent so the layer behind shows through, and a
-   placeholder inherits that — without a colour of its own it renders nothing.
-   WebKit resolves it through the fill colour, hence both. */
+/* A placeholder inherits the `color` above, which is transparent once the layer
+   behind is carrying the text — without a colour of its own it would render
+   nothing. WebKit resolves it through the fill colour, hence both. */
 .wahlberg-source::placeholder {
     color: var(--medium-text-color);
     -webkit-text-fill-color: var(--medium-text-color);
     opacity: 1;
-}
-
-/* No layer behind it, so the textarea shows its own text */
-.wahlberg--plain .wahlberg-source {
-    color: var(--text-color);
-}
-
-.wahlberg--plain .wahlberg-source::selection {
-    background-color: highlight;
 }
 
 .wahlberg-source:focus {

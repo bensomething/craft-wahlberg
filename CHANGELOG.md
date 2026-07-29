@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fixed a bug where a field flashed empty on load before its content appeared. The editor now shows the textarea’s own text until the layer behind it is ready to take over, rather than hiding it in the hope that something will.
+- The read-only field takes the cursor the control panel gives a disabled input.
+
 ## 1.0.0-beta.4 - 2026-07-29
 
 - Fixed a bug where a Markdown field showed nothing when it was rendered read-only (like when viewing a revision). The field now has a static rendering of its own.
