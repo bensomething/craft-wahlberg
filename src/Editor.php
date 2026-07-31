@@ -302,6 +302,7 @@ abstract class Editor
      * separately, since the shortcut has to work whether or not this is on the
      * toolbar at all.
      *
+     * @internal Assembled into the editor by `inputHtml()`, which is what to call.
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
      * @param list<string>|null $only Commands the toolbar is showing
      */
@@ -337,6 +338,7 @@ abstract class Editor
      * toolbar shows, not what the field can do. Their shortcuts work with every
      * button unticked, and so does the snippet half of this menu.
      *
+     * @internal Assembled into the editor by `inputHtml()`, which is what to call.
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
      */
     public static function insertMenuHtml(array $snippets): string
@@ -540,6 +542,7 @@ abstract class Editor
      * The same commands as a menu, for the buttons to fold into when the header
      * runs out of room.
      *
+     * @internal Assembled into the editor by `inputHtml()`, which is what to call.
      * @param list<string>|null $only Commands to keep, or null for all of them
      */
     public static function overflowMenuHtml(?array $only = null): string
@@ -587,6 +590,7 @@ abstract class Editor
      * handed to `Garnish.HUD` on first click — the popover Craft opens off a field’s
      * info icon, anchored to the button rather than stranded under a tall editor.
      *
+     * @internal Assembled into the editor by `inputHtml()`, which is what to call.
      * @param list<string>|null $only Commands the toolbar is showing
      */
     public static function guideHtml(?array $only = null): string
