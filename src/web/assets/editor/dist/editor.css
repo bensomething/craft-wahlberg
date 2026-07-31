@@ -24,6 +24,12 @@
     --wahlberg-pad-block: 12px;
     --wahlberg-pad-inline: 14px;
 
+    /* What a box sitting in the field's corner is rounded to. A pixel under the
+       field's own, because the field's border takes a pixel off the curve on the
+       inside: matched exactly, an inner box cuts its corner back further than the
+       border does and leaves a crescent of the field showing through. */
+    --wahlberg-inner-radius: calc(var(--large-border-radius, 5px) - 1px);
+
     /* How wide the text runs before *Line Length* holds it back. Roughly 80
        characters, the measure plain text has been wrapped at for as long as
        there's been plain text.
@@ -129,7 +135,7 @@
 
     /* Same for the field's top corners: a square-cornered strip over a rounded box
        shows its corners past the curve */
-    border-radius: var(--large-border-radius, 5px) var(--large-border-radius, 5px) 0 0;
+    border-radius: var(--wahlberg-inner-radius) var(--wahlberg-inner-radius) 0 0;
 }
 
 .wahlberg-tabs {
@@ -390,11 +396,12 @@
        height, so a half-scrolled band ends with the text rather than the box */
     overflow: hidden;
     background-color: var(--wahlberg-surface);
-    border-radius: 0 0 var(--large-border-radius, 5px) var(--large-border-radius, 5px);
+    border-radius: 0 0 var(--wahlberg-inner-radius) var(--wahlberg-inner-radius);
 }
 
+/* No header above it, so the writing surface carries the field's top corners too */
 .wahlberg--bare .wahlberg-editor {
-    border-radius: var(--large-border-radius, 5px);
+    border-radius: var(--wahlberg-inner-radius);
 }
 
 .wahlberg-source,
@@ -566,7 +573,7 @@
     margin: 0;
     padding: 12px 14px;
     border: none;
-    border-radius: 0 0 var(--large-border-radius, 5px) var(--large-border-radius, 5px);
+    border-radius: 0 0 var(--wahlberg-inner-radius) var(--wahlberg-inner-radius);
     background-color: var(--wahlberg-surface);
     color: var(--text-color);
 }
@@ -660,7 +667,7 @@
 .wahlberg-stats {
     padding: 5px 14px;
     border-top: 1px solid var(--hairline-color);
-    border-radius: 0 0 var(--large-border-radius, 5px) var(--large-border-radius, 5px);
+    border-radius: 0 0 var(--wahlberg-inner-radius) var(--wahlberg-inner-radius);
     font-size: 12px;
     color: var(--medium-text-color);
 }
