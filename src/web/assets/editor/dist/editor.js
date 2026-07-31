@@ -1311,6 +1311,15 @@
                 ? new TextEncoder().encode(value).length
                 : Array.from(value).length;
 
+            // The count twice: once formatted for reading, once raw for the plural
+            // rule to pick a branch with. A `#` inside a plural comes out as the
+            // bare number, which is `1234 words` where the limit beside it already
+            // says `1,234`
+            const count = (message, n) => Craft.t('wahlberg', message, {
+                n: n,
+                count: Craft.formatNumber(n),
+            });
+
             const parts = [];
 
             if (limit) {
@@ -1319,15 +1328,17 @@
                     limit: Craft.formatNumber(limit),
                 }));
             } else {
-                parts.push(Craft.t('wahlberg', '{n, plural, =1{1 character} other{# characters}}', {
-                    n: Array.from(value).length,
-                }));
+                parts.push(count(
+                    '{n, plural, =1{1 character} other{{count} characters}}',
+                    Array.from(value).length,
+                ));
             }
 
-            parts.push(Craft.t('wahlberg', '{n, plural, =1{1 word} other{# words}}', {n: words}));
-            parts.push(Craft.t('wahlberg', '{n, plural, =1{1 line} other{# lines}}', {
-                n: value === '' ? 0 : value.split('\n').length,
-            }));
+            parts.push(count('{n, plural, =1{1 word} other{{count} words}}', words));
+            parts.push(count(
+                '{n, plural, =1{1 line} other{{count} lines}}',
+                value === '' ? 0 : value.split('\n').length,
+            ));
 
             this.stats.textContent = parts.join(' · ');
             this.stats.classList.toggle('is-over', !!limit && counted > limit);

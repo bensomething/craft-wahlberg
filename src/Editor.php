@@ -108,9 +108,9 @@ abstract class Editor
             'Nothing to preview',
             'The preview couldn’t be loaded.',
             'url',
-            '{n, plural, =1{1 character} other{# characters}}',
-            '{n, plural, =1{1 word} other{# words}}',
-            '{n, plural, =1{1 line} other{# lines}}',
+            '{n, plural, =1{1 character} other{{count} characters}}',
+            '{n, plural, =1{1 word} other{{count} words}}',
+            '{n, plural, =1{1 line} other{{count} lines}}',
             '{n} of {limit}',
         ]);
 
