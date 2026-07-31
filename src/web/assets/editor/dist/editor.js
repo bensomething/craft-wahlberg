@@ -204,8 +204,9 @@
         return out.join('\n') + '\n';
     }
 
-    // `$0` through `$9` in a snippet body
-    const SNIPPET_STOP = /\$([0-9])/g;
+    // `$0` through `$9` in a snippet body, bare or carrying a default: `${1:Name}`.
+    // No nested braces in a default, which keeps this a regex rather than a parser
+    const SNIPPET_STOP = /\$(?:([0-9])|\{([0-9])(?::([^}]*))?\})/g;
 
     /**
      * Takes the stops out of a snippet body and says where each one was.
@@ -215,7 +216,12 @@
      * meant when it was the only marker there was: where the caret ends up. A body
      * carrying nothing but `$0` therefore behaves as it always did.
      *
-     * Returns the body with the markers gone, and their offsets into it.
+     * A default is left in the text and the stop covers it, so landing on one
+     * selects it and the next thing typed replaces it. That's what makes a run
+     * readable: a bare stop is somewhere to go, a filled one says what goes there.
+     *
+     * Returns the body with the markers gone, and a `from`/`to` for each stop —
+     * equal where the stop was bare.
      */
     function snippetStops(body) {
         const found = [];
@@ -226,22 +232,31 @@
         SNIPPET_STOP.lastIndex = 0;
 
         while ((match = SNIPPET_STOP.exec(body)) !== null) {
+            const number = match[1] === undefined ? match[2] : match[1];
+            const fill = match[3] || '';
+
             text += body.slice(at, match.index);
             at = match.index + match[0].length;
 
             found.push({
                 // `$0` sorts last rather than first
-                order: match[1] === '0' ? 10 : Number(match[1]),
-                at: text.length,
+                order: number === '0' ? 10 : Number(number),
+                from: text.length,
+                to: text.length + fill.length,
             });
+
+            text += fill;
         }
 
         text += body.slice(at);
 
         // By number, and by where they were when a number is used twice
-        found.sort((a, b) => a.order - b.order || a.at - b.at);
+        found.sort((a, b) => a.order - b.order || a.from - b.from);
 
-        return {text: text, stops: found.map((stop) => stop.at)};
+        return {
+            text: text,
+            stops: found.map((stop) => ({from: stop.from, to: stop.to})),
+        };
     }
 
     /**
@@ -1569,12 +1584,17 @@
             let stops = parsed.stops;
 
             // Every occurrence, so a snippet can use the selection twice. Whatever
-            // was after it moves along by the difference
+            // was after it moves along by the difference — including the far end of
+            // a stop whose default was the selection, which is how `${1:$SELECTION}`
+            // comes out covering the text it stood in for
             for (let at = text.indexOf(marker); at !== -1; at = text.indexOf(marker, at + selected.length)) {
                 const shift = selected.length - marker.length;
 
                 text = text.slice(0, at) + selected + text.slice(at + marker.length);
-                stops = stops.map((stop) => (stop > at ? stop + shift : stop));
+                stops = stops.map((stop) => ({
+                    from: stop.from > at ? stop.from + shift : stop.from,
+                    to: stop.to > at ? stop.to + shift : stop.to,
+                }));
             }
 
             source.focus();
@@ -1582,8 +1602,9 @@
             // Where the text is about to land, which is what the stops are measured
             // from once it has
             const base = source.selectionStart;
+            const first = stops.length ? stops[0] : {from: text.length, to: text.length};
 
-            this.insert(text, stops.length ? stops[0] : text.length);
+            this.insert(text, first.from, first.to);
             this.autoGrow();
             this.startSnippet(base, text.length, stops);
         }
@@ -1603,7 +1624,7 @@
             }
 
             this.snippet = {
-                stops: stops.map((stop) => base + stop),
+                stops: stops.map((stop) => ({from: base + stop.from, to: base + stop.to})),
                 at: 0,
                 from: base,
                 to: base + length,
@@ -1628,10 +1649,12 @@
 
             this.snippet.at = Math.max(0, index);
 
-            const at = this.snippet.stops[this.snippet.at];
+            const stop = this.snippet.stops[this.snippet.at];
 
+            // Selected rather than pointed at, so whatever the default said gets
+            // typed over. A bare stop is an empty range, which is a caret
             this.source.focus();
-            this.source.setSelectionRange(at, at);
+            this.source.setSelectionRange(stop.from, stop.to);
         }
 
         /**
@@ -1653,7 +1676,13 @@
                 // leaves it where it was
                 const edit = source.selectionStart - Math.max(delta, 0);
 
-                this.snippet.stops = this.snippet.stops.map((stop) => (stop > edit ? stop + delta : stop));
+                // Both ends, which is also what shrinks the stop being typed in
+                // down to what replaced its default
+                this.snippet.stops = this.snippet.stops.map((stop) => ({
+                    from: stop.from > edit ? stop.from + delta : stop.from,
+                    to: stop.to > edit ? Math.max(stop.from, stop.to + delta) : stop.to,
+                }));
+
                 this.snippet.to += delta;
             }
 

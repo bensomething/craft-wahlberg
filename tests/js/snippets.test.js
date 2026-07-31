@@ -37,17 +37,31 @@ function fail(message) {
     console.error('  ✗ ' + message);
 }
 
+/**
+ * Stops are written as `[from, to]` pairs, and as a bare number where the two are
+ * the same — a stop with no default is an empty range, which is a caret.
+ */
 function check(name, input, text, stops) {
     const got = snippetStops(input);
+    const want = stops.map((stop) => (Array.isArray(stop) ? stop : [stop, stop]));
+    const found = got.stops.map((stop) => [stop.from, stop.to]);
 
     if (got.text !== text) {
         fail(`${name}: text\n      got  ${JSON.stringify(got.text)}\n      want ${JSON.stringify(text)}`);
         return;
     }
 
-    if (JSON.stringify(got.stops) !== JSON.stringify(stops)) {
-        fail(`${name}: stops\n      got  ${JSON.stringify(got.stops)}\n      want ${JSON.stringify(stops)}`);
+    if (JSON.stringify(found) !== JSON.stringify(want)) {
+        fail(`${name}: stops\n      got  ${JSON.stringify(found)}\n      want ${JSON.stringify(want)}`);
         return;
+    }
+
+    // A stop has to point at text that's actually there, and not backwards
+    for (const [from, to] of found) {
+        if (from < 0 || to > got.text.length || from > to) {
+            fail(`${name}: [${from}, ${to}] doesn't fit ${JSON.stringify(got.text)}`);
+            return;
+        }
     }
 
     console.log('  - ' + name);
@@ -93,14 +107,44 @@ check('the selection marker is left alone', '$1$SELECTION$0', '$SELECTION', [0, 
 // A `$` that isn't a stop
 check('a dollar with no digit is text', 'costs $5.00 and $x', 'costs .00 and $x', [6]);
 
-// Every offset has to land inside the text it points into
-const {text, stops} = snippetStops('$1one$2two$3three$0');
+// -- Defaults -------------------------------------------------------------------
 
-if (stops.every((stop) => stop >= 0 && stop <= text.length)) {
-    console.log('  - every stop lands inside the text');
-} else {
-    fail(`stops outside the text: ${JSON.stringify(stops)} in ${JSON.stringify(text)}`);
-}
+check('a default stays in the text, with the stop over it', '${1:Name}', 'Name', [[0, 4]]);
+check('braces without a default are a bare stop', 'a${1}b', 'ab', [1]);
+check('an empty default is a bare stop too', 'a${1:}b', 'ab', [1]);
+
+check(
+    'defaults and bare stops together',
+    '[${1:text}]($0)',
+    '[text]()',
+    [[1, 5], 7],
+);
+
+check(
+    'the numbering still decides the order',
+    '${2:second} ${1:first}',
+    'second first',
+    [[7, 12], [0, 6]],
+);
+
+check('$0 can carry one as well', 'x${0:here}', 'xhere', [[1, 5]]);
+
+check(
+    'a default is text, so a marker inside one survives to be substituted',
+    '${1:$SELECTION}',
+    '$SELECTION',
+    [[0, 10]],
+);
+
+check(
+    'a callout with something to read',
+    '> **${1:Note}**\n> ${0:…}\n',
+    '> **Note**\n> …\n',
+    [[4, 8], [13, 14]],
+);
+
+// An unclosed brace isn't a stop, and mustn't eat the rest of the body
+check('an unclosed brace is text', 'a${1:b', 'a${1:b', []);
 
 console.log(failures === 0 ? '\nOK' : `\n${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);

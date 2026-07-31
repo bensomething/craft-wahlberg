@@ -198,14 +198,29 @@ class SnippetsTest extends TestCase
         foreach ($snippets as $handle => $snippet) {
             self::assertNotSame('', $snippet['label'], "`$handle` has no label");
 
-            // The markers must survive PHP's double-quoted interpolation
-            self::assertStringNotContainsString('${', $snippet['body'], "`$handle` mangled a marker");
+            // The markers must survive PHP's double-quoted interpolation, where an
+            // unescaped `${` is a variable rather than a stop. Every one that's got
+            // this far therefore has to be a stop the editor can read: a digit, and
+            // a default that closes
+            preg_match_all('/\$\{[^}]*\}?/', $snippet['body'], $matches);
+
+            foreach ($matches[0] as $marker) {
+                self::assertMatchesRegularExpression(
+                    '/^\$\{[0-9](:[^}]*)?\}$/',
+                    $marker,
+                    "`$handle` has a marker the editor won't read: $marker",
+                );
+            }
         }
 
-        // Between them they demonstrate both markers
+        // Between them they demonstrate the markers worth demonstrating
         $bodies = implode('', array_column($snippets, 'body'));
         self::assertStringContainsString(Snippets::CARET, $bodies);
         self::assertStringContainsString(Snippets::SELECTION, $bodies);
+
+        // Including a stop carrying a default, since that's the one whose escaping
+        // is easiest to get wrong
+        self::assertMatchesRegularExpression('/\$\{[0-9]:[^}]+\}/', $bodies);
     }
 
     #[TestDox('every snippet in the shipped template still renders once the markers are out and the purifier has been through')]
@@ -216,11 +231,13 @@ class SnippetsTest extends TestCase
         $this->writePluginConfig($config);
 
         foreach (Snippets::all() as $handle => $snippet) {
-            // What an author is left holding, with nothing selected
-            $body = str_replace(
-                [Snippets::CARET, Snippets::SELECTION],
-                ['Something', 'Selected text'],
-                $snippet['body'],
+            // What an author is left holding, with nothing selected: the selection
+            // first, so a stop defaulting to it keeps what it stood in for, then the
+            // stops themselves — defaults kept, bare ones stood in for
+            $body = preg_replace(
+                ['/\$\{[0-9]:([^}]*)\}/', '/\$\{[0-9]\}/', '/\$[0-9]/'],
+                ['$1', 'Something', 'Something'],
+                str_replace(Snippets::SELECTION, 'Selected text', $snippet['body']),
             );
 
             // Purified, as a field ships. An example that comes out empty is one

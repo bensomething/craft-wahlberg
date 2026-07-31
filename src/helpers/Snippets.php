@@ -29,7 +29,8 @@ abstract class Snippets
     /**
      * Where the caret ends up, and the last of the stops a body can carry: `$1`
      * through `$9` are visited in order first, on Tab, and `$0` is where the run
-     * finishes. Without one the caret goes to the end.
+     * finishes. Any of them can carry a default — `${1:Name}` — which goes in as
+     * text and is selected on arrival. Without a marker the caret goes to the end.
      *
      * The numbering is the convention every editor with snippets uses, and it’s why
      * `$0` still means what it meant when it was the only marker there was — a body

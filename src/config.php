@@ -18,6 +18,9 @@ return [
      * Optional markers:
      *
      * - `$1` to `$9` are stops, visited in order on Tab and ⇧Tab. Esc ends the run.
+     * - `${1:like this}` is a stop with a default: the text goes in, and landing on
+     *   the stop selects it, so it reads as a prompt and types over as a
+     *   placeholder. No nesting — a default runs to the first `}`.
      * - `$0` is where the caret ends up: the last stop, after any numbered ones.
      *   Without a marker at all it lands at the end.
      * - `$SELECTION` is replaced by what the author had selected, so a snippet can
@@ -40,17 +43,19 @@ return [
             'body' => "> **Note**\n> \$0\n",
         ],
 
-        // The Asset button is the better way in for an image already in a volume
+        // The Asset button is the better way in for an image already in a volume.
+        // Tab runs the alt text, then the URL, then the caption — each default is
+        // selected on arrival, so it reads as a prompt and types over
         'figure' => [
             'label' => 'Figure with caption',
             'icon' => 'image',
-            'body' => "![\$SELECTION](\$0)\n*Caption*\n",
+            'body' => "![\${1:\$SELECTION}](\${2:https://})\n*\${0:Caption}*\n",
         ],
 
         'pullQuote' => [
             'label' => 'Quote with attribution',
             'icon' => 'block-quote',
-            'body' => "> \$SELECTION\$0\n>\n> — **Name**, Title\n",
+            'body' => "> \$SELECTION\${1:…}\n>\n> — **\${2:Name}**, \${0:Title}\n",
         ],
 
         // Survives purification because Craft's defaults allow YouTube and Vimeo.

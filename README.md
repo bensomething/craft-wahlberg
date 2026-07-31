@@ -191,12 +191,16 @@ return [
 Markers, all optional:
 
 - **`$1`** to **`$9`** are stops. Insert a snippet with more than one and the caret lands on the first; <kbd>Tab</kbd> moves to the next, <kbd>⇧Tab</kbd> back.
+- **`${1:like this}`** is a stop with a default. The text goes in, and landing on the stop selects it — so it reads as a prompt and types over as a placeholder. Bare `${1}` is the same as `$1`.
 - **`$0`** is where the caret ends up — the last stop, visited after the numbered ones. Without any marker at all the caret lands at the end.
 - **`$SELECTION`** is replaced by whatever the author had selected, so a snippet can wrap their text rather than only ever landing beside it. It’s empty when nothing was selected, and every occurrence is replaced.
 
 ```php
-'table' => "| \$1 | \$2 |\n| --- | --- |\n| \$0 |  |\n",
+'table' => "| \${1:Column} | \${2:Column} |\n| --- | --- |\n| \$0 |  |\n",
+'link' => "[\${1:\$SELECTION}](\${0:https://})",
 ```
+
+Defaults are worth the extra characters on anything with more than a couple of stops: a bare stop is somewhere to go, a filled one says what goes there. A default is ordinary text, so `$SELECTION` inside one is still substituted, and the stop comes out covering whatever it stood in for. There’s no nesting — a default runs to the first `}`.
 
 Tab belongs to the run only while one is going, and <kbd>Esc</kbd> ends it early — Tab is how you leave a field, and a textarea that kept hold of it would be one you couldn’t get out of. The run also ends when the last stop is passed, or when the caret leaves the text the snippet put in.
 
