@@ -2937,4 +2937,11 @@
     }
 
     window.WahlbergEditor = WahlbergEditor;
+
+    // The pure parts of the file, handed to the tests in tests/js. Nothing in here
+    // touches the DOM until something calls it, so Node can require the file and
+    // reach them without pretending to be a browser
+    if (typeof module !== 'undefined') {
+        module.exports = {highlightMarkdown, snippetStops, shiftStops, sourceBlocks};
+    }
 })();

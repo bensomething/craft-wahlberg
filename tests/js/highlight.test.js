@@ -9,25 +9,10 @@
  *     node tests/js/highlight.test.js
  */
 
-const fs = require('fs');
-const path = require('path');
+// The editor hands its class to the window on the way past, so there has to be one
+global.window = {};
 
-const editorPath = path.join(__dirname, '../../src/web/assets/editor/dist/editor.js');
-const source = fs.readFileSync(editorPath, 'utf8');
-
-// The editor is an IIFE that hands one class to the window; swap that for an export
-// so the internals can be reached without a DOM
-const body = source.replace(
-    /window\.WahlbergEditor = WahlbergEditor;/,
-    'module.exports = {highlightMarkdown};',
-);
-
-const exported = {exports: {}};
-new Function('module', 'window', 'navigator', 'document', 'requestAnimationFrame', body)(
-    exported, {}, {platform: 'MacIntel'}, {}, () => {},
-);
-
-const {highlightMarkdown} = exported.exports;
+const {highlightMarkdown} = require('../../src/web/assets/editor/resources/editor.js');
 
 function textOf(html) {
     return html

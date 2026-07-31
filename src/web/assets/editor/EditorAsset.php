@@ -7,7 +7,7 @@ use craft\web\assets\cp\CpAsset;
 
 class EditorAsset extends AssetBundle
 {
-    public $sourcePath = __DIR__ . '/dist';
+    public $sourcePath = __DIR__ . '/resources';
 
     public $depends = [
         CpAsset::class,
