@@ -260,6 +260,44 @@
     }
 
     /**
+     * Where a snippet's stops end up after an edit, so Tab keeps landing on them as
+     * the author fills one in.
+     *
+     * The awkward part is the boundary. Text typed at the end of the stop being
+     * filled in belongs to that stop, not to whatever begins where it used to end —
+     * so what follows is decided by the stop's old end rather than by the caret.
+     * Measuring from the caret is what turns a bare stop after a shortened default
+     * into a selection the width of the edit: its two ends move by different
+     * amounts, and a stop whose ends disagree is a range.
+     *
+     * `at` is the stop being filled in, `edit` where the change began, `caret` where
+     * it left the caret, and `delta` how much longer the value got.
+     */
+    function shiftStops(stops, at, edit, caret, delta) {
+        const current = stops[at];
+
+        // Edits inside the stop being filled in are the run working. Anywhere else
+        // and there's no boundary to protect, so the change speaks for itself
+        const inside = !!current && edit >= current.from && edit <= current.to;
+        const boundary = inside ? current.to : edit;
+
+        return stops.map((stop) => {
+            // Ends where the caret does, so going back to it selects what was
+            // typed rather than what the default used to measure
+            if (inside && stop === current) {
+                return {from: stop.from, to: Math.max(stop.from, caret)};
+            }
+
+            // Both ends by the same amount, which is what keeps a point a point
+            if (stop.from >= boundary) {
+                return {from: stop.from + delta, to: stop.to + delta};
+            }
+
+            return stop;
+        });
+    }
+
+    /**
      * The source split into the blocks a parser turns into elements: runs of lines
      * with blank ones between them, and a fenced code block counting as one however
      * many blank lines are inside it.
@@ -1672,16 +1710,17 @@
             this.snippet.length = source.value.length;
 
             if (delta) {
+                const caret = source.selectionStart;
+
                 // Where the edit landed: an insertion ends at the caret, a deletion
                 // leaves it where it was
-                const edit = source.selectionStart - Math.max(delta, 0);
-
-                // Both ends, which is also what shrinks the stop being typed in
-                // down to what replaced its default
-                this.snippet.stops = this.snippet.stops.map((stop) => ({
-                    from: stop.from > edit ? stop.from + delta : stop.from,
-                    to: stop.to > edit ? Math.max(stop.from, stop.to + delta) : stop.to,
-                }));
+                this.snippet.stops = shiftStops(
+                    this.snippet.stops,
+                    this.snippet.at,
+                    caret - Math.max(delta, 0),
+                    caret,
+                    delta,
+                );
 
                 this.snippet.to += delta;
             }

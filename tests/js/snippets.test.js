@@ -20,7 +20,7 @@ const source = fs.readFileSync(editorPath, 'utf8');
 // so the internals can be reached without a DOM
 const body = source.replace(
     /window\.WahlbergEditor = WahlbergEditor;/,
-    'module.exports = {snippetStops};',
+    'module.exports = {snippetStops, shiftStops};',
 );
 
 const exported = {exports: {}};
@@ -28,7 +28,7 @@ new Function('module', 'window', 'navigator', 'document', 'requestAnimationFrame
     exported, {}, {platform: 'MacIntel'}, {}, () => {},
 );
 
-const {snippetStops} = exported.exports;
+const {snippetStops, shiftStops} = exported.exports;
 
 let failures = 0;
 
@@ -145,6 +145,70 @@ check(
 
 // An unclosed brace isn't a stop, and mustn't eat the rest of the body
 check('an unclosed brace is text', 'a${1:b', 'a${1:b', []);
+
+// -- Keeping the stops in place as one is filled in -----------------------------
+
+/**
+ * Types `typed` over the stop at `at`, and reports where the stops end up.
+ * `stops` and the result are `[from, to]` pairs.
+ */
+function types(stops, at, typed) {
+    const ranges = stops.map((stop) => (Array.isArray(stop) ? {from: stop[0], to: stop[1]} : {from: stop, to: stop}));
+    const current = ranges[at];
+
+    // Replacing what the stop covers: the value loses its width and gains the text
+    const delta = typed.length - (current.to - current.from);
+    const caret = current.from + typed.length;
+
+    return shiftStops(ranges, at, caret - Math.max(delta, 0), caret, delta)
+        .map((stop) => [stop.from, stop.to]);
+}
+
+function shifted(name, stops, at, typed, want) {
+    const got = types(stops, at, typed);
+    const expected = want.map((stop) => (Array.isArray(stop) ? stop : [stop, stop]));
+
+    if (JSON.stringify(got) === JSON.stringify(expected)) {
+        console.log('  - ' + name);
+        return;
+    }
+
+    fail(`${name}\n      got  ${JSON.stringify(got)}\n      want ${JSON.stringify(expected)}`);
+}
+
+// `| ${1:Column} | $2 |` — the stop with the default, then a bare one after it.
+// Shortening the default must not leave the bare stop covering the difference
+shifted('a bare stop after a shortened default stays a point', [[2, 8], 11], 0, 'ab', [[2, 4], 7]);
+shifted('and after a lengthened one', [[2, 8], 11], 0, 'Much longer', [[2, 13], 16]);
+shifted('and after one typed over exactly', [[2, 8], 11], 0, 'Ledge', [[2, 7], 10]);
+shifted('and after one emptied', [[2, 8], 11], 0, '', [[2, 2], 5]);
+
+// The stop being filled in ends where the caret does, so going back selects what
+// was typed rather than what the default used to measure
+shifted('the current stop follows what replaced it', [[2, 8]], 0, 'Hi', [[2, 4]]);
+
+// A stop that starts exactly where the edited one ended still belongs after it
+shifted('an adjacent stop moves with the text', [[2, 4], 4], 0, 'X', [[2, 3], 3]);
+shifted('an adjacent stop after growth', [[2, 4], 4], 0, 'XYZ', [[2, 5], 5]);
+
+// Anything before the edit is untouched
+shifted('a stop before the edit stays put', [0, [2, 8], 11], 1, 'x', [0, [2, 3], 6]);
+
+// Order is visit order, not document order, so a later stop can be earlier in text
+shifted('a stop earlier in the text than the one being filled', [[10, 14], [2, 4]], 0, 'ab', [[10, 12], [2, 4]]);
+
+// A second edit, typing on after the default was replaced
+let after = types([[2, 8], 11], 0, 'N');
+after = shiftStops(
+    after.map((stop) => ({from: stop[0], to: stop[1]})),
+    0, 3, 4, 1,
+).map((stop) => [stop.from, stop.to]);
+
+if (JSON.stringify(after) === JSON.stringify([[2, 4], [7, 7]])) {
+    console.log('  - typing on after the default was replaced');
+} else {
+    fail(`typing on after the default was replaced\n      got  ${JSON.stringify(after)}\n      want [[2,4],[7,7]]`);
+}
 
 console.log(failures === 0 ? '\nOK' : `\n${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);

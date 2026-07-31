@@ -196,7 +196,7 @@ Markers, all optional:
 - **`$SELECTION`** is replaced by whatever the author had selected, so a snippet can wrap their text rather than only ever landing beside it. It’s empty when nothing was selected, and every occurrence is replaced.
 
 ```php
-'table' => "| \${1:Column} | \${2:Column} |\n| --- | --- |\n| \$0 |  |\n",
+'table' => "| \${1:Column} | \${2:Column} |\n| --- | --- |\n| \$3 | \$0 |\n",
 'link' => "[\${1:\$SELECTION}](\${0:https://})",
 ```
 
