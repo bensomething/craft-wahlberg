@@ -7,6 +7,12 @@
     const MOD_LABEL = IS_MAC ? '⌘' : 'Ctrl+';
     const MOD_SHIFT_LABEL = IS_MAC ? '⌘⇧' : 'Ctrl+Shift+';
 
+    // How much of the window a field has to fill before its header holds still and
+    // lets the text scroll under it. Under this the header is barely gone before the
+    // field is too, and sticking it would only mean sliding it over the last of the
+    // text on the way past — motion in exchange for nothing.
+    const STICKY_SHARE = 0.5;
+
     // A list item, split into indent / marker / spacing / content
     const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])(\s+)(.*)$/;
     const BLOCKQUOTE = /^(\s*>\s?)(.*)$/;
@@ -306,6 +312,7 @@
             this.editorEl = this.container.querySelector('[data-editor]');
             this.highlight = this.container.querySelector('[data-highlight]');
             this.previewEl = this.container.querySelector('[data-preview]');
+            this.headerEl = this.container.querySelector('[data-header]');
             this.tabs = Array.from(this.container.querySelectorAll('[data-tab]'));
             this.previewTab = this.container.querySelector('[data-tab="preview"]');
 
@@ -326,6 +333,11 @@
             // Once the author drags the editor to a height they want, stop
             // second-guessing them
             this.manuallySized = false;
+
+            // How tall the field stands writing, which is what decides whether its
+            // header sticks — kept, because the preview is shorter and can't be
+            // asked
+            this.stickyHeight = 0;
 
             // The floating toolbar's state: summoned to the caret rather than
             // called up by a selection, put away with Escape, and out of the way
@@ -1473,6 +1485,16 @@
 
         initSizing() {
             this.autoGrow();
+            this.measureStickyTop();
+            this.syncSticky();
+
+            // A field that stayed the same size can still cross the threshold, by
+            // the window changing height under it — and the page header it's
+            // clearing is a different height at a different width
+            window.addEventListener('resize', () => {
+                this.measureStickyTop();
+                this.syncSticky();
+            });
 
             if (typeof ResizeObserver === 'undefined') {
                 return;
@@ -1484,14 +1506,21 @@
             let lastWidth = this.source.offsetWidth;
 
             new ResizeObserver(() => {
+                // Ahead of everything below, since this is the one thing that has
+                // to keep up with a height the author set by dragging — which is
+                // exactly the case `autoGrow()` bows out of
+                this.syncSticky();
+
                 const width = this.source.offsetWidth;
 
                 if (width !== lastWidth) {
                     lastWidth = width;
                     this.autoGrow();
                     // Narrower or wider wraps the lines differently, and the band
-                    // is the height of however many rows its line now takes
+                    // is the height of however many rows its line now takes. The
+                    // panel is anchored to a row that's moved for the same reason
                     this.syncActiveLine();
+                    this.syncFloating();
                     return;
                 }
 
@@ -1499,6 +1528,74 @@
                     this.manuallySized = true;
                 }
             }).observe(this.source);
+        }
+
+        /**
+         * How far down the sticky header has to start.
+         *
+         * Craft pins the page header to the top of the window once the page scrolls,
+         * and a field header stuck at the top of the window would hold still
+         * underneath it. So the offset is that header's height — but only where the
+         * page is what's scrolling. In a slideout, or anywhere else with a scrolling
+         * box of its own, our header sticks to the top of that box, which is already
+         * below whatever chrome the thing has.
+         *
+         * Kept separate from `--wahlberg-sticky-top`, which is what a control panel
+         * with something else along the top sets to overrule all of this.
+         */
+        measureStickyTop() {
+            const header = this.pageScrolls() ? document.querySelector('#header') : null;
+
+            this.container.style.setProperty(
+                '--wahlberg-header-offset',
+                (header ? header.offsetHeight : 0) + 'px',
+            );
+        }
+
+        /**
+         * Whether the page is what scrolls this field, rather than a box it's inside.
+         *
+         * Anything that scrolls or clips counts, since either way it's a scrollport,
+         * and a sticky element holds against the nearest one of those rather than
+         * against the window.
+         */
+        pageScrolls() {
+            for (let node = this.container.parentElement; node && node !== document.body; node = node.parentElement) {
+                const overflow = window.getComputedStyle(node).overflowY;
+
+                if (overflow === 'auto' || overflow === 'scroll' || overflow === 'hidden') {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /**
+         * Decides whether the header holds still while the text scrolls under it.
+         *
+         * Worth it on a field big enough to be read and written with its own header
+         * off the top of the screen, and not on one that's gone almost as soon as
+         * its header is. Measured against the window rather than counted in rows,
+         * since what matters is how much of the screen the field takes up, and a row
+         * is a different fraction of that on every display.
+         */
+        syncSticky() {
+            // The height the field has writing, whichever tab is up. Rendered
+            // Markdown is shorter than the source it came from, so measuring the
+            // preview would unstick the header of a field that's going to stick
+            // again the moment the author switches back — and a header that comes
+            // and goes with the tabs is worse than one that never held still.
+            // Remembered rather than measured while previewing, since a hidden box
+            // has no height to read
+            if (!this.previewing()) {
+                this.stickyHeight = this.container.offsetHeight;
+            }
+
+            this.container.classList.toggle(
+                'wahlberg--sticky',
+                this.stickyHeight > window.innerHeight * STICKY_SHARE,
+            );
         }
 
         /**

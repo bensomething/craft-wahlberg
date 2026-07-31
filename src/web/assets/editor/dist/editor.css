@@ -93,6 +93,36 @@
     padding: 4px;
 }
 
+/* The header holds still while the field scrolls under it, so the tabs and the
+   buttons are where they were rather than somewhere off the top of the screen.
+   Only on a field tall enough for that to be a problem — the JS adds the class,
+   since the height is its business.
+
+   It starts below Craft's own page header, which pins itself to the top of the
+   window once the page scrolls. That height is measured rather than declared —
+   Craft has no token for it, and it isn't a fixed number — so the JS puts it in
+   `--wahlberg-header-offset`, and it's zero wherever the page isn't what's
+   scrolling. `--wahlberg-sticky-top` overrules the pair of them, for a control
+   panel that has put something else along the top. */
+
+.wahlberg--sticky .wahlberg-header {
+    position: sticky;
+    inset-block-start: var(--wahlberg-sticky-top, var(--wahlberg-header-offset, 0px));
+
+    /* Over the floating toolbar and the snippet menu, both of which are anchored
+       to text: a panel pointing at a line that's gone under the header should go
+       under it too, rather than hang over the chrome pointing at nothing */
+    z-index: 11;
+
+    /* It was borrowing the fill of the field behind it, which is no longer behind
+       it once the text is */
+    background-color: var(--gray-050, #f9fafb);
+
+    /* Same for the field's top corners: a square-cornered strip over a rounded box
+       shows its corners past the curve */
+    border-radius: var(--large-border-radius, 5px) var(--large-border-radius, 5px) 0 0;
+}
+
 .wahlberg-tabs {
     display: flex;
     gap: 2px;

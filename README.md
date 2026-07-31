@@ -442,6 +442,16 @@ Enter continues a list or a blockquote onto the next line, and ends it on an emp
 
 The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*. Dragging the resize handle takes over from there. Once someone has picked a height by hand, it stops resizing itself.
 
+### The header
+
+Once a field fills more than half the window, its header sticks: the tabs and the toolbar hold still and the text scrolls under them, so the buttons are still there when the writing has run past where they were. That’s measured on the **Write** tab whichever tab is up — rendered Markdown is shorter than the source it came from, and a header that came and went as you switched would be worse than one that never held still.
+
+Below that they scroll away with everything else. A short field is gone almost as soon as its header is, so sticking it would only mean sliding the strip over the last few rows on the way past — motion in exchange for nothing.
+
+It stops below Craft’s own page header, which pins itself to the top of the window once the page scrolls. Craft has no token for that header’s height and it isn’t a fixed number, so the editor measures it — and treats it as zero in a slideout, a modal, or anywhere else scrolling in a box of its own, since the field’s header is already stopping below that thing’s chrome.
+
+There’s no setting for it and no threshold to tune. If your control panel has put something else along the top, `--wahlberg-sticky-top` on `.wahlberg` overrules the measurement.
+
 ### The current line
 
 The line being written carries a band behind it, the way a code editor does. A long line wraps over several rows and the band covers all of them, since what it marks is the line the author is on rather than the row the caret is in — in Markdown that block is usually the paragraph.

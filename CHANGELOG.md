@@ -8,6 +8,7 @@
 - Added `⌘⇧F`, which brings the floating toolbar up at the caret with nothing selected, and `Esc`, which puts it away.
 - Added `⌘⇧E` and `⌘⇧U` for the **Entry** and **Asset** pickers.
 - Added a `floating` option to `Editor::inputHtml()` and the Twig macros.
+- The tabs and the toolbar now stick to the top of a field that fills more than half the window, so they’re still there once the text has scrolled past them. They stop below Craft’s own page header, and `--wahlberg-sticky-top` overrules where that lands.
 
 ### Changed
 

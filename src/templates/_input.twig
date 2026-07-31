@@ -46,7 +46,7 @@
 <div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not headerToolbar ? ' wahlberg--no-toolbar' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
     style="--wahlberg-font-size: {{ fontSize }}px; --wahlberg-min-rows: {{ minRows }}{{ maxRows ? "; --wahlberg-max-rows: #{maxRows}" }}">
     {% if hasHeader %}
-        <div class="wahlberg-header">
+        <div class="wahlberg-header" data-header>
             {% if showPreview %}
                 <div class="wahlberg-tabs" role="tablist">
                     <button type="button" role="tab" class="wahlberg-tab is-selected" data-tab="write"
