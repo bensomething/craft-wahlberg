@@ -51,7 +51,10 @@
         "fix-cs": "ecs check --ansi --fix",
         "phpstan": "phpstan --memory-limit=1G",
         "test": "phpunit --colors=always",
-        "test-js": "@php -r \"passthru('node tests/js/highlight.test.js');\""
+        "test-js": [
+            "node tests/js/highlight.test.js",
+            "node tests/js/blocks.test.js"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

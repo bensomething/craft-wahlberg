@@ -452,6 +452,14 @@ It stops below Craft’s own page header, which pins itself to the top of the wi
 
 There’s no setting for it and no threshold to tune. If your control panel has put something else along the top, `--wahlberg-sticky-top` on `.wahlberg` overrules the measurement.
 
+### Keeping your place
+
+Switching between **Write** and **Preview** halfway down a long field puts you back where you were, rather than at the top.
+
+What’s matched is structure, not distance. The two panes hold the same content at wildly different lengths — a link is a URL’s worth of source and a word of rendered text, and a reference tag is worse — so a percentage or a pixel offset would land somewhere arbitrary. Instead the source is split into the blocks the parser turns into elements, and the block at the top of one pane is the element put at the top of the other.
+
+Blocks and elements come out one for one nearly always. Where they don’t — a list with blank lines between its items is several blocks of source and a single `<ul>` — the position is scaled rather than trusted, which lands in the right region instead of on the wrong paragraph. At the top of a field, switching does nothing at all.
+
 ### The current line
 
 The line being written carries a band behind it, the way a code editor does. A long line wraps over several rows and the band covers all of them, since what it marks is the line the author is on rather than the row the caret is in — in Markdown that block is usually the paragraph.

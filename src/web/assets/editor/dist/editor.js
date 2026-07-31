@@ -204,6 +204,52 @@
         return out.join('\n') + '\n';
     }
 
+    /**
+     * The source split into the blocks a parser turns into elements: runs of lines
+     * with blank ones between them, and a fenced code block counting as one however
+     * many blank lines are inside it.
+     *
+     * Returned as the character each block starts at.
+     */
+    function sourceBlocks(value) {
+        const starts = [];
+        let fence = null;
+        let open = false;
+        let at = 0;
+
+        value.split('\n').forEach((line) => {
+            const fenced = line.match(FENCE);
+
+            if (fence) {
+                // Inside a fence, where a blank line ends nothing
+                if (fenced && fenced[2][0] === fence[0] && fenced[2].length >= fence.length) {
+                    fence = null;
+                }
+            } else if (fenced) {
+                if (!open) {
+                    starts.push(at);
+                    open = true;
+                }
+
+                fence = fenced[2];
+            } else if (line.trim() === '') {
+                open = false;
+            } else if (HEADING.test(line)) {
+                // A heading is an element of its own whether or not a blank line
+                // announced it, and whatever follows starts another
+                starts.push(at);
+                open = false;
+            } else if (!open) {
+                starts.push(at);
+                open = true;
+            }
+
+            at += line.length + 1;
+        });
+
+        return starts;
+    }
+
     // Copied onto the mirror that finds the caret, so it wraps the same text at the
     // same width in the same face
     const CARET_STYLES = [
@@ -2000,6 +2046,208 @@
             return true;
         }
 
+        // -- Keeping your place -----------------------------------------------
+        //
+        // Switching tabs swaps one document for another: the same content, at a
+        // different length, in a different shape. Matching by pixel or by percentage
+        // doesn't survive that — a link is a URL's worth of source and a word of
+        // rendered text, and a reference tag is worse — so what's matched is
+        // structure. Each block of source comes out of the parser as one top-level
+        // element, so the block at the top of one pane is the element to put at the
+        // top of the other.
+
+        /**
+         * The band across the top of the window the sticky header can occupy:
+         * whatever it's clearing, plus its own height.
+         *
+         * What it can occupy rather than what it currently does, and its height
+         * rather than where it is. The header only sticks on a field over the
+         * threshold, and the same field is over it writing and under it previewing,
+         * since rendered Markdown is shorter than its source. Reading the header's
+         * live position would therefore give one answer on the way out and another
+         * on the way back, and the difference between them is a page that creeps a
+         * little further every time the author switches tabs.
+         */
+        stickyAllowance() {
+            const styles = window.getComputedStyle(this.container);
+
+            // As the stylesheet resolves it: the override first, then the measured
+            // page header
+            const top = styles.getPropertyValue('--wahlberg-sticky-top').trim() ||
+                styles.getPropertyValue('--wahlberg-header-offset').trim();
+
+            return (parseFloat(top) || 0) + (this.headerEl ? this.headerEl.offsetHeight : 0);
+        }
+
+        /**
+         * The top of what's actually on screen, in viewport coordinates: the top of
+         * the pane, or the underside of the header's band where that's over it.
+         */
+        visibleTop(el) {
+            return Math.max(el.getBoundingClientRect().top, this.stickyAllowance());
+        }
+
+        /**
+         * Where each block of source starts, in the textarea's own coordinates.
+         *
+         * Measured on one throwaway copy of the textarea with a zero-width marker at
+         * every block boundary — the same trick the caret is found with, for a
+         * handful of points rather than one. Zero-width because a marker that took
+         * up room would wrap the text differently from the textarea it's standing in
+         * for.
+         */
+        sourceOffsets() {
+            const value = this.source.value;
+            const starts = sourceBlocks(value);
+
+            if (!starts.length) {
+                return [];
+            }
+
+            const copy = mirror(this.source, this.editorEl, '');
+            const markers = [];
+            let at = 0;
+
+            starts.forEach((start) => {
+                copy.appendChild(document.createTextNode(value.slice(at, start)));
+                at = start;
+
+                const marker = document.createElement('span');
+                marker.textContent = '​';
+                copy.appendChild(marker);
+                markers.push(marker);
+            });
+
+            copy.appendChild(document.createTextNode(value.slice(at)));
+
+            const base = copy.getBoundingClientRect().top;
+            const offsets = markers.map((marker) => marker.getBoundingClientRect().top - base);
+
+            copy.remove();
+
+            return offsets;
+        }
+
+        /**
+         * The same for the preview, where the blocks are elements and there's nothing
+         * to measure on a copy: they're already laid out.
+         */
+        previewOffsets() {
+            const base = this.previewEl.getBoundingClientRect().top - this.previewEl.scrollTop;
+
+            return Array.from(this.previewEl.children)
+                .map((el) => el.getBoundingClientRect().top - base);
+        }
+
+        /**
+         * Which block the visible top of a pane has reached, and how far into it.
+         */
+        anchorIn(el, offsets) {
+            if (!offsets.length) {
+                return null;
+            }
+
+            const at = this.visibleTop(el) - el.getBoundingClientRect().top + el.scrollTop;
+
+            // Above the first block, so the author is at the top of the field and
+            // there's nothing to keep: the other pane starts at the top as well, and
+            // moving the page to say so would only be a jolt
+            if (at <= offsets[0]) {
+                return null;
+            }
+
+            let index = 0;
+
+            while (index + 1 < offsets.length && offsets[index + 1] <= at) {
+                index++;
+            }
+
+            const span = (offsets[index + 1] ?? offsets[index] + 1) - offsets[index];
+
+            return {
+                index: index,
+                // What the index is out of, so the other pane can tell whether the
+                // two documents came out the same shape
+                of: offsets.length,
+                fraction: span > 0 ? Math.min(1, Math.max(0, (at - offsets[index]) / span)) : 0,
+            };
+        }
+
+        /**
+         * Scrolls a pane to the block the other one was showing.
+         */
+        applyAnchor(el, offsets, anchor) {
+            if (!anchor || !offsets.length) {
+                return;
+            }
+
+            // One block, one element — nearly always. Where the two disagree, the
+            // index is scaled rather than trusted: a list with blank lines between
+            // its items is several blocks of source and a single `<ul>`, and landing
+            // in the right region beats landing on the wrong paragraph
+            const scaled = anchor.of === offsets.length
+                ? anchor.index
+                : Math.round(anchor.index * (offsets.length - 1) / Math.max(1, anchor.of - 1));
+
+            const index = Math.min(offsets.length - 1, Math.max(0, scaled));
+            const span = (offsets[index + 1] ?? offsets[index] + 1) - offsets[index];
+            const target = offsets[index] + anchor.fraction * span;
+
+            const rect = el.getBoundingClientRect();
+            const top = this.visibleTop(el);
+
+            // A field at its maximum height scrolls its own text, and the page makes
+            // up whatever's left over. Not one or the other: a textarea reports the
+            // height of everything in it whether or not it's scrolling any of it, so
+            // asking `scrollHeight` alone would have the page stand still while a
+            // `overflow: hidden` textarea was told to scroll and quietly didn't
+            const overflow = window.getComputedStyle(el).overflowY;
+            const scrolls = overflow === 'auto' || overflow === 'scroll';
+            const room = scrolls ? Math.max(0, el.scrollHeight - el.clientHeight) : 0;
+
+            // Where the pane would have to be scrolled to for the block to land on
+            // its own, and how far it can actually go
+            const scrolled = Math.max(0, Math.min(target - (top - rect.top), room));
+
+            if (scrolls) {
+                el.scrollTop = scrolled;
+            }
+
+            // The pane's own top doesn't move when its text does, so what's left is
+            // the page's to cover
+            const delta = rect.top + target - scrolled - top;
+
+            // A field that fits on screen has nowhere to go, and would only jump
+            if (Math.abs(delta) > 1) {
+                window.scrollBy(0, delta);
+            }
+        }
+
+        /**
+         * Puts the preview where the source was, once there's something to put it
+         * against.
+         *
+         * Twice, where there are images: one that hasn't loaded has no height yet,
+         * so anything under it slides down the moment it arrives.
+         */
+        restorePreview() {
+            this.applyAnchor(this.previewEl, this.previewOffsets(), this.anchor);
+
+            this.previewEl.querySelectorAll('img').forEach((img) => {
+                if (img.complete) {
+                    return;
+                }
+
+                img.addEventListener('load', () => {
+                    // Unless the author has moved on, in which case it isn't ours
+                    // to correct any more
+                    if (this.previewing()) {
+                        this.applyAnchor(this.previewEl, this.previewOffsets(), this.anchor);
+                    }
+                }, {once: true});
+            });
+        }
+
         // -- Tabs -------------------------------------------------------------
 
         /**
@@ -2067,6 +2315,18 @@
 
             const previewing = name === 'preview';
 
+            // Already here. Clicking the tab you're on shouldn't do anything, and
+            // measuring the pane that's hidden would read every rect as zero — which
+            // resolves to the last block in the document, and jumps there
+            if (previewing === this.previewing()) {
+                return;
+            }
+
+            // Where the pane being left had got to, taken while it's still laid out
+            this.anchor = previewing
+                ? this.anchorIn(this.source, this.sourceOffsets())
+                : this.anchorIn(this.previewEl, this.previewOffsets());
+
             if (previewing) {
                 // The field's floor, not the height the editor had grown to: enough
                 // that the spinner doesn't collapse the box, while letting the
@@ -2112,15 +2372,23 @@
             this.editorEl.hidden = previewing;
             this.previewEl.hidden = !previewing;
 
+            // `preventScroll` on both: focus drags whatever it lands on into view,
+            // which for a textarea means the caret and for a tab means the top of
+            // the field — neither of which is where the author was reading. The
+            // anchor below is what decides that
             if (previewing) {
                 // Focus follows the author out of the textarea, so the shortcut
                 // that got here is still inside the field on the way back
-                this.previewTab.focus();
+                this.previewTab.focus({preventScroll: true});
                 this.renderPreview();
             } else {
-                this.source.focus();
+                this.source.focus({preventScroll: true});
                 this.autoGrow();
                 this.syncScroll();
+
+                // After `autoGrow()`, which is what settles the height everything
+                // here is measured against
+                this.applyAnchor(this.source, this.sourceOffsets(), this.anchor);
             }
         }
 
@@ -2139,7 +2407,10 @@
         renderPreview() {
             const markdown = this.source.value;
 
+            // Already showing this, so there's nothing to fetch — but the author
+            // has come back to it from somewhere else in the document
             if (markdown === this.previewed) {
+                this.restorePreview();
                 return;
             }
 
@@ -2162,6 +2433,7 @@
                 },
             }).then((response) => {
                 this.previewEl.innerHTML = response.data.html;
+                this.restorePreview();
             }).catch(() => {
                 this.previewed = null;
                 this.previewEl.innerHTML = '';
