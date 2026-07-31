@@ -8,9 +8,8 @@
     const MOD_SHIFT_LABEL = IS_MAC ? '⌘⇧' : 'Ctrl+Shift+';
 
     // How much of the window a field has to fill before its header holds still and
-    // lets the text scroll under it. Under this the header is barely gone before the
-    // field is too, and sticking it would only mean sliding it over the last of the
-    // text on the way past — motion in exchange for nothing.
+    // lets the text scroll under it. Under this it's barely gone before the field
+    // is too, and sticking it would only slide the strip over the last few rows.
     const STICKY_SHARE = 0.5;
 
     // A list item, split into indent / marker / spacing / content
@@ -211,17 +210,15 @@
     /**
      * Takes the stops out of a snippet body and says where each one was.
      *
-     * Visited in numbered order with `$0` last, which is the convention every editor
-     * with snippets uses — and the one that lets `$0` go on meaning exactly what it
-     * meant when it was the only marker there was: where the caret ends up. A body
-     * carrying nothing but `$0` therefore behaves as it always did.
+     * Numbered order with `$0` last, the convention every editor with snippets uses
+     * — and the one that lets `$0` go on meaning what it meant when it was the only
+     * marker there was, so a body carrying nothing else behaves as it always did.
      *
-     * A default is left in the text and the stop covers it, so landing on one
-     * selects it and the next thing typed replaces it. That's what makes a run
-     * readable: a bare stop is somewhere to go, a filled one says what goes there.
+     * A default stays in the text with the stop covering it, so landing on one
+     * selects it and the next thing typed replaces it.
      *
-     * Returns the body with the markers gone, and a `from`/`to` for each stop —
-     * equal where the stop was bare.
+     * Returns the body without the markers, and a `from`/`to` per stop, equal where
+     * the stop was bare.
      */
     function snippetStops(body) {
         const found = [];
@@ -264,14 +261,13 @@
      * the author fills one in.
      *
      * The awkward part is the boundary. Text typed at the end of the stop being
-     * filled in belongs to that stop, not to whatever begins where it used to end —
-     * so what follows is decided by the stop's old end rather than by the caret.
-     * Measuring from the caret is what turns a bare stop after a shortened default
-     * into a selection the width of the edit: its two ends move by different
-     * amounts, and a stop whose ends disagree is a range.
+     * filled in belongs to that stop, not to whatever begins where it used to end,
+     * so what follows is decided by the stop's old end and not by the caret. Measure
+     * from the caret and a bare stop after a shortened default comes out a selection
+     * the width of the edit, its two ends having moved by different amounts.
      *
      * `at` is the stop being filled in, `edit` where the change began, `caret` where
-     * it left the caret, and `delta` how much longer the value got.
+     * it left the caret, `delta` how much longer the value got.
      */
     function shiftStops(stops, at, edit, caret, delta) {
         const current = stops[at];
@@ -476,9 +472,8 @@
             // The stops of a snippet being filled in, while Tab belongs to them
             this.snippet = null;
 
-            // How tall the field stands writing, which is what decides whether its
-            // header sticks — kept, because the preview is shorter and can't be
-            // asked
+            // How tall the field stands writing, which decides whether the header
+            // sticks. Kept, since the preview is shorter and can't be asked
             this.stickyHeight = 0;
 
             // The floating toolbar's state: summoned to the caret rather than
@@ -489,9 +484,8 @@
             this.selecting = false;
 
             // The band behind the line being written. Built here rather than in the
-            // template because it's decoration: nothing outside this class needs to
-            // know it exists, and a field that themes it away pays for nothing.
-            // First child, so it paints under both text layers
+            // template because it's decoration, and nothing outside this class needs
+            // to know it exists. First child, so it paints under both text layers
             this.activeLine = document.createElement('div');
             this.activeLine.className = 'wahlberg-active-line';
             this.activeLine.hidden = true;
@@ -602,12 +596,10 @@
                 return;
             }
 
-            // The probe copies letter-spacing across with the rest of the metrics, so
-            // the layer was measured through whatever correction is already on it.
-            // What comes out is therefore the drift still left, not the whole of it,
-            // which is what makes a second run safe: a face that now matches reads as
-            // no drift, and the correction already in place has to stay where it is
-            // rather than be cleared out from under the caret.
+            // The probe copies letter-spacing with the rest of the metrics, so the
+            // layer was measured through whatever correction is already on it. What
+            // comes out is the drift still left, not all of it, which is what makes
+            // a second run safe rather than one that clears a working correction.
             const applied = parseFloat(this.highlight.style.letterSpacing) || 0;
             const drift = source - layer;
 
@@ -629,16 +621,13 @@
          * Decides whether the tokens can carry weight and slope as well as colour.
          *
          * They can whenever the face the browser picks advances exactly as the
-         * regular one does, which in a real monospace family it will, since equal
-         * advances across every cut is what makes a font monospace. What can't be
+         * regular one does, which a real monospace family will. What can't be
          * trusted is a fabricated cut: asked for a bold the family hasn't got, the
-         * browser thickens the regular one itself, and depending on the engine that
-         * comes out wider. Wider means the layer creeps out from under the caret.
+         * browser thickens the regular one itself, and that can come out wider —
+         * wider meaning the layer creeps out from under the caret.
          *
-         * So measure the face before using it, and where it doesn't hold fall back
-         * to colour alone, still perfectly legible since the markers are right there
-         * in the text. Measured against the layer rather than the textarea because
-         * the layer is the only side that gets styled.
+         * So measure before using it, and fall back to colour alone where it doesn't
+         * hold. Measured on the layer, which is the only side that gets styled.
          */
         alignFaces() {
             if (!this.highlight) {
@@ -1153,10 +1142,9 @@
                 menu.querySelectorAll('.menu-item').forEach((item) =>
                     item.classList.toggle('is-highlighted', item === current));
 
-                // Best effort: it's what gives Craft's focus ring, but the class
-                // above is what guarantees the highlight is visible either way.
-                // Not when `/` opened it — focus has to stay in the textarea, or
-                // the next keystroke would go to the menu instead of the query
+                // Best effort: it gives Craft's focus ring, but the class above is
+                // what makes the highlight visible either way. Not when `/` opened
+                // it, or the next keystroke would go to the menu, not the query
                 if (focus) {
                     current.focus();
                 }
@@ -1308,13 +1296,10 @@
          * Opens the insert menu, at the caret or under whatever opened it.
          *
          * The caret is the default because that's where whatever's picked is going,
-         * and because `/` and the shortcut have to work when the button isn't on the
-         * toolbar at all. `visible` rather than an attribute of our own: Craft hides
-         * `.menu:not(.visible)` outright, and that outranks anything the plugin's
-         * own stylesheet says about display.
-         *
-         * `commands` is what tells the two snippet triggers from `/`: the button and
-         * ⌘⇧K have meant snippets since before there was anything else in here.
+         * and because `/` and the shortcut work with the button off the toolbar
+         * entirely. `visible` rather than an attribute of our own: Craft hides
+         * `.menu:not(.visible)` outright, which outranks anything this stylesheet
+         * says about display. `commands` tells the snippet triggers from `/`.
          */
         openInsert(anchor, commands) {
             if (!this.insertMenu || this.insertOpen()) {
@@ -1343,17 +1328,15 @@
             this.insertMenu.style.top = at.top + 'px';
             this.insertMenu.style.left = Math.max(0, Math.min(left, room)) + 'px';
 
-            // The Snippets button lights up for the menu it opened, and for its own
-            // shortcut. Not for `/`, which is a menu at the caret that the button
-            // had nothing to do with — and which is offering more than snippets
+            // The Snippets button lights up for the menu it opened and for its own
+            // shortcut, not for a `/` menu it had nothing to do with
             if (!typed) {
                 this.container.querySelectorAll('[data-snippets-trigger]')
                     .forEach((button) => button.setAttribute('aria-expanded', 'true'));
             }
 
-            // Opened by typing, focus stays in the textarea so the author can carry
-            // on typing to narrow the list. Opened any other way it moves into the
-            // menu, which is what gives Craft's focus ring
+            // Typed, focus stays in the textarea so the author can go on narrowing
+            // the list. Otherwise it moves into the menu, for Craft's focus ring
             this.driveMenu(this.insertMenu, () => this.closeInsert(), !typed);
         }
 
@@ -1373,10 +1356,9 @@
 
         // -- Typing `/` -------------------------------------------------------
         //
-        // A menu at the caret, listing the things that go in at one. It's the only
-        // way to reach the element pickers without the toolbar — which a field with
-        // a floating toolbar hasn't got until something is selected, and the whole
-        // point of an entry link is that there isn't.
+        // The only way to the element pickers without a toolbar, which a floating
+        // one hasn't got until something is selected — and the point of an entry
+        // link is that nothing is.
 
         /**
          * Called on every keystroke: opens the menu on a `/` that starts something,
@@ -1621,10 +1603,9 @@
             let text = parsed.text;
             let stops = parsed.stops;
 
-            // Every occurrence, so a snippet can use the selection twice. Whatever
-            // was after it moves along by the difference — including the far end of
-            // a stop whose default was the selection, which is how `${1:$SELECTION}`
-            // comes out covering the text it stood in for
+            // Every occurrence, so a snippet can use the selection twice. What
+            // followed moves along by the difference, including the far end of a
+            // stop that defaulted to it, which is how `${1:$SELECTION}` works
             for (let at = text.indexOf(marker); at !== -1; at = text.indexOf(marker, at + selected.length)) {
                 const shift = selected.length - marker.length;
 
@@ -1649,10 +1630,9 @@
 
         // -- Snippet stops ----------------------------------------------------
         //
-        // A body with more than one stop starts a run: Tab moves on, Shift+Tab back,
-        // Escape gives Tab back to the browser. Borrowed for as long as the run
-        // lasts and no longer — Tab is how you leave a field, and a textarea that
-        // kept it would be a textarea you couldn't get out of.
+        // More than one stop starts a run: Tab moves on, Shift+Tab back, Escape
+        // hands Tab back. Borrowed only while a run lasts — Tab is how you leave a
+        // field, and one that kept it would be one you couldn't get out of.
 
         startSnippet(base, length, stops) {
             // One stop is where the caret goes, which needs no run
@@ -1747,10 +1727,9 @@
                 return;
             }
 
-            // As every other control on the toolbar does. It matters more here than
-            // it looks: the cheatsheet is read against something half-written, so
-            // the selection has to survive opening it — and a floating toolbar is
-            // up for exactly as long as the field has the focus this would take
+            // As every other control on the toolbar does. The cheatsheet is read
+            // against something half-written, so the selection has to survive it —
+            // and a floating toolbar is up only while the field has focus
             this.guideBtn.addEventListener('mousedown', (event) => event.preventDefault());
             this.guideBtn.addEventListener('click', () => this.toggleGuide());
         }
@@ -1814,10 +1793,9 @@
                 ? new TextEncoder().encode(value).length
                 : Array.from(value).length;
 
-            // The count twice: once formatted for reading, once raw for the plural
-            // rule to pick a branch with. A `#` inside a plural comes out as the
-            // bare number, which is `1234 words` where the limit beside it already
-            // says `1,234`
+            // The count twice: formatted for reading, raw for the plural rule to
+            // pick a branch with. A `#` inside a plural comes out unformatted,
+            // which is `1234 words` beside a limit already reading `1,234`
             const count = (message, n) => Craft.t('wahlberg', message, {
                 n: n,
                 count: Craft.formatNumber(n),
@@ -1867,13 +1845,9 @@
                     return;
                 }
 
-                // The two element pickers, bound whether or not their buttons are
-                // on the toolbar, as the unshifted three are. They matter most to a
-                // field with a floating toolbar, where reaching a button means
-                // picking out text first — and inserting an entry is the one thing
-                // an author does with nothing selected
-                // `U` rather than the `A` that would have matched Asset: macOS
-                // browsers take ⌘⇧A for themselves, and it never reaches the page
+                // The element pickers, bound whether or not their buttons are on
+                // the toolbar, as the unshifted three are. `U` rather than the `A`
+                // that would have matched Asset: macOS browsers keep ⌘⇧A
                 const command = {e: 'entry', u: 'asset'}[key];
 
                 if (command) {
@@ -1996,9 +1970,8 @@
          * the one above.
          *
          * The setting exists because a single newline is the one piece of Markdown
-         * that does nothing you can see: with *Preserve Line Breaks* on it's a
-         * `<br>`, and with it off it's a space. Neither is a paragraph, and pressing
-         * Enter twice is not a thing anyone arrives already knowing.
+         * that does nothing you can see: a `<br>` with *Preserve Line Breaks* on, a
+         * space with it off. Neither is a paragraph.
          */
         paragraphBreak(event) {
             const source = this.source;
@@ -2100,15 +2073,13 @@
         /**
          * How far down the sticky header has to start.
          *
-         * Craft pins the page header to the top of the window once the page scrolls,
-         * and a field header stuck at the top of the window would hold still
-         * underneath it. So the offset is that header's height — but only where the
-         * page is what's scrolling. In a slideout, or anywhere else with a scrolling
-         * box of its own, our header sticks to the top of that box, which is already
-         * below whatever chrome the thing has.
+         * Craft pins the page header once the page scrolls, and a field header stuck
+         * at the top of the window would hold still underneath it. So the offset is
+         * that header's height, but only where the page is what scrolls: a slideout
+         * has a scrolling box of its own, and our header already stops below its
+         * chrome.
          *
-         * Kept separate from `--wahlberg-sticky-top`, which is what a control panel
-         * with something else along the top sets to overrule all of this.
+         * Separate from `--wahlberg-sticky-top`, which overrules the lot.
          */
         measureStickyTop() {
             const header = this.pageScrolls() ? document.querySelector('#header') : null;
@@ -2414,12 +2385,10 @@
          * Whether something the panel opened is still up: one of the menus, the
          * snippet list, the cheatsheet.
          *
-         * Each of them is anchored to a button on the panel, so taking the panel
-         * away would take the thing the author is reading with it — and Escape
-         * belongs to them before it belongs to the panel, for the same reason.
-         *
-         * Keyed off the ARIA state each of them keeps in step rather than off
-         * anything of ours, which is how the button styling reads it too.
+         * Each is anchored to a button on the panel, so taking the panel away would
+         * take the thing the author is reading with it, and Escape belongs to them
+         * first for the same reason. Keyed off the ARIA state they keep in step,
+         * which is how the button styling reads it too.
          */
         floatingBusy() {
             return !!this.floating && !this.floating.hidden &&
@@ -2571,12 +2540,9 @@
          * whatever it's clearing, plus its own height.
          *
          * What it can occupy rather than what it currently does, and its height
-         * rather than where it is. The header only sticks on a field over the
-         * threshold, and the same field is over it writing and under it previewing,
-         * since rendered Markdown is shorter than its source. Reading the header's
-         * live position would therefore give one answer on the way out and another
-         * on the way back, and the difference between them is a page that creeps a
-         * little further every time the author switches tabs.
+         * rather than where it is. Reading the header's live position gives one
+         * answer on the way out and another on the way back, and the difference
+         * between them is a page that creeps further with every tab switch.
          */
         stickyAllowance() {
             const styles = window.getComputedStyle(this.container);

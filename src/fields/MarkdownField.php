@@ -160,7 +160,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
      * @var bool Whether the toolbar should sit over the selection rather than in a
      * strip above the editor. Less a look than a statement about who’s writing in
      * the field: with it on, nothing formatting-related is on screen until the
-     * author selects something, the Markdown guide button included.
+     * author selects something, the guide button included.
      */
     public bool $floatingToolbar = false;
 
@@ -536,8 +536,8 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'maxRows' => $this->maxRows,
             'placeholder' => $this->placeholder,
             // Off where the setting is hidden, so the key does what the settings
-            // screen says it does. The stored value is left alone, and comes back
-            // if the field stops rendering inline
+            // screen says. The stored value survives and comes back if the field
+            // stops rendering inline
             'paragraphOnEnter' => $this->paragraphOnEnter && !$this->inlineOnly,
             'charLimit' => $this->charLimit,
             'byteLimit' => $this->byteLimit,
@@ -685,7 +685,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             // A field with no paragraphs in its output has no use for a key that
             // makes them. Hidden rather than disabled: a disabled control posts
             // nothing, and Craft rebuilds a field from what was posted, so the
-            // setting would quietly revert to its default on the next save
+            // setting would revert to its default on the next save
             'reverseToggle' => 'paragraph-on-enter-container',
         ]) . Html::tag('div', Cp::lightswitchFieldHtml([
             'label' => Craft::t('wahlberg', 'New Paragraph on Enter'),

@@ -207,13 +207,12 @@ abstract class Editor
      * The editor’s read-only twin: the same surface and the same type, showing the
      * Markdown as it was written, with no textarea, no toolbar and nothing to run.
      *
-     * For anywhere a value is being shown rather than edited — a revision, a
-     * disabled form, a slideout that only reports. Craft renders those by disabling
-     * a field’s inputs and throwing away the JS registered alongside them, which the
-     * editor can’t survive: the textarea paints its own text transparent so the
-     * highlighted layer behind it shows through, and that layer is filled by the JS
-     * that never ran. What’s left is a box that looks empty. Hence no editor here at
-     * all, rather than a disabled one.
+     * For anywhere a value is shown rather than edited: a revision, a disabled
+     * form, a slideout that only reports. Craft renders those by disabling a field’s
+     * inputs and throwing away the JS that came with them, which the editor can’t
+     * survive — the textarea paints its own text transparent for the layer behind it
+     * to show through, and that layer is filled by the JS that never ran. Hence no
+     * editor at all rather than a disabled one.
      *
      * @param array{
      *     value?: string,
@@ -330,14 +329,13 @@ abstract class Editor
      * the commands left out, since both of those have meant snippets all along.
      *
      * Craft's disclosure menu anchors to the button that opens it, which is the
-     * wrong place: whatever's picked goes in where the author is typing, and `/`
-     * has no button at all. Same markup Craft's menus use, so the classes carry
-     * the styling, but driven by the editor itself.
+     * wrong place: whatever's picked goes in where the author is typing, and `/` has
+     * no button at all. Same markup, so Craft's classes carry the styling, but
+     * driven by the editor itself.
      *
-     * The commands don't follow *Toolbar Buttons*, and shouldn't: that setting says
-     * what the toolbar shows, not what the field can do. Their shortcuts work with
-     * every button unticked, and so does the snippet half of this menu — one menu
-     * answering to two rules would be the odd thing.
+     * The commands don't follow *Toolbar Buttons*: that setting says what the
+     * toolbar shows, not what the field can do. Their shortcuts work with every
+     * button unticked, and so does the snippet half of this menu.
      *
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
      */
@@ -485,10 +483,9 @@ abstract class Editor
     {
         $labels = self::commands();
 
-        // A shortcut is the key the modifier is held with, prefixed `shift+` where
-        // Shift is held too. The editor turns that into ⌘K or ⌘⇧E for the tooltip,
-        // and Ctrl where the platform says so, which is why this is a key rather
-        // than a label
+        // The key the modifier is held with, prefixed `shift+` where Shift is too.
+        // A key rather than a label, since the editor writes it as ⌘K or ⌘⇧E, or
+        // with Ctrl where the platform says so
         $button = function(string $command, string $icon, ?string $shortcut = null) use ($labels) {
             return [
                 'command' => $command,

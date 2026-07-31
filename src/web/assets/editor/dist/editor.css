@@ -24,18 +24,16 @@
     --wahlberg-pad-block: 12px;
     --wahlberg-pad-inline: 14px;
 
-    /* How wide the text is allowed to run before *Line Length* starts holding it
-       back. Roughly 80 characters, the measure plain text has been wrapped at for
-       as long as there's been plain text.
+    /* How wide the text runs before *Line Length* holds it back. Roughly 80
+       characters, the measure plain text has been wrapped at for as long as
+       there's been plain text.
 
-       In `em` and not `ch`, which is the obvious unit for a monospace column and
-       the wrong one here: `ch` is the width of a `0` in the face the browser
-       actually resolved, and a textarea and a div don't always resolve the same
-       one out of the same stack — which is what `alignMetrics()` is for. Two
-       layers on two different `ch` would take two different paddings and wrap in
-       two different places, and no amount of letter-spacing correction brings
-       those back together. `em` is the font size, which both layers take from the
-       same custom property. */
+       In `em` and not the `ch` a monospace column asks for: `ch` is the width of a
+       `0` in the face the browser resolved, and the two layers don't always
+       resolve the same one out of the same stack — see `alignMetrics()`. Two
+       different `ch` means two different paddings and two different wrap points,
+       which no letter-spacing correction can bring back together. `em` is the font
+       size, which both layers take from the same property. */
     --wahlberg-measure: 48em;
 
     /* Syntax palette. Override these to retheme the editor. Colour only, on
@@ -73,8 +71,8 @@
        either side. */
     --wahlberg-active-line-pad: 1px;
 
-    /* What the snippet menu is positioned against, so it can sit under the caret
-       or under the button that opened it wherever the field itself sits */
+    /* What the insert menu and the floating toolbar are positioned against, so
+       both sit where the field does */
     position: relative;
     border: 1px solid var(--hairline-color);
     border-radius: var(--large-border-radius, 5px);
@@ -108,24 +106,21 @@
 }
 
 /* The header holds still while the field scrolls under it, so the tabs and the
-   buttons are where they were rather than somewhere off the top of the screen.
-   Only on a field tall enough for that to be a problem — the JS adds the class,
-   since the height is its business.
+   buttons stay where they were. Only on a field tall enough for that to matter,
+   which the JS decides, since the height is its business.
 
    It starts below Craft's own page header, which pins itself to the top of the
-   window once the page scrolls. That height is measured rather than declared —
-   Craft has no token for it, and it isn't a fixed number — so the JS puts it in
-   `--wahlberg-header-offset`, and it's zero wherever the page isn't what's
-   scrolling. `--wahlberg-sticky-top` overrules the pair of them, for a control
-   panel that has put something else along the top. */
+   window once the page scrolls. Craft has no token for that height and it isn't a
+   fixed number, so the JS measures it into `--wahlberg-header-offset`, zero
+   wherever the page isn't what scrolls. `--wahlberg-sticky-top` overrules both. */
 
 .wahlberg--sticky .wahlberg-header {
     position: sticky;
     inset-block-start: var(--wahlberg-sticky-top, var(--wahlberg-header-offset, 0px));
 
-    /* Over the floating toolbar and the snippet menu, both of which are anchored
-       to text: a panel pointing at a line that's gone under the header should go
-       under it too, rather than hang over the chrome pointing at nothing */
+    /* Over the floating toolbar and the insert menu, both anchored to text: a
+       panel pointing at a line that's gone under the header should go under it
+       too, not hang over the chrome pointing at nothing */
     z-index: 11;
 
     /* It was borrowing the fill of the field behind it, which is no longer behind
@@ -313,12 +308,9 @@
     fill: currentcolor;
 }
 
-/* The floating toolbar: the same strip, lifted out of the header and put over the
-   text it's formatting. Up when there's a selection to act on, and on ⌘⇧F at the
-   caret.
-
-   Positioned against the field rather than the writing surface, which clips its
-   own overflow — the panel has to be able to sit under the last line and past
+/* The floating toolbar: the same strip, out of the header and over the text it's
+   formatting. Positioned against the field rather than the writing surface, which
+   clips its own overflow — the panel has to sit under the last line and past
    either edge. */
 
 .wahlberg-floating {
@@ -428,15 +420,13 @@
     font-feature-settings: 'liga' 0, 'clig' 0, 'calt' 0;
 }
 
-/* Line length. The text column is capped by padding rather than by a width, so
-   both layers, the preview and the read-only rendering all narrow together and
-   every measurement taken off a computed style follows without being told.
-   `max()` so a field too narrow for the measure keeps its ordinary padding and
-   nothing goes negative.
+/* Line length. Capped by padding rather than a width, so both layers, the preview
+   and the read-only rendering narrow together, and every measurement taken off a
+   computed style follows without being told. `max()` keeps a field too narrow for
+   the measure on its ordinary padding.
 
-   The slack goes at the end of the line, or half at each end when the setting
-   asks for centred — which is the only difference between the two, so the cap
-   itself is declared once. */
+   The slack goes at the end of the line, or half at each end when centred, which
+   is the only difference between the two — so the cap is declared once. */
 
 .wahlberg--measured :is(.wahlberg-source, .wahlberg-highlight, .wahlberg-preview, .wahlberg-static) {
     padding-inline-end: max(
