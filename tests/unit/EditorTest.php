@@ -64,21 +64,17 @@ class EditorTest extends TestCase
         self::assertStringContainsString('data-command-group', $html);
     }
 
-    #[TestDox('the commands follow the toolbar setting, so a field that turned them off keeps them off')]
-    public function testInsertMenuCommandsFollowTheToolbar(): void
+    #[TestDox('the commands don’t follow the toolbar setting, since neither do their shortcuts')]
+    public function testInsertMenuCommandsIgnoreTheToolbar(): void
     {
-        $snippets = $this->snippets();
+        // `Toolbar Buttons` says what the toolbar shows, not what the field can do:
+        // ⌘⇧E and ⌘⇧U work with every button unticked, and so does this menu — the
+        // snippets in it are already offered whether or not the button is
+        $html = Editor::insertMenuHtml($this->snippets());
 
-        $html = Editor::insertMenuHtml($snippets, ['entry', 'snippets']);
-
-        self::assertStringContainsString('data-command="entry"', $html);
-        self::assertStringNotContainsString('data-command="asset"', $html);
-
-        // Nothing left to fence off, so no divider hanging over one group
-        $html = Editor::insertMenuHtml($snippets, ['bold']);
-
-        self::assertStringNotContainsString('data-command=', $html);
-        self::assertStringNotContainsString('<hr>', $html);
+        foreach (array_keys(Editor::INSERT_COMMANDS) as $command) {
+            self::assertStringContainsString("data-command=\"$command\"", $html);
+        }
     }
 
     #[TestDox('commands alone are still a menu, since `/` reaches them without any snippets')]
@@ -88,13 +84,9 @@ class EditorTest extends TestCase
 
         self::assertStringContainsString('data-command="entry"', $html);
         self::assertStringNotContainsString('data-snippet=', $html);
-        self::assertStringNotContainsString('<hr>', $html);
-    }
 
-    #[TestDox('nothing to offer means no menu at all, rather than an empty one')]
-    public function testInsertMenuEmpty(): void
-    {
-        self::assertSame('', Editor::insertMenuHtml([], ['bold']));
+        // Nothing on the other side of it, so no divider hanging off the end
+        self::assertStringNotContainsString('<hr>', $html);
     }
 
     #[TestDox('a snippet without an icon still gets one, so the labels line up')]
@@ -135,7 +127,7 @@ class EditorTest extends TestCase
         self::assertSame('', Editor::snippetsButtonHtml([], ['snippets']));
 
         // `/` and the shortcut open it either way, so the menu is rendered regardless
-        self::assertNotSame('', Editor::insertMenuHtml($snippets, ['bold', 'entry']));
+        self::assertStringContainsString('data-snippet="callout"', Editor::insertMenuHtml($snippets));
     }
 
     #[TestDox('the guide button follows the toolbar setting')]

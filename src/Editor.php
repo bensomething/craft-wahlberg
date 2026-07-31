@@ -198,7 +198,7 @@ abstract class Editor
             'snippetsButton' => $showToolbar ? $snippetsButton : null,
             // Outside the toolbar: `/` and the shortcut open it whether or not the
             // button is there, and it's positioned at the caret rather than at either
-            'insertMenu' => self::insertMenuHtml($snippets, $buttons),
+            'insertMenu' => self::insertMenuHtml($snippets),
             'guide' => $showToolbar ? $guide : null,
             'inputAttributes' => $config['inputAttributes'],
         ], View::TEMPLATE_MODE_CP);
@@ -335,10 +335,14 @@ abstract class Editor
      * has no button at all. Same markup Craft's menus use, so the classes carry
      * the styling, but driven by the editor itself.
      *
+     * The commands don't follow *Toolbar Buttons*, and shouldn't: that setting says
+     * what the toolbar shows, not what the field can do. Their shortcuts work with
+     * every button unticked, and so does the snippet half of this menu — one menu
+     * answering to two rules would be the odd thing.
+     *
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
-     * @param list<string>|null $only Commands the field is offering
      */
-    public static function insertMenuHtml(array $snippets, ?array $only = null): string
+    public static function insertMenuHtml(array $snippets): string
     {
         $labels = self::commands();
 
@@ -355,9 +359,7 @@ abstract class Editor
         $commands = [];
 
         foreach (self::INSERT_COMMANDS as $command => $icon) {
-            if ($only === null || in_array($command, $only, true)) {
-                $commands[] = $item($icon, $labels[$command], ['command' => $command]);
-            }
+            $commands[] = $item($icon, $labels[$command], ['command' => $command]);
         }
 
         $items = array_map(
@@ -370,18 +372,10 @@ abstract class Editor
             array_values($snippets),
         );
 
-        if ($commands === [] && $items === []) {
-            return '';
-        }
-
-        $groups = [];
-
-        if ($commands !== []) {
-            // Marked so the two triggers that mean snippets can leave it out
-            $groups[] = Html::tag('ul', implode('', $commands), [
-                'data' => ['command-group' => true],
-            ]);
-        }
+        // Marked so the two triggers that mean snippets can leave it out
+        $groups = [Html::tag('ul', implode('', $commands), [
+            'data' => ['command-group' => true],
+        ])];
 
         if ($items !== []) {
             $groups[] = Html::tag('ul', implode('', $items));

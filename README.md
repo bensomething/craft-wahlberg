@@ -205,7 +205,7 @@ Typing <kbd>/</kbd> opens it **at the caret**, and what you type after that narr
 
 Neither needs the button: both work with **Snippets** unticked in *Toolbar Buttons*, and with the toolbar switched off altogether. Arrows and <kbd>Tab</kbd> move through the list, <kbd>Enter</kbd> inserts, <kbd>Esc</kbd> closes and puts the caret back.
 
-The <kbd>/</kbd> menu also offers **Entry** and **Asset**, above the snippets and divided off from them — the two commands that put something in at the caret rather than reshaping what's around it, which is the only kind a menu opened by typing can offer. There's nothing selected to make bold. They follow *Toolbar Buttons* like the buttons do, so a field that turned them off keeps them off, and the menu is there for them alone on a field with no snippets at all.
+The <kbd>/</kbd> menu also offers **Entry** and **Asset**, above the snippets and divided off from them — the two commands that put something in at the caret rather than reshaping what's around it, which is the only kind a menu opened by typing can offer. There's nothing selected to make bold. They don't follow *Toolbar Buttons*. That setting says what the toolbar shows, not what the field can do — <kbd>⌘⇧E</kbd> and <kbd>⌘⇧U</kbd> work with every button unticked, and so do the snippets in this menu — so the menu is there in full either way, and on a field with no snippets at all it's there for the two commands alone.
 
 <kbd>⌘⇧K</kbd> and the button stay snippets-only. Both have meant snippets since before there was anything else in the list.
 
@@ -449,7 +449,7 @@ Enter continues a list or a blockquote onto the next line, and ends it on an emp
 
 ### What Enter does
 
-With *New Paragraph on Enter* on, Enter leaves a blank line behind it and <kbd>⇧Enter</kbd> gives the single newline — the division every rich text editor makes.
+With *New Paragraph on Enter* on, <kbd>Enter</> leaves a blank line behind it and <kbd>⇧Enter</kbd> gives the single newline — the division every rich text editor makes.
 
 It's off by default, because a field whose authors write Markdown doesn't need it. It's worth turning on for one whose authors don't, because a single newline is the one piece of Markdown that does nothing you can see. With *Preserve Line Breaks* on it renders as a `<br>`; with it off it renders as a space, and the two lines you just separated come back as one. Neither is a paragraph, and "press it twice" is not something anyone arrives already knowing.
 
