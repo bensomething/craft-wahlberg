@@ -27,7 +27,13 @@ abstract class Snippets
     public const CONFIG_FILE = 'wahlberg';
 
     /**
-     * Where the caret ends up. The first one wins; without one it goes to the end.
+     * Where the caret ends up, and the last of the stops a body can carry: `$1`
+     * through `$9` are visited in order first, on Tab, and `$0` is where the run
+     * finishes. Without one the caret goes to the end.
+     *
+     * The numbering is the convention every editor with snippets uses, and it’s why
+     * `$0` still means what it meant when it was the only marker there was — a body
+     * carrying nothing else behaves exactly as it always has.
      */
     public const CARET = '$0';
 

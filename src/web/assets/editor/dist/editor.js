@@ -204,6 +204,46 @@
         return out.join('\n') + '\n';
     }
 
+    // `$0` through `$9` in a snippet body
+    const SNIPPET_STOP = /\$([0-9])/g;
+
+    /**
+     * Takes the stops out of a snippet body and says where each one was.
+     *
+     * Visited in numbered order with `$0` last, which is the convention every editor
+     * with snippets uses — and the one that lets `$0` go on meaning exactly what it
+     * meant when it was the only marker there was: where the caret ends up. A body
+     * carrying nothing but `$0` therefore behaves as it always did.
+     *
+     * Returns the body with the markers gone, and their offsets into it.
+     */
+    function snippetStops(body) {
+        const found = [];
+        let text = '';
+        let at = 0;
+        let match;
+
+        SNIPPET_STOP.lastIndex = 0;
+
+        while ((match = SNIPPET_STOP.exec(body)) !== null) {
+            text += body.slice(at, match.index);
+            at = match.index + match[0].length;
+
+            found.push({
+                // `$0` sorts last rather than first
+                order: match[1] === '0' ? 10 : Number(match[1]),
+                at: text.length,
+            });
+        }
+
+        text += body.slice(at);
+
+        // By number, and by where they were when a number is used twice
+        found.sort((a, b) => a.order - b.order || a.at - b.at);
+
+        return {text: text, stops: found.map((stop) => stop.at)};
+    }
+
     /**
      * The source split into the blocks a parser turns into elements: runs of lines
      * with blank ones between them, and a fenced code block counting as one however
@@ -380,6 +420,9 @@
             // second-guessing them
             this.manuallySized = false;
 
+            // The stops of a snippet being filled in, while Tab belongs to them
+            this.snippet = null;
+
             // How tall the field stands writing, which is what decides whether its
             // header sticks — kept, because the preview is shorter and can't be
             // asked
@@ -442,6 +485,7 @@
                 this.syncActiveLine();
                 this.syncFloating();
                 this.syncSlashCaret();
+                this.syncSnippetCaret();
             };
 
             document.addEventListener('selectionchange', moved);
@@ -476,6 +520,7 @@
             this.renderStats();
             this.syncActiveLine();
             this.syncSlash();
+            this.syncSnippet();
             this.syncPreviewTab();
         }
 
@@ -1515,22 +1560,116 @@
 
             const source = this.source;
             const selected = source.value.slice(source.selectionStart, source.selectionEnd);
-            const selectionMarker = this.config.selection || '$SELECTION';
-            const caretMarker = this.config.caret || '$0';
+            const marker = this.config.selection || '$SELECTION';
 
-            // Every occurrence, so a snippet can use the selection twice
-            let text = body.split(selectionMarker).join(selected);
+            // The stops come out first, so a `$1` in the author's own selected text
+            // is text rather than a stop
+            const parsed = snippetStops(body);
+            let text = parsed.text;
+            let stops = parsed.stops;
 
-            // Found after the selection has gone in, so the offset accounts for it
-            const caret = text.indexOf(caretMarker);
+            // Every occurrence, so a snippet can use the selection twice. Whatever
+            // was after it moves along by the difference
+            for (let at = text.indexOf(marker); at !== -1; at = text.indexOf(marker, at + selected.length)) {
+                const shift = selected.length - marker.length;
 
-            if (caret !== -1) {
-                text = text.slice(0, caret) + text.slice(caret + caretMarker.length);
+                text = text.slice(0, at) + selected + text.slice(at + marker.length);
+                stops = stops.map((stop) => (stop > at ? stop + shift : stop));
             }
 
             source.focus();
-            this.insert(text, caret === -1 ? text.length : caret);
+
+            // Where the text is about to land, which is what the stops are measured
+            // from once it has
+            const base = source.selectionStart;
+
+            this.insert(text, stops.length ? stops[0] : text.length);
             this.autoGrow();
+            this.startSnippet(base, text.length, stops);
+        }
+
+        // -- Snippet stops ----------------------------------------------------
+        //
+        // A body with more than one stop starts a run: Tab moves on, Shift+Tab back,
+        // Escape gives Tab back to the browser. Borrowed for as long as the run
+        // lasts and no longer — Tab is how you leave a field, and a textarea that
+        // kept it would be a textarea you couldn't get out of.
+
+        startSnippet(base, length, stops) {
+            // One stop is where the caret goes, which needs no run
+            if (stops.length < 2) {
+                this.snippet = null;
+                return;
+            }
+
+            this.snippet = {
+                stops: stops.map((stop) => base + stop),
+                at: 0,
+                from: base,
+                to: base + length,
+                // What the value measured when the stops were last correct
+                length: this.source.value.length,
+            };
+        }
+
+        /**
+         * Moves the caret to a stop. Off the end and the run is over, with the caret
+         * left where the last one put it.
+         */
+        goToStop(index) {
+            if (!this.snippet) {
+                return;
+            }
+
+            if (index >= this.snippet.stops.length) {
+                this.snippet = null;
+                return;
+            }
+
+            this.snippet.at = Math.max(0, index);
+
+            const at = this.snippet.stops[this.snippet.at];
+
+            this.source.focus();
+            this.source.setSelectionRange(at, at);
+        }
+
+        /**
+         * Keeps the stops where they belong as the author fills one in. Everything
+         * after the edit moves by however much it grew or shrank.
+         */
+        syncSnippet() {
+            if (!this.snippet) {
+                return;
+            }
+
+            const source = this.source;
+            const delta = source.value.length - this.snippet.length;
+
+            this.snippet.length = source.value.length;
+
+            if (delta) {
+                // Where the edit landed: an insertion ends at the caret, a deletion
+                // leaves it where it was
+                const edit = source.selectionStart - Math.max(delta, 0);
+
+                this.snippet.stops = this.snippet.stops.map((stop) => (stop > edit ? stop + delta : stop));
+                this.snippet.to += delta;
+            }
+
+            this.syncSnippetCaret();
+        }
+
+        /**
+         * The run is over once the author is writing somewhere else, or Tab would
+         * take them back into a snippet they've left.
+         */
+        syncSnippetCaret() {
+            const at = this.source.selectionStart;
+
+            if (this.snippet && (at < this.snippet.from || at > this.snippet.to)) {
+                this.snippet = null;
+            }
         }
 
         // -- Guide ------------------------------------------------------------
@@ -1698,6 +1837,22 @@
                 event.stopPropagation();
                 this.dismissed = true;
                 this.hideFloating();
+                return;
+            }
+
+            // A snippet's stops have Tab for as long as the run lasts
+            if (event.key === 'Tab' && this.snippet && !event.altKey && !event[MOD_KEY]) {
+                event.preventDefault();
+                this.goToStop(this.snippet.at + (event.shiftKey ? -1 : 1));
+                return;
+            }
+
+            // And Escape hands it back, which is the way out of a run the author
+            // didn't want
+            if (event.key === 'Escape' && this.snippet) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.snippet = null;
                 return;
             }
 

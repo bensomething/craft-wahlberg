@@ -15,9 +15,11 @@ return [
      * Craft’s set. One without an icon gets a neutral stand-in, so labels line up
      * either way. Which snippets a given field offers is a field setting.
      *
-     * Two optional markers:
+     * Optional markers:
      *
-     * - `$0` is where the caret ends up. Without one it lands at the end.
+     * - `$1` to `$9` are stops, visited in order on Tab and ⇧Tab. Esc ends the run.
+     * - `$0` is where the caret ends up: the last stop, after any numbered ones.
+     *   Without a marker at all it lands at the end.
      * - `$SELECTION` is replaced by what the author had selected, so a snippet can
      *   wrap their text. Empty when nothing was selected; every occurrence goes.
      *

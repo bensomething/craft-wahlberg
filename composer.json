@@ -53,7 +53,8 @@
         "test": "phpunit --colors=always",
         "test-js": [
             "node tests/js/highlight.test.js",
-            "node tests/js/blocks.test.js"
+            "node tests/js/blocks.test.js",
+            "node tests/js/snippets.test.js"
         ]
     },
     "autoload-dev": {

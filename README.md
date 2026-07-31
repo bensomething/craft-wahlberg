@@ -188,10 +188,19 @@ return [
 
 `icon` is optional — any name from Craft’s set, which is Font Awesome’s solid icons. One that doesn’t name an icon gets a neutral stand-in, so the labels line up either way.
 
-Two markers are understood, both optional:
+Markers, all optional:
 
-- **`$0`** is where the caret ends up. Without one it lands at the end.
+- **`$1`** to **`$9`** are stops. Insert a snippet with more than one and the caret lands on the first; <kbd>Tab</kbd> moves to the next, <kbd>⇧Tab</kbd> back.
+- **`$0`** is where the caret ends up — the last stop, visited after the numbered ones. Without any marker at all the caret lands at the end.
 - **`$SELECTION`** is replaced by whatever the author had selected, so a snippet can wrap their text rather than only ever landing beside it. It’s empty when nothing was selected, and every occurrence is replaced.
+
+```php
+'table' => "| \$1 | \$2 |\n| --- | --- |\n| \$0 |  |\n",
+```
+
+Tab belongs to the run only while one is going, and <kbd>Esc</kbd> ends it early — Tab is how you leave a field, and a textarea that kept hold of it would be one you couldn’t get out of. The run also ends when the last stop is passed, or when the caret leaves the text the snippet put in.
+
+A body carrying only `$0` behaves exactly as it did before stops existed: one stop is a caret position, not a run.
 
 Mind the quoting: inside a double-quoted PHP string, `$0` and `$SELECTION` read as variables, so escape them as `\$0` and `\$SELECTION`. Single quotes avoid that but cost you `\n`. Heredocs interpolate; nowdocs (`<<<'MD'`) don’t.
 

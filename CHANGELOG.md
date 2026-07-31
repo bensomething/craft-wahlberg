@@ -12,6 +12,7 @@
 - The tabs and the toolbar now stick to the top of a field that fills more than half the window, so they’re still there once the text has scrolled past them. They stop below Craft’s own page header, and `--wahlberg-sticky-top` overrules where that lands.
 - Switching between **Write** and **Preview** now keeps the author’s place, by matching the block at the top of one pane to the element at the top of the other.
 
+- Added `$1` to `$9` snippet stops, visited on `Tab` and `⇧Tab` with `$0` last of them. `Esc` ends the run, and a body carrying only `$0` behaves exactly as it did.
 - Added a `/` menu at the caret, listing the **Entry** and **Asset** pickers and then the field’s snippets, filtered by whatever’s typed after the slash. Only a slash at the start of a line or after a space opens it, and never one inside a fenced code block.
 
 - Added a **New Paragraph on Enter** setting, which has Enter leave a blank line behind it so it starts a paragraph rather than a line Markdown runs back into the one above. `⇧Enter` still gives the single newline, and the setting is hidden and ignored on a field rendering **Inline Only**.

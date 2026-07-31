@@ -168,7 +168,6 @@ abstract class Editor
                     fn(array $snippet) => $snippet['body'],
                     $snippets,
                 ),
-                'caret' => Snippets::CARET,
                 'selection' => Snippets::SELECTION,
             ]),
         ));
