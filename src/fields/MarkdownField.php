@@ -535,7 +535,10 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'minRows' => $this->minRows,
             'maxRows' => $this->maxRows,
             'placeholder' => $this->placeholder,
-            'paragraphOnEnter' => $this->paragraphOnEnter,
+            // Off where the setting is hidden, so the key does what the settings
+            // screen says it does. The stored value is left alone, and comes back
+            // if the field stops rendering inline
+            'paragraphOnEnter' => $this->paragraphOnEnter && !$this->inlineOnly,
             'charLimit' => $this->charLimit,
             'byteLimit' => $this->byteLimit,
             // So the Asset button writes `{asset:1:url}` rather than a URL that a
@@ -679,6 +682,20 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'id' => 'inlineOnly',
             'name' => 'inlineOnly',
             'on' => $this->inlineOnly,
+            // A field with no paragraphs in its output has no use for a key that
+            // makes them. Hidden rather than disabled: a disabled control posts
+            // nothing, and Craft rebuilds a field from what was posted, so the
+            // setting would quietly revert to its default on the next save
+            'reverseToggle' => 'paragraph-on-enter-container',
+        ]) . Html::tag('div', Cp::lightswitchFieldHtml([
+            'label' => Craft::t('wahlberg', 'New Paragraph on Enter'),
+            'instructions' => Craft::t('wahlberg', 'Leave a blank line when Enter is pressed, so it starts a new paragraph rather than a line that Markdown runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote.'),
+            'id' => 'paragraphOnEnter',
+            'name' => 'paragraphOnEnter',
+            'on' => $this->paragraphOnEnter,
+        ]), [
+            'id' => 'paragraph-on-enter-container',
+            'class' => $this->inlineOnly ? 'hidden' : null,
         ]);
 
         // -- Editor ----------------------------------------------------------
@@ -729,12 +746,6 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'name' => 'placeholder',
             'value' => $this->placeholder,
             'errors' => $this->getErrors('placeholder'),
-        ]) . Cp::lightswitchFieldHtml([
-            'label' => Craft::t('wahlberg', 'New Paragraph on Enter'),
-            'instructions' => Craft::t('wahlberg', 'Leave a blank line when Enter is pressed, so it starts a new paragraph rather than a line that Markdown runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote.'),
-            'id' => 'paragraphOnEnter',
-            'name' => 'paragraphOnEnter',
-            'on' => $this->paragraphOnEnter,
         ]) . $this->limitFieldHtml() . Cp::lightswitchFieldHtml([
             'label' => Craft::t('wahlberg', 'Show Syntax Highlighting'),
             'instructions' => Craft::t('wahlberg', 'Colour the Markdown as it’s typed. With this off, the Write tab is a plain textarea with the same sizing, toolbar and Preview tab.'),

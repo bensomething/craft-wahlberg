@@ -51,6 +51,7 @@ Create a field of type **Markdown** and add it to a field layout.
 | **Markdown Flavour** | GitHub-Flavoured | Which parser the Preview tab and the `html` value use. GFM adds fenced code blocks, tables, strikethrough and autolinking; Traditional Markdown and Markdown Extra are also available. |
 | **Preserve Line Breaks** | On | GFM only. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do. Turn it off for Markdown that’s hard-wrapped and meant to reflow. This is the parser’s `gfm-comment` flavour, which is what `.flavour` reports. |
 | **Inline Only** | Off | Render without the wrapping `<p>`, for a heading or strapline going into markup of its own. Emphasis, links and code still parse. |
+| **New Paragraph on Enter** | Off | Enter leaves a blank line, so it starts a paragraph rather than a line that runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote. Hidden, and ignored, when *Inline Only* is on — a field with no paragraphs in its output has no use for a key that makes them. |
 
 **Editor**
 
@@ -61,7 +62,6 @@ Create a field of type **Markdown** and add it to a field layout.
 | **Minimum Rows** | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
 | **Maximum Rows** | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
 | **Placeholder Text** | none | Shown while the field is empty. |
-| **New Paragraph on Enter** | Off | Enter leaves a blank line, so it starts a paragraph rather than a line that runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote. |
 | **Field Limit** | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
 | **Show Syntax Highlighting** | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
 
@@ -454,6 +454,8 @@ With *New Paragraph on Enter* on, Enter leaves a blank line behind it and <kbd>�
 It's off by default, because a field whose authors write Markdown doesn't need it. It's worth turning on for one whose authors don't, because a single newline is the one piece of Markdown that does nothing you can see. With *Preserve Line Breaks* on it renders as a `<br>`; with it off it renders as a space, and the two lines you just separated come back as one. Neither is a paragraph, and "press it twice" is not something anyone arrives already knowing.
 
 Enter keeps its other jobs either way: it carries on a list or a quote, and ends one on an empty item. And a blank line already under the caret isn't doubled, so holding Enter down leaves a gap rather than a pile of them.
+
+The setting sits with *Preserve Line Breaks* and *Inline Only* because the three of them are one question — what a line break means in this field — answered at the three points it gets asked: what Enter types, what a single newline renders as, and whether there are paragraphs to make at all. It disappears when *Inline Only* is on, and is ignored there, since a field rendering without a `<p>` has no use for a key that starts one.
 
 <kbd>⌘⇧P</kbd> swaps between **Write** and **Preview**, from anywhere in the field, and puts the caret back where it was on the way in. It does nothing on a field with *Show Preview Tab* off, or while there’s nothing written to preview.
 

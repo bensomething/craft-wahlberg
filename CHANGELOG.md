@@ -14,7 +14,7 @@
 
 - Added a `/` menu at the caret, listing the **Entry** and **Asset** pickers and then the field’s snippets, filtered by whatever’s typed after the slash. Only a slash at the start of a line or after a space opens it, and never one inside a fenced code block.
 
-- Added a **New Paragraph on Enter** setting, which has Enter leave a blank line behind it so it starts a paragraph rather than a line Markdown runs back into the one above. `⇧Enter` still gives the single newline.
+- Added a **New Paragraph on Enter** setting, which has Enter leave a blank line behind it so it starts a paragraph rather than a line Markdown runs back into the one above. `⇧Enter` still gives the single newline, and the setting is hidden and ignored on a field rendering **Inline Only**.
 
 ### Changed
 
