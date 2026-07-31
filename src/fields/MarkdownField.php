@@ -731,7 +731,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'errors' => $this->getErrors('placeholder'),
         ]) . Cp::lightswitchFieldHtml([
             'label' => Craft::t('wahlberg', 'New Paragraph on Enter'),
-            'instructions' => Craft::t('wahlberg', 'Leave a blank line when Enter is pressed, so it starts a paragraph. Without one, a single newline is the one piece of Markdown that does nothing you can see: a `<br>` with *Preserve Line Breaks* on, and a space with it off. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote.'),
+            'instructions' => Craft::t('wahlberg', 'Leave a blank line when Enter is pressed, so it starts a new paragraph rather than a line that Markdown runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote.'),
             'id' => 'paragraphOnEnter',
             'name' => 'paragraphOnEnter',
             'on' => $this->paragraphOnEnter,
