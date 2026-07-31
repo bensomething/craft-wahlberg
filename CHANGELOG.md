@@ -12,6 +12,7 @@
 ### Changed
 
 - The read-only field shows the disabled input cursor on hover.
+- Regrouped the field settings: **Editor** for the sizing and the field limit, **Toolbar** for everything above the writing surface.
 
 ### Fixed
 

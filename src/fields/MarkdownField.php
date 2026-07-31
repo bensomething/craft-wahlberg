@@ -633,9 +633,9 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'on' => $this->inlineOnly,
         ]);
 
-        // -- Appearance ------------------------------------------------------
+        // -- Editor ----------------------------------------------------------
 
-        $html .= Html::tag('hr') . Html::tag('h2', Craft::t('wahlberg', 'Appearance')) . Cp::textFieldHtml([
+        $html .= Html::tag('hr') . Html::tag('h2', Craft::t('wahlberg', 'Editor')) . Cp::textFieldHtml([
             'label' => Craft::t('wahlberg', 'Text Size'),
             'instructions' => Craft::t('wahlberg', 'The size of the Markdown source in the editor, in pixels. Doesn’t affect the front end.'),
             'id' => 'fontSize',
@@ -673,7 +673,11 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'name' => 'placeholder',
             'value' => $this->placeholder,
             'errors' => $this->getErrors('placeholder'),
-        ]) . Cp::lightswitchFieldHtml([
+        ]) . $this->limitFieldHtml();
+
+        // -- Toolbar ---------------------------------------------------------
+
+        $html .= Html::tag('hr') . Html::tag('h2', Craft::t('wahlberg', 'Toolbar')) . Cp::lightswitchFieldHtml([
             'label' => Craft::t('wahlberg', 'Show Preview Tab'),
             'instructions' => Craft::t('wahlberg', 'Let authors switch between the Markdown source and the rendered result. With this off, the editor is source-only.'),
             'id' => 'showPreview',
@@ -715,7 +719,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'id' => 'showStats',
             'name' => 'showStats',
             'on' => $this->showStats,
-        ]) . $this->limitFieldHtml();
+        ]);
 
         // -- Parsing ---------------------------------------------------------
 

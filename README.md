@@ -51,7 +51,7 @@ Create a field of type **Markdown** and add it to a field layout.
 | **Preserve Line Breaks** | On | GFM only. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do. Turn it off for Markdown that’s hard-wrapped and meant to reflow. This is the parser’s `gfm-comment` flavour, which is what `.flavour` reports. |
 | **Inline Only** | Off | Render without the wrapping `<p>`, for a heading or strapline going into markup of its own. Emphasis, links and code still parse. |
 
-**Appearance**
+**Editor**
 
 | Setting | Default | |
 | --- | --- | --- |
@@ -59,12 +59,18 @@ Create a field of type **Markdown** and add it to a field layout.
 | **Minimum Rows** | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
 | **Maximum Rows** | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
 | **Placeholder Text** | none | Shown while the field is empty. |
+| **Field Limit** | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
+
+**Toolbar**
+
+| Setting | Default | |
+| --- | --- | --- |
 | **Show Preview Tab** | On | Off makes the editor source-only, and the toolbar moves to where the tabs were. |
 | **Show Formatting Toolbar** | On | The keyboard shortcuts keep working either way. |
+| **Floating Toolbar** | Off | Puts the buttons in a panel over the selection rather than in a strip above the editor. Nothing formatting-related is on screen until an author selects something or hits `⌘⇧F` — see [Floating](#floating). |
 | **Toolbar Buttons** | all but Heading 1, Heading 3–6 and the guide | Which buttons the toolbar offers — see [The toolbar](#the-toolbar). |
 | **Show Syntax Highlighting** | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
 | **Show Stats** | Off | Character, word and line counts under the editor, with the field limit alongside when there is one. |
-| **Field Limit** | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
 
 **Parsing**
 
