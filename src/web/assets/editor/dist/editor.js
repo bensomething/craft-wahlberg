@@ -1223,6 +1223,10 @@
                 return;
             }
 
+            // Typed rather than asked for: `/` is the only way in that isn't the
+            // Snippets button or its shortcut
+            const typed = this.slashAt !== null;
+
             if (this.commandGroup) {
                 this.commandGroup.classList.toggle('filtered', !commands);
                 this.divider?.classList.toggle('filtered', !commands);
@@ -1241,13 +1245,18 @@
             this.insertMenu.style.top = at.top + 'px';
             this.insertMenu.style.left = Math.max(0, Math.min(left, room)) + 'px';
 
-            this.container.querySelectorAll('[data-snippets-trigger]')
-                .forEach((button) => button.setAttribute('aria-expanded', 'true'));
+            // The Snippets button lights up for the menu it opened, and for its own
+            // shortcut. Not for `/`, which is a menu at the caret that the button
+            // had nothing to do with — and which is offering more than snippets
+            if (!typed) {
+                this.container.querySelectorAll('[data-snippets-trigger]')
+                    .forEach((button) => button.setAttribute('aria-expanded', 'true'));
+            }
 
             // Opened by typing, focus stays in the textarea so the author can carry
             // on typing to narrow the list. Opened any other way it moves into the
             // menu, which is what gives Craft's focus ring
-            this.driveMenu(this.insertMenu, () => this.closeInsert(), this.slashAt === null);
+            this.driveMenu(this.insertMenu, () => this.closeInsert(), !typed);
         }
 
         closeInsert() {
