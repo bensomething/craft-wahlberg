@@ -5,31 +5,29 @@
 ### Added
 
 - Added a **Floating Toolbar** setting, which puts the formatting buttons in a panel over the selection rather than in a strip above the editor.
-- Added `⌘⇧F`, which brings the floating toolbar up at the caret with nothing selected, and `Esc`, which puts it away.
-- Added `⌘⇧E` and `⌘⇧U` for the **Entry** and **Asset** pickers.
+- Added a **Line Length** setting, which holds the text to a readable measure rather than the full width of the field. `--wahlberg-measure` sets the width.
+- Added a **New Paragraph on Enter** setting, which has Enter leave a blank line behind it. `⇧Enter` still gives the single newline.
+- Added a `/` menu at the caret, listing the **Entry** and **Asset** pickers and then the field’s snippets, filtered as you type.
+- Added `$1` to `$9` snippet stops, visited on `Tab` and `⇧Tab`, and `${1:defaults}`. A body carrying only `$0` behaves as it always did.
+- Added `⌘⇧F` for the floating toolbar, and `⌘⇧E` and `⌘⇧U` for the **Entry** and **Asset** pickers.
 - Added a `floating` option to `Editor::inputHtml()` and the Twig macros.
-- Added a **Line Length** setting, which holds the text to a readable measure rather than the full width of the field, with the spare room at the end of the line or split between both edges. `--wahlberg-measure` sets the width.
-- The tabs and the toolbar now stick to the top of a field that fills more than half the window, so they’re still there once the text has scrolled past them. They stop below Craft’s own page header, and `--wahlberg-sticky-top` overrules where that lands.
-- Switching between **Write** and **Preview** now keeps the author’s place, by matching the block at the top of one pane to the element at the top of the other.
-
-- Added `$1` to `$9` snippet stops, visited on `Tab` and `⇧Tab` with `$0` last of them, and `${1:defaults}` that go in as text and are selected on arrival. `Esc` ends the run, and a body carrying only `$0` behaves exactly as it did.
-- Added a `/` menu at the caret, listing the **Entry** and **Asset** pickers and then the field’s snippets, filtered by whatever’s typed after the slash. Only a slash at the start of a line or after a space opens it, and never one inside a fenced code block.
-
-- Added a **New Paragraph on Enter** setting, which has Enter leave a blank line behind it so it starts a paragraph rather than a line Markdown runs back into the one above. `⇧Enter` still gives the single newline, and the setting is hidden and ignored on a field rendering **Inline Only**.
+- The tabs and the toolbar now stick to the top of a field that fills more than half the window. `--wahlberg-sticky-top` overrules where they stop.
+- Switching between **Write** and **Preview** now keeps the author’s place.
 
 ### Changed
 
-- **Show Syntax Highlighting** moved to the bottom of the **Editor** settings, since it’s the writing surface rather than the toolbar.
-- `Editor::snippetsMenuHtml()` is now `Editor::insertMenuHtml()`, and takes the commands the field offers as a second argument. The **Snippets** button and `⌘⇧K` still open snippets alone.
 - Regrouped the field settings: **Editor** for the sizing and the field limit, **Toolbar** for everything above the writing surface.
+- **Show Syntax Highlighting** moved to the bottom of the **Editor** settings.
+- `Editor::snippetsMenuHtml()` is now `Editor::insertMenuHtml()`. The **Snippets** button and `⌘⇧K` still open snippets alone.
 - The stats bar reads `1,234 words` rather than `1234 words`.
 - The read-only field shows the disabled input cursor on hover.
 
 ### Fixed
 
-- Fixed a bug where a field flashed empty on load before its content appeared. The editor now shows the textarea’s own text until the layer behind it is ready to take over.
-- Fixed a bug where a field opened at its minimum rows and grew a paint later. It now opens at the height its content needs, and browsers without `field-sizing` keep the old behaviour.
-- The **Markdown guide** button no longer takes the selection when it’s clicked, as every other button on the toolbar already didn’t.
+- Fixed a bug where a field flashed empty on load before its content appeared.
+- Fixed a bug where a field opened at its minimum rows and grew a paint later. Browsers without `field-sizing` keep the old behaviour.
+- Fixed the top corners of a field with no header and a stats bar, where the writing surface painted square corners over the field’s rounded ones.
+- The **Markdown guide** button no longer takes the selection when it’s clicked.
 
 ## 1.0.0-beta.4 - 2026-07-29
 

@@ -677,10 +677,14 @@
     font-weight: var(--font-weight-bold, 700);
 }
 
-/* The rounded bottom belongs to whatever's last. */
+/* The rounded bottom belongs to whatever's last. The bottom only: on a field with
+   no header the writing surface owns the top corners too, and this rule outranks
+   the one that gave them to it — square white corners over the field's rounded
+   ones being exactly what they were rounded to avoid. */
 .wahlberg:has(.wahlberg-stats) .wahlberg-editor,
 .wahlberg:has(.wahlberg-stats) .wahlberg-preview {
-    border-radius: 0;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
 }
 
 /* Alignment debugging: add the `wahlberg--debug` class to the field to paint the
