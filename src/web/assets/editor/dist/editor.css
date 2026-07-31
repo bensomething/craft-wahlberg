@@ -765,6 +765,14 @@
     font-style: normal;
 }
 
+/* Emphasis inside strong, or inside a heading, is asking for a bold italic, and a
+   family can have a real bold and a real italic while leaving the browser to
+   fabricate the two together. Where that's what happens, the nesting keeps its
+   colour and its dimmed markers and gives up the slope. */
+.wahlberg--bold-tokens:not(.wahlberg--bold-italic-tokens) :is(.wh-heading, .wh-strong) .wh-em {
+    font-style: normal;
+}
+
 /* Out of flow, so while it's loading the box stays exactly as tall as the editor
    it replaced. Craft's spinner is a fixed height taller than one line of text,
    and in flow it would push a one-row field open and drop it shut again the

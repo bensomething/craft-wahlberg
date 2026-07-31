@@ -76,6 +76,10 @@ unicode: café — 日本語 🎉`,
     'a wall of list markers': '- '.repeat(500),
     'html that must stay escaped': '<script>alert(1)</script> & <div>',
     'trailing whitespace on every line': 'one \ntwo  \nthree   \n',
+    'formatting inside formatting': '**CHAPTER 1. _Loomings_.** and _Y**ea**h_ and ~~a **struck** bit~~',
+    'a link label carrying emphasis': '[**bold** and _em_](https://example.com/**not**/_markup_)',
+    'nesting deep enough to be silly': '**a _b ~~c `d` e~~ f_ g**',
+    'nesting that never closes': '**outer _inner and `code',
 };
 
 let failures = 0;
@@ -118,6 +122,29 @@ for (const token of [
     } else {
         fail('nothing was marked up as ' + token);
     }
+}
+
+// Formatting inside formatting is marked up as such, and code inside it isn't
+const nested = {
+    'emphasis inside strong': ['**a _b_ c**', /wh-strong.*wh-em/],
+    'strong inside emphasis': ['_a **b** c_', /wh-em.*wh-strong/],
+    'emphasis inside a heading': ['# a _b_', /wh-heading.*wh-em/],
+    'a link label': ['[**a**](u)', /wh-link.*wh-strong/],
+};
+
+for (const [name, [input, pattern]] of Object.entries(nested)) {
+    if (pattern.test(highlightMarkdown(input))) {
+        console.log('  - ' + name);
+    } else {
+        fail(`${name}: ${JSON.stringify(input)} came out flat`);
+    }
+}
+
+// A fence is literal, so what's inside one stays text however it's spelled
+if (/wh-strong/.test(highlightMarkdown('`**bold**`'))) {
+    fail('markers inside code were marked up');
+} else {
+    console.log('  - code is left alone');
 }
 
 // Every keystroke repaints the whole document, so this has to stay cheap

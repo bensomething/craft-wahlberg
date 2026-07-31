@@ -51,8 +51,11 @@
         return '<span class="' + className + '">' + esc(text) + '</span>';
     }
 
+    // Recursing on the content, so emphasis inside strong is emphasis. Terminates
+    // because the content is always shorter than what matched: the delimiters are
+    // outside it
     function wrapped(className, open, content, close) {
-        return '<span class="' + className + '">' + span('wh-mark', open) + esc(content) +
+        return '<span class="' + className + '">' + span('wh-mark', open) + inline(content) +
             span('wh-mark', close) + '</span>';
     }
 
@@ -75,7 +78,7 @@
                 return span('wh-code', match[0]);
             case 'link': {
                 const open = match[1] + '[';
-                return '<span class="wh-link">' + span('wh-mark', open) + esc(match[2]) +
+                return '<span class="wh-link">' + span('wh-mark', open) + inline(match[2]) +
                     span('wh-mark', '](') + span('wh-url', match[3]) + span('wh-mark', ')') + '</span>';
             }
             case 'strong':
@@ -655,6 +658,14 @@
 
             this.container.classList.toggle('wahlberg--bold-tokens', holds({fontWeight: bold}));
             this.container.classList.toggle('wahlberg--italic-tokens', holds({fontStyle: 'italic'}));
+
+            // Emphasis inside strong, or inside a heading, asks for a third cut.
+            // A family can have a real bold and a real italic and still leave the
+            // browser to fabricate the two together
+            this.container.classList.toggle(
+                'wahlberg--bold-italic-tokens',
+                holds({fontWeight: bold, fontStyle: 'italic'}),
+            );
         }
 
         /**

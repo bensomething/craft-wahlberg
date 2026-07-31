@@ -13,6 +13,7 @@
 - Added a `floating` option to `Editor::inputHtml()` and the Twig macros.
 - The tabs and the toolbar now stick to the top of a field that fills more than half the window. `--wahlberg-sticky-top` overrules where they stop.
 - Switching between **Write** and **Preview** now keeps the author’s place.
+- Formatting inside formatting is highlighted as such, so the `_` in `**a _b_ c**` reads as emphasis rather than text. A link’s label too, though not its URL.
 
 ### Changed
 
