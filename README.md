@@ -6,24 +6,20 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 > Wahlberg is in beta. The templating surface, `|marky` filter, `wahlberg_Markdown` GraphQL type, `Editor::inputHtml()` options, both events, and the `config/wahlberg.php` snippet format are settled. The field’s own settings may still move.
 
 - Raw Markdown in, raw Markdown out
-- Server-side preview, parsed with the same parser as Craft’s `|md` filter, so the preview can’t drift from the front end
+- Server-side preview, parsed with the same parser as Craft’s `|md` filter, so it can’t drift from the front end
 - HTML Purifier on the parsed output by default, so inline `<script>` can’t ride in on an author’s Markdown
-- Craft reference tags like `[Read more]({entry:123:url})` resolved on output, and left alone inside code
-- Markdown syntax highlighting in the Write tab, without giving up the plain textarea
-- A band behind the line being written, over every row a wrapped line takes
-- Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted and numbered lists, folding into a menu when the field is too narrow for them
-- Or a floating toolbar, in a panel over the selection rather than a strip above the editor
-- Entry and asset links written as reference tags, so they survive a slug change or a replaced file
-- `/` at the caret opens an insert menu — entry and asset pickers, then your snippets — and filters it as you type
-- Snippets: blocks of Markdown you define, dropped in from the toolbar
-- The editor grows to fit what’s typed, between a minimum and (optional) maximum height
-- `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧E` and `⌘⇧U` for the element pickers, `⌘⇧K` for snippets, `⌘⇧P` to preview, `⌘⇧F` for the floating toolbar, and Enter continues lists and blockquotes
-- Buttons toggle: hit **Bold** on already-bold text and the markers come off
-- Native browser undo, so formatting buttons don’t blow away the undo stack
-- No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
-- Per-field Markdown flavour, toolbar, sizing, placeholder, character or byte limit, and counts
+- Craft reference tags resolved on output and left alone inside code, and written by the entry and asset pickers, so links survive a slug change or a replaced file
+- Markdown syntax highlighting in the Write tab without giving up the plain textarea, and a band behind the line being written
+- Formatting toolbar of headings, bold, italic, strikethrough, quote, code, link, element pickers and lists, folding into a menu when the field is too narrow. Or a floating one, in a panel over the selection
+- `/` at the caret opens an insert menu of the element pickers and your snippets, filtered as you type
+- Snippets you define in config, with tab stops and defaults
+- `⌘B` / `⌘I` / `⌘K`, `⌘⇧E` and `⌘⇧U` for the pickers, `⌘⇧K` for snippets, `⌘⇧P` to preview, `⌘⇧F` for the floating toolbar
+- Buttons toggle, Enter carries on a list, and native browser undo survives all of it
+- The editor grows to fit what’s typed, sticks its header on a tall field, and keeps your place across the tabs
+- No editor library bundled: a textarea, some vanilla JS, and Craft’s own icons
+- Per-field flavour, toolbar, line length, sizing, limits and counts
 - GraphQL support
-- Reusable outside the field type: drop the editor into your own plugin’s settings from Twig or PHP
+- Reusable outside the field type, from Twig or PHP
 
 ## Requirements
 
@@ -48,17 +44,17 @@ Create a field of type **Markdown** and add it to a field layout.
 
 | Setting | Default | |
 | --- | --- | --- |
-| **Markdown Flavour** | GitHub-Flavoured | Which parser the Preview tab and the `html` value use. GFM adds fenced code blocks, tables, strikethrough and autolinking; Traditional Markdown and Markdown Extra are also available. |
+| **Markdown Flavour** | GitHub-Flavoured | Which parser the Preview tab and the `html` value use. GFM adds fenced code blocks, tables, strikethrough and autolinking. Traditional Markdown and Markdown Extra are also available. |
 | **Preserve Line Breaks** | On | GFM only. Turns a single newline into a `<br>`, the way GitHub’s comment boxes do. Turn it off for Markdown that’s hard-wrapped and meant to reflow. This is the parser’s `gfm-comment` flavour, which is what `.flavour` reports. |
 | **Inline Only** | Off | Render without the wrapping `<p>`, for a heading or strapline going into markup of its own. Emphasis, links and code still parse. |
-| **New Paragraph on Enter** | Off | Enter leaves a blank line, so it starts a paragraph rather than a line that runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote. Hidden, and ignored, when *Inline Only* is on — a field with no paragraphs in its output has no use for a key that makes them. |
+| **New Paragraph on Enter** | Off | Enter leaves a blank line, so it starts a paragraph rather than a line that runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote. Hidden, and ignored, when *Inline Only* is on: a field with no paragraphs in its output has no use for a key that makes them. |
 
 **Editor**
 
 | Setting | Default | |
 | --- | --- | --- |
-| **Text Size** | 14px | The Markdown source in the editor, 11–20px. Editing comfort only — no bearing on the front end. |
-| **Line Length** | Full width | How far the text runs before it wraps. **Comfortable** holds it to about 80 characters and leaves the spare room at the end of the line; **Comfortable (centred)** splits that room between both edges. `--wahlberg-measure` sets the width. Editing comfort only. |
+| **Text Size** | 14px | The Markdown source in the editor, 11–20px. Editing comfort only, with no bearing on the front end. |
+| **Line Length** | Full width | How far the text runs before it wraps. **Comfortable** holds it to about 80 characters and leaves the spare room at the end of the line. **Comfortable (centred)** splits that room between both edges. `--wahlberg-measure` sets the width. Editing comfort only. |
 | **Minimum Rows** | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
 | **Maximum Rows** | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
 | **Placeholder Text** | none | Shown while the field is empty. |
@@ -71,8 +67,8 @@ Create a field of type **Markdown** and add it to a field layout.
 | --- | --- | --- |
 | **Show Preview Tab** | On | Off makes the editor source-only, and the toolbar moves to where the tabs were. |
 | **Show Formatting Toolbar** | On | The keyboard shortcuts keep working either way. |
-| **Floating Toolbar** | Off | Puts the buttons in a panel over the selection rather than in a strip above the editor. Nothing formatting-related is on screen until an author selects something or hits `⌘⇧F` — see [Floating](#floating). |
-| **Toolbar Buttons** | all but Heading 1, Heading 3–6 and the guide | Which buttons the toolbar offers — see [The toolbar](#the-toolbar). |
+| **Floating Toolbar** | Off | Puts the buttons in a panel over the selection rather than in a strip above the editor. Nothing formatting-related is on screen until an author selects something or hits `⌘⇧F`. See [Floating](#floating). |
+| **Toolbar Buttons** | all but Heading 1, Heading 3–6 and the guide | Which buttons the toolbar offers. See [The toolbar](#the-toolbar). |
 | **Show Stats** | Off | Character, word and line counts under the editor, with the field limit alongside when there is one. |
 
 **Parsing**
@@ -115,10 +111,10 @@ Every button is optional, and which ones a field offers is up to *Toolbar Button
 | **Quote** | | `> ` |
 | **Code** | | `` ` `` around a selection on one line, a fence around one spanning several |
 | **Link** | <kbd>⌘K</kbd> | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
-| **Entry** | <kbd>⌘⇧E</kbd> | opens Craft’s element selector — see below |
-| **Asset** | <kbd>⌘⇧U</kbd> | opens Craft’s element selector — see below |
+| **Entry** | <kbd>⌘⇧E</kbd> | opens Craft’s element selector, see below |
+| **Asset** | <kbd>⌘⇧U</kbd> | opens Craft’s element selector, see below |
 | **Bulleted list**, **Numbered list** | | `- ` and `1. `, toggling between each other rather than stacking up |
-| **Snippets** | <kbd>⌘⇧K</kbd> | blocks of Markdown you define, also on <kbd>/</kbd> — see [Snippets](#snippets) |
+| **Snippets** | <kbd>⌘⇧K</kbd> | blocks of Markdown you define, also on <kbd>/</kbd>. See [Snippets](#snippets) |
 | **Markdown guide** | | a syntax cheatsheet, in a popover off the button |
 
 Shortcuts work whether or not the button is shown, so a field with the toolbar switched off still has all of them. On Windows and Linux, <kbd>Ctrl</kbd> stands in for <kbd>⌘</kbd>. **Asset** is <kbd>⌘⇧U</kbd> rather than the <kbd>⌘⇧A</kbd> you’d expect, because macOS browsers keep that one for themselves and it never reaches the page.
@@ -127,11 +123,11 @@ The buttons fold into a menu when the toolbar is too narrow to hold them all. **
 
 ### Floating
 
-With *Floating Toolbar* on, the buttons leave the header and appear in a panel over the text instead — pointed at whatever’s selected, above it or below it depending on which side has room.
+With *Floating Toolbar* on, the buttons leave the header for a panel over the text, pointed at whatever’s selected. It sits above or below depending on which side has room.
 
-It’s worth being clear about what the setting costs, because it isn’t a look. A field with a floating toolbar opens showing no formatting buttons at all, the **Markdown guide** among them; they only turn up once an author selects something. That’s a good trade for authors who write Markdown all day and a bad one for authors who don’t, which is what the setting is really choosing between.
+This isn’t a look, and it costs something. The field opens with no formatting buttons at all, the **Markdown guide** among them, and they turn up only once an author selects something. Good for authors who write Markdown all day, bad for authors who don’t, which is what the setting really chooses between.
 
-Half of what the toolbar offers goes in at the caret rather than around a selection — a heading, a list, a quote, an entry, a snippet — so the panel doesn’t only answer to selections:
+Half of what the toolbar offers goes in at the caret rather than around a selection: a heading, a list, a quote, an entry, a snippet. So the panel doesn’t only answer to selections.
 
 | | |
 | --- | --- |
@@ -143,7 +139,7 @@ It stays put while a menu it opened is up, follows the text as the field scrolls
 
 ### Headings
 
-However many heading levels you tick, the toolbar shows **one** control — six near-identical H icons in a row is a lot of toolbar to say one thing. What changes is its shape:
+However many heading levels you tick, the toolbar shows **one** control. Six near-identical H icons in a row is a lot of toolbar to say one thing. What changes is its shape:
 
 | Levels ticked | What authors get |
 | --- | --- |
@@ -155,7 +151,7 @@ The icon is the same plain **H** either way, with the level named in the tooltip
 
 ### Entry and Asset
 
-Both open Craft’s element selector. **Entry** writes a link; **Asset** writes an image as `![alt](…)` and anything else as a link, taking the alt text from the asset when it has some.
+Both open Craft’s element selector. **Entry** writes a link. **Asset** writes an image as `![alt](…)` and anything else as a link, taking the alt text from the asset when it has some.
 
 With *Parse Reference Tags* on, both write a reference tag rather than a URL:
 
@@ -165,7 +161,7 @@ With *Parse Reference Tags* on, both write a reference tag rather than a URL:
 ![Ada Lovelace]({asset:41:url})
 ```
 
-so the link survives a slug change, or follows the file if it’s replaced or moved. With reference tags off there’s nothing to resolve the tag later, so they write the URL instead — and an entry with no URL of its own writes an empty one.
+so the link survives a slug change, or follows the file if it’s replaced or moved. With reference tags off there’s nothing to resolve the tag later, so they write the URL instead. An entry with no URL of its own writes an empty one.
 
 ## Snippets
 
@@ -186,13 +182,13 @@ return [
 ];
 ```
 
-`icon` is optional — any name from Craft’s set, which is Font Awesome’s solid icons. One that doesn’t name an icon gets a neutral stand-in, so the labels line up either way.
+`icon` is optional: any name from Craft’s set, which is Font Awesome’s solid icons. One without gets a neutral stand-in, so the labels line up either way.
 
 Markers, all optional:
 
-- **`$1`** to **`$9`** are stops. Insert a snippet with more than one and the caret lands on the first; <kbd>Tab</kbd> moves to the next, <kbd>⇧Tab</kbd> back.
-- **`${1:like this}`** is a stop with a default. The text goes in, and landing on the stop selects it — so it reads as a prompt and types over as a placeholder. Bare `${1}` is the same as `$1`.
-- **`$0`** is where the caret ends up — the last stop, visited after the numbered ones. Without any marker at all the caret lands at the end.
+- **`$1`** to **`$9`** are stops. Insert a snippet with more than one and the caret lands on the first. <kbd>Tab</kbd> moves to the next, <kbd>⇧Tab</kbd> back.
+- **`${1:like this}`** is a stop with a default. The text goes in, and landing on the stop selects it, so it reads as a prompt and types over as a placeholder. Bare `${1}` is the same as `$1`.
+- **`$0`** is where the caret ends up: the last stop, after the numbered ones. Without any marker the caret lands at the end.
 - **`$SELECTION`** is replaced by whatever the author had selected, so a snippet can wrap their text rather than only ever landing beside it. It’s empty when nothing was selected, and every occurrence is replaced.
 
 ```php
@@ -200,31 +196,31 @@ Markers, all optional:
 'link' => "[\${1:\$SELECTION}](\${0:https://})",
 ```
 
-Defaults are worth the extra characters on anything with more than a couple of stops: a bare stop is somewhere to go, a filled one says what goes there. A default is ordinary text, so `$SELECTION` inside one is still substituted, and the stop comes out covering whatever it stood in for. There’s no nesting — a default runs to the first `}`.
+Defaults earn their characters on anything with more than a couple of stops: a bare stop is somewhere to go, a filled one says what goes there. A default is ordinary text, so `$SELECTION` inside one is still substituted and the stop comes out covering whatever it stood in for. There’s no nesting: a default runs to the first `}`.
 
-Tab belongs to the run only while one is going, and <kbd>Esc</kbd> ends it early — Tab is how you leave a field, and a textarea that kept hold of it would be one you couldn’t get out of. The run also ends when the last stop is passed, or when the caret leaves the text the snippet put in.
+Tab belongs to a run only while one is going, since it’s also how you leave a field. <kbd>Esc</kbd> ends a run early, and it ends on its own at the last stop or when the caret leaves the text the snippet put in. A body carrying only `$0` is a caret position rather than a run, and behaves as it always did.
 
-A body carrying only `$0` behaves exactly as it did before stops existed: one stop is a caret position, not a run.
+Mind the quoting. Inside a double-quoted PHP string, `$0` and `${1:…}` read as variables, so escape the `$` as `\$0` and `\${1:…}`. Single quotes avoid that but cost you `\n`. Heredocs interpolate. Nowdocs (`<<<'MD'`) don’t.
 
-Mind the quoting: inside a double-quoted PHP string, `$0` and `$SELECTION` read as variables, so escape them as `\$0` and `\$SELECTION`. Single quotes avoid that but cost you `\n`. Heredocs interpolate; nowdocs (`<<<'MD'`) don’t.
-
-**Why a config file and not a settings screen?** A snippet is a contract with the templates and CSS that render it — a callout only looks like a callout because your front end styles what it emits. So the person writing one should be the person who can also write that, and the definition should travel with the code in version control. Which snippets a *given field* offers is a field setting, under **Available Snippets** — the same split `config/htmlpurifier/` already uses.
+**Why a config file and not a settings screen?** A snippet is a contract with the templates and CSS that render it, so the person writing one should be the person who can write those too, and the definition should travel with the code. Which snippets a *given field* offers is a field setting, under **Available Snippets**, the same split `config/htmlpurifier/` already uses.
 
 A field that has never been saved against a snippet offers all of them, so adding one to the config file reaches every existing field without editing each one. With no config file the **Snippets** button hides itself rather than opening an empty menu, and the field settings drop the section to match.
 
 ### Opening the menu
 
-Typing <kbd>/</kbd> opens it **at the caret**, and what you type after that narrows the list — `/cal` gets you to a callout without reaching for the arrow keys. <kbd>⌘⇧K</kbd> opens it at the caret too, and clicking the toolbar button opens it under the button, since that's where the eye already is.
+Typing <kbd>/</kbd> opens it **at the caret**, and what you type after that narrows the list. `/cal` gets you to a callout without reaching for the arrow keys. <kbd>⌘⇧K</kbd> opens it at the caret too, and clicking the toolbar button opens it under the button, since that's where the eye already is.
 
 Neither needs the button: both work with **Snippets** unticked in *Toolbar Buttons*, and with the toolbar switched off altogether. Arrows and <kbd>Tab</kbd> move through the list, <kbd>Enter</kbd> inserts, <kbd>Esc</kbd> closes and puts the caret back.
 
-The <kbd>/</kbd> menu also offers **Entry** and **Asset**, above the snippets and divided off from them — the two commands that put something in at the caret rather than reshaping what's around it, which is the only kind a menu opened by typing can offer. There's nothing selected to make bold. They don't follow *Toolbar Buttons*. That setting says what the toolbar shows, not what the field can do — <kbd>⌘⇧E</kbd> and <kbd>⌘⇧U</kbd> work with every button unticked, and so do the snippets in this menu — so the menu is there in full either way, and on a field with no snippets at all it's there for the two commands alone.
+The <kbd>/</kbd> menu also offers **Entry** and **Asset**, above the snippets and divided off from them. They're the two commands that put something in at the caret rather than reshaping what's around it, which is the only kind a menu opened by typing can offer. There's nothing selected to make bold.
+
+They don't follow *Toolbar Buttons*. That setting says what the toolbar shows, not what the field can do, and <kbd>⌘⇧E</kbd> and <kbd>⌘⇧U</kbd> work with every button unticked. So does the snippet half of this menu. On a field with no snippets at all, the menu is there for the two commands alone.
 
 <kbd>⌘⇧K</kbd> and the button stay snippets-only. Both have meant snippets since before there was anything else in the list.
 
-**What counts as a `/`.** Only one at the start of a line or after a space, and never inside a fenced code block — Markdown source is full of the other kind, in URLs, paths, closing tags and dates. Past that the list narrows as you type and closes the moment nothing matches, so a slash that wasn't meant as a command costs a flicker rather than a dismissal.
+**What counts as a `/`.** Only one at the start of a line or after a space, and never inside a fenced code block. Markdown source is full of the other kind, in URLs, paths, closing tags and dates. Past that the list narrows as you type and closes the moment nothing matches, so a slash that wasn't meant as a command costs a flicker rather than a dismissal.
 
-**Mind what your fields render.** With *Purify HTML* on — the default — raw HTML in a snippet is sanitised on the way out, and HTML Purifier only knows HTML 4: `<details>` and `<summary>` are dropped entirely, and iframes survive only for the hosts `config/htmlpurifier/` allows. Markdown *inside* a raw HTML block isn’t parsed either, whatever the purifier does. A snippet that emits Markdown works everywhere; one that emits HTML is worth checking in the Preview tab first.
+**Mind what your fields render.** With *Purify HTML* on, the default, raw HTML in a snippet is sanitised on the way out by a purifier that only knows HTML 4. `<details>` and `<summary>` are dropped entirely, and iframes survive only for the hosts `config/htmlpurifier/` allows. Markdown *inside* a raw HTML block isn’t parsed either, whatever the purifier does. A snippet that emits Markdown works everywhere. One that emits HTML is worth checking in the Preview tab first.
 
 ### From a plugin
 
@@ -247,7 +243,7 @@ Event::on(
 );
 ```
 
-A handle already defined in `config/wahlberg.php` wins, so an installation can always overrule a plugin about its own site. Plugins rendering the editor directly can skip the pool entirely and pass definitions to `Editor::inputHtml()` instead — see [Using the editor in your own plugin](#using-the-editor-in-your-own-plugin).
+A handle already defined in `config/wahlberg.php` wins, so an installation can always overrule a plugin about its own site. Plugins rendering the editor directly can skip the pool and pass definitions to `Editor::inputHtml()` instead. See [Using the editor in your own plugin](#using-the-editor-in-your-own-plugin).
 
 ## Templating
 
@@ -320,7 +316,7 @@ They’re resolved on the way out, not on save, so an entry that changes its slu
 
 Two things worth knowing:
 
-- **Code is left alone.** A reference tag in a fenced block or an inline code span renders as the author typed it, which is what you want when the thing you’re documenting *is* reference tags. This works because tags are resolved after parsing, when the parser has already decided what counts as code, so there’s no second guess at Markdown’s fence rules to get wrong.
+- **Code is left alone.** A tag in a fenced block or an inline code span renders as the author typed it, which is what you want when the thing you’re documenting *is* reference tags. Tags are resolved after parsing, when the parser has already decided what counts as code, so nothing here second-guesses Markdown’s fence rules.
 - **Resolved values are purified.** Whatever a tag resolves to goes through HTML Purifier along with the rest of the content, assuming **Purify HTML** is on.
 
 On a multi-site install, tags resolve against the site the element is being rendered in. Override that per tag with Craft’s own `@` syntax, `{entry:123@german:url}`, or for a whole render with `{{ text|marky(siteId=2) }}`.
@@ -331,7 +327,7 @@ Markdown lets authors write HTML inline, so a Markdown field is an HTML field we
 
 Two things to know about how that works here:
 
-- **It runs at output, not on save.** Craft’s CKEditor field purifies the value as it’s stored, because what’s stored *is* HTML. Here the stored value is Markdown source, and purifying source would mangle it, since autolinks like `<https://example.com>` and `<` inside code fences are not markup. So purification happens each time `.html` is rendered, and the raw Markdown is never touched.
+- **It runs at output, not on save.** Craft’s CKEditor field purifies as it stores, because what’s stored *is* HTML. Here the stored value is Markdown source, and purifying that would mangle it: autolinks like `<https://example.com>` and `<` inside code fences are not markup. So it happens each time `.html` is rendered, and the raw Markdown is never touched.
 - **`|md` bypasses it.** `{{ entry.body.html }}` is purified. `{{ entry.body|md }}` runs Craft's filter over the raw value and isn’t. That’s deliberate, since `.raw` has to stay pristine, but it means the protection lives on one particular path. `|marky` is on that path, `|md` isn’t.
 
 To change what’s allowed through, drop a JSON config file in `config/htmlpurifier/` and select it in the field’s settings, exactly as you would for a CKEditor field:
@@ -347,9 +343,9 @@ Turning **Purify HTML** off renders exactly what authors type, scripts included.
 
 ### Encoding instead
 
-**Encode HTML** is the stricter option, and a different one. Purifying parses the HTML and then drops what isn’t safe; encoding never lets it be HTML at all. An author who types `<em>tag</em>` gets those characters back on the page rather than an emphasis, and a `<script>` shows up as text.
+**Encode HTML** is the stricter option, and a different one. Purifying parses the HTML and then drops what isn’t safe. Encoding never lets it be HTML at all: an author who types `<em>tag</em>` gets those characters back on the page rather than an emphasis, and a `<script>` shows up as text.
 
-Use it for fields where HTML has no business being — a strapline, a caption, a field authored by people you’d rather not hand an `<iframe>` to. Markdown itself carries on working: `**bold**` is still bold, it’s only the raw HTML that goes.
+Use it where HTML has no business being. A strapline, a caption, a field authored by people you’d rather not hand an `<iframe>` to. Markdown itself carries on working, so `**bold**` is still bold. It’s only the raw HTML that goes.
 
 Encoding forces Craft’s `pre-encoded` parser, which is Traditional Markdown with the escaping it would otherwise do inside code taken out. Without that, a fenced block would come back showing `&amp;lt;` where the author typed `<`. The flavour selector is disabled while **Encode HTML** is on for that reason, and `.flavour` reports `pre-encoded`.
 
@@ -390,7 +386,7 @@ echo Editor::inputHtml([
 
 The ones you leave out fall back to the same defaults a Markdown field starts with: 14px text, a 2-row minimum, no maximum, and the same toolbar. An editor rendered from another plugin matches one in a field layout without having to be configured to.
 
-`buttons` takes the command names `Editor::commands()` lists, in any order — the toolbar keeps its own, and drops a group nothing was picked from rather than leaving its divider hanging:
+`buttons` takes the command names `Editor::commands()` lists, in any order. The toolbar keeps its own, and drops a group nothing was picked from rather than leaving its divider hanging:
 
 ```twig
 {{ wahlberg.field({
@@ -416,7 +412,7 @@ Turn `highlight` off and you get a plain textarea with the same chrome, sizing a
 }) }}
 ```
 
-The **Preview** tab works without a field behind it. It parses with whatever `flavour` you pass and always purifies, since there are no field settings to consult. There’s no *Preserve Line Breaks* option out here: `flavour` takes a parser flavour directly, so pass `gfm` to turn line breaks off and `gfm-comment` (the default) to keep them.
+The **Preview** tab works without a field behind it, parsing with whatever `flavour` you pass and always purifying, since there are no field settings to consult. There’s no *Preserve Line Breaks* option out here: `flavour` takes a parser flavour directly, so pass `gfm` to turn line breaks off and `gfm-comment` (the default) to keep them.
 
 For somewhere a value is shown rather than edited, `Editor::staticHtml([ ... ])` renders the Markdown as it was written on the same surface, in the same type, with no textarea and nothing to run:
 
@@ -426,15 +422,15 @@ echo Editor::staticHtml([
 ]);
 ```
 
-**Options**: `value` and `fontSize`.
+**Options**: `value`, `fontSize` and `lineLength`.
 
-Reach for it anywhere the JavaScript won’t be there. Disabling the editor’s inputs isn’t enough on its own: the textarea paints its own text transparent so the highlighted layer behind it shows through, and that layer is filled by the JS. This is what a Markdown field renders in a revision, and in any other read-only form Craft builds.
+Reach for it anywhere the JavaScript won’t be there. Disabling the editor’s inputs isn’t enough on its own, because the textarea paints its own text transparent for the highlighted layer to show through, and that layer is filled by the JS. This is what a Markdown field renders in a revision, and in any other read-only form Craft builds.
 
 What’s public API here is the four entry points and their options. The markup they generate, the CSS class names, and the data attributes the JS binds to are all internal and will change without a major version, so render through these rather than hand-rolling the HTML.
 
 ### Hooking the Preview tab
 
-`PreviewController::EVENT_MODIFY_PREVIEW` hands you the preview’s HTML after parsing, reference tags and purification — so a listener can add markup the purifier would otherwise strip, inline SVG being the case it exists for. `ReferenceTags::outsideCode()` is there if you want to leave tokens inside code fences as the author typed them.
+`PreviewController::EVENT_MODIFY_PREVIEW` hands you the preview’s HTML after parsing, reference tags and purification, so a listener can add markup the purifier would otherwise strip. Inline SVG is the case it exists for. `ReferenceTags::outsideCode()` is there if you want to leave tokens inside code fences as the author typed them.
 
 Two things to be deliberate about, both because it runs after the sanitiser: what you add has to be safe on its own account, and the preview is now a step ahead of `entry.body.html` unless you ship a filter that puts it back on the template side. [`ModifyPreviewEvent`](src/events/ModifyPreviewEvent.php) has a worked example.
 
@@ -462,13 +458,13 @@ Enter continues a list or a blockquote onto the next line, and ends it on an emp
 
 ### What Enter does
 
-With *New Paragraph on Enter* on, <kbd>Enter</> leaves a blank line behind it and <kbd>⇧Enter</kbd> gives the single newline — the division every rich text editor makes.
+With *New Paragraph on Enter* on, <kbd>Enter</kbd> leaves a blank line behind it and <kbd>⇧Enter</kbd> gives the single newline. That's the division every rich text editor makes.
 
-It's off by default, because a field whose authors write Markdown doesn't need it. It's worth turning on for one whose authors don't, because a single newline is the one piece of Markdown that does nothing you can see. With *Preserve Line Breaks* on it renders as a `<br>`; with it off it renders as a space, and the two lines you just separated come back as one. Neither is a paragraph, and "press it twice" is not something anyone arrives already knowing.
+It's off by default, because a field whose authors write Markdown doesn't need it. Turn it on for one whose authors don't. A single newline is the one piece of Markdown that does nothing you can see: a `<br>` with *Preserve Line Breaks* on, and with it off a space, so the two lines you just separated come back as one. Neither is a paragraph, and "press it twice" is not something anyone arrives already knowing.
 
-Enter keeps its other jobs either way: it carries on a list or a quote, and ends one on an empty item. And a blank line already under the caret isn't doubled, so holding Enter down leaves a gap rather than a pile of them.
+Enter keeps its other jobs either way, carrying on a list or a quote and ending one on an empty item. A blank line already under the caret isn't doubled, so holding Enter down leaves a gap rather than a pile of them.
 
-The setting sits with *Preserve Line Breaks* and *Inline Only* because the three of them are one question — what a line break means in this field — answered at the three points it gets asked: what Enter types, what a single newline renders as, and whether there are paragraphs to make at all. It disappears when *Inline Only* is on, and is ignored there, since a field rendering without a `<p>` has no use for a key that starts one.
+It sits with *Preserve Line Breaks* and *Inline Only* because the three are one question: what a line break means in this field. It disappears when *Inline Only* is on, and is ignored there, since a field rendering without a `<p>` has no use for a key that starts one.
 
 <kbd>⌘⇧P</kbd> swaps between **Write** and **Preview**, from anywhere in the field, and puts the caret back where it was on the way in. It does nothing on a field with *Show Preview Tab* off, or while there’s nothing written to preview.
 
@@ -476,11 +472,11 @@ The editor grows as the author types, between *Minimum Rows* and *Maximum Rows*.
 
 ### The header
 
-Once a field fills more than half the window, its header sticks: the tabs and the toolbar hold still and the text scrolls under them, so the buttons are still there when the writing has run past where they were. That’s measured on the **Write** tab whichever tab is up — rendered Markdown is shorter than the source it came from, and a header that came and went as you switched would be worse than one that never held still.
+Once a field fills more than half the window, its header sticks. The tabs and the toolbar hold still and the text scrolls under them, so the buttons are still there when the writing has run past where they were. That’s measured on the **Write** tab whichever tab is up, because rendered Markdown is shorter than its source, and a header that came and went as you switched would be worse than one that never held still.
 
-Below that they scroll away with everything else. A short field is gone almost as soon as its header is, so sticking it would only mean sliding the strip over the last few rows on the way past — motion in exchange for nothing.
+Below that they scroll away with everything else. A short field is gone almost as soon as its header is, so sticking it would only slide the strip over the last few rows on the way past.
 
-It stops below Craft’s own page header, which pins itself to the top of the window once the page scrolls. Craft has no token for that header’s height and it isn’t a fixed number, so the editor measures it — and treats it as zero in a slideout, a modal, or anywhere else scrolling in a box of its own, since the field’s header is already stopping below that thing’s chrome.
+It stops below Craft’s own page header, which pins itself to the top of the window once the page scrolls. Craft has no token for that height and it isn’t a fixed number, so the editor measures it. In a slideout, a modal, or anywhere else scrolling in a box of its own it’s zero, since the field’s header already stops below that thing’s chrome.
 
 There’s no setting for it and no threshold to tune. If your control panel has put something else along the top, `--wahlberg-sticky-top` on `.wahlberg` overrules the measurement.
 
@@ -488,17 +484,17 @@ There’s no setting for it and no threshold to tune. If your control panel has 
 
 Switching between **Write** and **Preview** halfway down a long field puts you back where you were, rather than at the top.
 
-What’s matched is structure, not distance. The two panes hold the same content at wildly different lengths — a link is a URL’s worth of source and a word of rendered text, and a reference tag is worse — so a percentage or a pixel offset would land somewhere arbitrary. Instead the source is split into the blocks the parser turns into elements, and the block at the top of one pane is the element put at the top of the other.
+What’s matched is structure, not distance. The two panes hold the same content at wildly different lengths, since a link is a URL’s worth of source and a word of rendered text, and a reference tag is worse. A percentage or a pixel offset would land somewhere arbitrary. So the source is split into the blocks the parser turns into elements, and the block at the top of one pane is the element put at the top of the other.
 
-Blocks and elements come out one for one nearly always. Where they don’t — a list with blank lines between its items is several blocks of source and a single `<ul>` — the position is scaled rather than trusted, which lands in the right region instead of on the wrong paragraph. At the top of a field, switching does nothing at all.
+Blocks and elements come out one for one nearly always. Where they don’t, as when a list with blank lines between its items is several blocks of source and a single `<ul>`, the position is scaled rather than trusted, landing in the right region instead of on the wrong paragraph. At the top of a field, switching does nothing at all.
 
 ### The current line
 
-The line being written carries a band behind it, the way a code editor does. A long line wraps over several rows and the band covers all of them, since what it marks is the line the author is on rather than the row the caret is in — in Markdown that block is usually the paragraph.
+The line being written carries a band behind it, the way a code editor does. A long line wraps over several rows and the band covers all of them, since what it marks is the line the author is on rather than the row the caret is in. In Markdown that block is usually the paragraph.
 
-It’s up only while the field has focus and nothing is selected: a selection already says where the author is, and a page of fields each wearing a band says nothing at all.
+It’s up only while the field has focus and nothing is selected. A selection already says where the author is, and a page of fields each wearing a band says nothing at all.
 
-In light mode it’s `--gray-050`, the same step on Craft’s ramp the field’s header strip sits on; in dark, a 3% lift off whatever the surface is. Nothing else about the field’s colours changes.
+In light mode it’s `--gray-050`, the same step on Craft’s ramp the field’s header sits on. In dark it’s a 3% lift off whatever the surface is. Nothing else about the field’s colours changes.
 
 There’s no setting for it. Retheme or switch it off with the CSS variables on `.wahlberg`:
 
@@ -509,17 +505,17 @@ There’s no setting for it. Retheme or switch it off with the CSS variables on 
 | `--wahlberg-line-height` | `1.6` | the row itself, which the caret and the selection are drawn to as well |
 | `--wahlberg-measure` | `48em` | how wide the text runs under *Line Length*, about 80 characters |
 
-`--wahlberg-measure` is in `em` rather than the `ch` you’d expect of a monospace column, and deliberately: `ch` is the width of a `0` in the face the browser actually resolved, and the two text layers don’t always resolve the same one out of the same stack. Two layers on two different `ch` would wrap in two different places, which is the one mismatch the editor can’t measure its way out of. `em` is the font size, which both take from the same place.
+Both text layers take the last two from the same place on purpose: wrapping in different places, or sitting on different line heights, is the one mismatch the editor can’t measure its way out of. That’s why `--wahlberg-measure` is in `em` and not the `ch` a monospace column asks for. `ch` is the width of a `0` in the face the browser resolved, and the two layers don’t always resolve the same one.
 
-`--wahlberg-line-height` is the one to reach for if the caret looks too tall for the text: a browser draws it to the full row, so the only way to shorten it is to tighten the row. Both text layers take it from the same place on purpose — two layers on different line heights is the one mismatch the editor can’t measure its way out of.
+Reach for `--wahlberg-line-height` if the caret looks too tall for the text. A browser draws it to the full row, so the only way to shorten it is to tighten the row.
 
 ### Syntax highlighting
 
-The Write tab highlights Markdown as you type, and it’s still a plain `<textarea>` — the colour comes from a layer rendered behind it, with the textarea’s own text made transparent. Native undo, spellcheck, selection and form submission all behave as they otherwise would.
+The Write tab highlights Markdown as you type and is still a plain `<textarea>`. The colour comes from a layer rendered behind it, with the textarea’s own text made transparent, so native undo, spellcheck, selection and form submission all behave as they otherwise would.
 
-Bold and italic are used only where the font family has real cuts for them. The editor measures on load and falls back to colour alone where a fabricated cut would advance wider and pull the two layers apart. Nothing is lost by that: in Markdown source the `**` and `_` are on screen anyway.
+Bold and italic are used only where the font family has real cuts for them. The editor measures on load and falls back to colour alone where a fabricated cut would advance wider and pull the two layers apart. Nothing is lost by that, since in Markdown source the `**` and `_` are on screen anyway.
 
-Retheme with the CSS variables on `.wahlberg`: `--wahlberg-mark`, `--wahlberg-heading`, `--wahlberg-strong`, `--wahlberg-em`, `--wahlberg-code`, `--wahlberg-link`, `--wahlberg-url`, `--wahlberg-quote`. Keep to colour, since setting weight or slope here goes around that measurement. Each defaults to a step on Craft’s own ramp rather than a fixed hex, so a control panel theme that redeclares the palette — its dark mode included — moves the editor with it.
+Retheme with the CSS variables on `.wahlberg`: `--wahlberg-mark`, `--wahlberg-heading`, `--wahlberg-strong`, `--wahlberg-em`, `--wahlberg-code`, `--wahlberg-link`, `--wahlberg-url`, `--wahlberg-quote`. Keep to colour, since setting weight or slope here goes around that measurement. Each defaults to a step on Craft’s own ramp rather than a fixed hex, so a control panel theme that redeclares the palette, dark mode included, moves the editor with it.
 
 If the two layers ever look out of step, add the `wahlberg--debug` class to the field to paint the textarea’s own text in red over the layer beneath it.
 
