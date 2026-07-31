@@ -269,6 +269,81 @@
     fill: currentcolor;
 }
 
+/* The floating toolbar: the same strip, lifted out of the header and put over the
+   text it's formatting. Up when there's a selection to act on, and on ⌘⇧F at the
+   caret.
+
+   Positioned against the field rather than the writing surface, which clips its
+   own overflow — the panel has to be able to sit under the last line and past
+   either edge. */
+
+.wahlberg-floating {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+
+    /* Wide enough for the buttons, and never wider than the field. The cap is
+       what makes the buttons fold: the toolbar clips at whatever it's given, and
+       the JS hides from the end until what's left fits — the same machinery that
+       runs when a header is too narrow, aimed at the panel instead. */
+    max-width: 100%;
+
+    padding: 3px;
+    border: 1px solid var(--hairline-color);
+    border-radius: var(--large-border-radius, 5px);
+    background-color: var(--wahlberg-surface);
+
+    /* Craft's popover shadow, so the panel sits at the same height above the page
+       as a menu or a HUD does. The fallback is that token's own value */
+    box-shadow: var(--popover-box-shadow, 0 6px 20px rgb(59 76 106 / 13%));
+}
+
+/* The gap under the buttons is the header's, where it cleared the tabs' bottom
+   border. In a panel it's just a heavy bottom edge. */
+.wahlberg-floating .wahlberg-toolbar {
+    padding-bottom: 0;
+}
+
+/* The pointer at the text. Two triangles: the border's, and the fill's a pixel
+   over it, which leaves the panel's own edge drawn around a solid arrow.
+   `--wahlberg-arrow` is where the JS wants it to aim — the middle of the
+   selection, wherever the panel itself had to be pushed to stay on screen. */
+
+.wahlberg-floating::before,
+.wahlberg-floating::after {
+    content: '';
+    position: absolute;
+    left: var(--wahlberg-arrow, 50%);
+    bottom: 100%;
+    width: 0;
+    height: 0;
+    border: 7px solid transparent;
+    border-bottom-color: var(--hairline-color);
+    transform: translateX(-50%);
+}
+
+.wahlberg-floating::after {
+    margin-bottom: -1px;
+    border-bottom-color: var(--wahlberg-surface);
+}
+
+/* Above the selection instead, because there wasn't room below it, so the arrow
+   moves to the underside and turns over. */
+
+.wahlberg-floating--above::before,
+.wahlberg-floating--above::after {
+    top: 100%;
+    bottom: auto;
+    border-bottom-color: transparent;
+    border-top-color: var(--hairline-color);
+}
+
+.wahlberg-floating--above::after {
+    margin-bottom: 0;
+    margin-top: -1px;
+    border-top-color: var(--wahlberg-surface);
+}
+
 /* Body. The source is two stacked layers: a <pre> showing the highlighted text,
    and the real textarea on top with its own text made transparent. Every metric
    that affects where a character lands has to match on both, or they drift. */
@@ -440,6 +515,7 @@
 
 .wahlberg-editor[hidden],
 .wahlberg-preview[hidden],
+.wahlberg-floating[hidden],
 .wahlberg-guide[hidden] {
     display: none;
 }

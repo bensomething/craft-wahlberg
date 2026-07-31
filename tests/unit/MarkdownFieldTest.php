@@ -261,6 +261,11 @@ class MarkdownFieldTest extends TestCase
         // Except the counts, which are opt-in: most fields don't want them
         self::assertFalse($field->showStats);
 
+        // And the toolbar stays where an author can see it. Floating hides every
+        // formatting control until text is picked out, which is a thing to ask for
+        // rather than to be given
+        self::assertFalse($field->floatingToolbar);
+
         // And the parsing stays as it was before any of this was configurable
         self::assertFalse($field->inlineOnly);
         self::assertFalse($field->encodeHtml);

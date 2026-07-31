@@ -132,6 +132,39 @@ class EditorTest extends TestCase
         self::assertStringNotContainsString('<craft-copy-attribute value="> quote"', $html);
     }
 
+    #[TestDox('a shortcut is the key to hold the modifier with, and says so if Shift is held too')]
+    public function testToolbarShortcuts(): void
+    {
+        $shortcuts = [];
+
+        foreach (Editor::toolbar() as $group) {
+            foreach ($group as $button) {
+                if (isset($button['shortcut'])) {
+                    $shortcuts[$button['command']] = $button['shortcut'];
+                }
+            }
+        }
+
+        self::assertSame([
+            'bold' => 'B',
+            'italic' => 'I',
+            'link' => 'K',
+            'entry' => 'shift+E',
+            'asset' => 'shift+U',
+        ], $shortcuts);
+
+        // The editor reads this attribute to label the button ⌘K or ⌘⇧E, and to
+        // decide which modifiers the keystroke wants. A shortcut spelled any other
+        // way would come out as a tooltip that lies
+        foreach ($shortcuts as $command => $shortcut) {
+            self::assertMatchesRegularExpression(
+                '/^(shift\+)?[A-Z]$/',
+                $shortcut,
+                "`$command` has a shortcut the editor can't read",
+            );
+        }
+    }
+
     #[TestDox('every command has a label, and the defaults are all real commands')]
     public function testCommands(): void
     {

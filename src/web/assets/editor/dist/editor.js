@@ -313,6 +313,7 @@
             this.groups = Array.from(this.container.querySelectorAll('[data-toolbar-group]'));
             this.buttons = Array.from(this.container.querySelectorAll('[data-toolbar-group] [data-command]'));
             this.overflow = this.container.querySelector('[data-overflow]');
+            this.floating = this.container.querySelector('[data-floating]');
             this.headingsEl = this.container.querySelector('[data-headings]');
             this.guideBtn = this.container.querySelector('[data-guide-trigger]');
             this.guideBody = this.container.querySelector('[data-guide]');
@@ -325,6 +326,13 @@
             // Once the author drags the editor to a height they want, stop
             // second-guessing them
             this.manuallySized = false;
+
+            // The floating toolbar's state: summoned to the caret rather than
+            // called up by a selection, put away with Escape, and out of the way
+            // while a selection is being dragged
+            this.summoned = false;
+            this.dismissed = false;
+            this.selecting = false;
 
             // The band behind the line being written. Built here rather than in the
             // template because it's decoration: nothing outside this class needs to
@@ -346,8 +354,14 @@
 
             this.buttons.forEach((button) => {
                 const shortcut = button.dataset.shortcut;
+
                 if (shortcut) {
-                    button.title += ' (' + MOD_LABEL + shortcut + ')';
+                    // `shift+E` is ⌘⇧E and `B` is ⌘B — or Ctrl, on a platform that
+                    // says Ctrl
+                    const shifted = shortcut.indexOf('shift+') === 0;
+
+                    button.title += ' (' + (shifted ? MOD_SHIFT_LABEL : MOD_LABEL) +
+                        (shifted ? shortcut.slice(6) : shortcut) + ')';
                 }
                 // Keep the textarea's selection when a button takes the click
                 button.addEventListener('mousedown', (event) => event.preventDefault());
@@ -366,11 +380,17 @@
             // Every way the caret can move raises `selectionchange`, typing and
             // clicking included; what it doesn't cover is the caret going away,
             // hence the other two
-            document.addEventListener('selectionchange', () => this.syncActiveLine());
-            this.source.addEventListener('focus', () => this.syncActiveLine());
-            this.source.addEventListener('blur', () => this.syncActiveLine());
+            const moved = () => {
+                this.syncActiveLine();
+                this.syncFloating();
+            };
+
+            document.addEventListener('selectionchange', moved);
+            this.source.addEventListener('focus', moved);
+            this.source.addEventListener('blur', moved);
 
             this.initOverflow();
+            this.initFloating();
             this.initHeadings();
             this.initSnippets();
             this.initGuide();
@@ -519,6 +539,9 @@
             }
 
             this.positionActiveLine();
+
+            // The panel is anchored to text that's just moved under it
+            this.syncFloating();
         }
 
         /**
@@ -1209,6 +1232,11 @@
                 return;
             }
 
+            // As every other control on the toolbar does. It matters more here than
+            // it looks: the cheatsheet is read against something half-written, so
+            // the selection has to survive opening it — and a floating toolbar is
+            // up for exactly as long as the field has the focus this would take
+            this.guideBtn.addEventListener('mousedown', (event) => event.preventDefault());
             this.guideBtn.addEventListener('click', () => this.toggleGuide());
         }
 
@@ -1296,16 +1324,39 @@
         // -- Typing -----------------------------------------------------------
 
         onKeydown(event) {
-            if (event[MOD_KEY] && event.shiftKey && !event.altKey &&
-                event.key.toLowerCase() === 'k' && this.snippetMenu
-            ) {
-                event.preventDefault();
-                this.openSnippets();
-                return;
+            if (event[MOD_KEY] && event.shiftKey && !event.altKey) {
+                const key = event.key.toLowerCase();
+
+                if (key === 'k' && this.snippetMenu) {
+                    event.preventDefault();
+                    this.openSnippets();
+                    return;
+                }
+
+                if (key === 'f' && this.floating) {
+                    event.preventDefault();
+                    this.toggleFloating();
+                    return;
+                }
+
+                // The two element pickers, bound whether or not their buttons are
+                // on the toolbar, as the unshifted three are. They matter most to a
+                // field with a floating toolbar, where reaching a button means
+                // picking out text first — and inserting an entry is the one thing
+                // an author does with nothing selected
+                // `U` rather than the `A` that would have matched Asset: macOS
+                // browsers take ⌘⇧A for themselves, and it never reaches the page
+                const command = {e: 'entry', u: 'asset'}[key];
+
+                if (command) {
+                    event.preventDefault();
+                    this.run(command);
+                    return;
+                }
             }
 
-            // Shift excluded, or the shifted shortcut above would lowercase into
-            // this one and insert a link instead
+            // Shift excluded, or the shifted shortcuts above would lowercase into
+            // these and insert a link instead
             if (event[MOD_KEY] && !event.altKey && !event.shiftKey) {
                 const command = {b: 'bold', i: 'italic', k: 'link'}[event.key.toLowerCase()];
 
@@ -1314,6 +1365,19 @@
                     this.run(command);
                     return;
                 }
+            }
+
+            // Whatever the panel was up for is over — unless something it opened is
+            // still up, in which case Escape belongs to that. Stopped here rather
+            // than left to bubble, since a visible thing closing is what Escape did
+            if (event.key === 'Escape' && this.floating && !this.floating.hidden &&
+                !this.floatingBusy()
+            ) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.dismissed = true;
+                this.hideFloating();
+                return;
             }
 
             if (event.key === 'Enter' && !event.shiftKey && !event.altKey && !event[MOD_KEY]) {
@@ -1585,6 +1649,249 @@
             }
         }
 
+        // -- Floating toolbar -------------------------------------------------
+        //
+        // The same toolbar, out of the header and over the text: up when there's a
+        // selection to act on, and on ⌘⇧F at the caret for the commands that don't
+        // need one.
+
+        initFloating() {
+            if (!this.floating) {
+                return;
+            }
+
+            // A drag is a selection being made rather than one to act on, and a
+            // panel chasing the cursor is a panel in the way. It comes back when
+            // the mouse comes up
+            this.source.addEventListener('mousedown', () => {
+                this.selecting = true;
+                this.hideFloating();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (this.selecting) {
+                    this.selecting = false;
+                    this.syncFloating();
+                }
+            });
+        }
+
+        /**
+         * Puts the panel where the selection is, or takes it away. Coalesced like
+         * the band behind the line, since the caret can move on every keystroke.
+         */
+        syncFloating() {
+            if (!this.floating || this.floatingFrame) {
+                return;
+            }
+
+            this.floatingFrame = requestAnimationFrame(() => {
+                this.floatingFrame = null;
+                this.renderFloating();
+            });
+        }
+
+        renderFloating() {
+            const source = this.source;
+            const range = source.selectionStart + ':' + source.selectionEnd;
+
+            // Escape puts the panel away for this selection only. Anything else
+            // and there'd be no way back to it without leaving the field
+            if (range !== this.floatingRange) {
+                this.floatingRange = range;
+                this.dismissed = false;
+            }
+
+            if (!this.wantsFloating()) {
+                this.hideFloating();
+                return;
+            }
+
+            // Shown before it's measured: hidden it has no width to fold the
+            // buttons against, and nothing to position. Only on the way up —
+            // while it's up, the toolbar's own observer catches a field that's
+            // been resized under it
+            if (this.floating.hidden) {
+                this.floating.hidden = false;
+                this.layoutToolbar();
+            }
+
+            if (!this.positionFloating()) {
+                this.hideFloating();
+            }
+        }
+
+        /**
+         * Whether the panel should be up: something picked out to act on, or ⌘⇧F at
+         * the caret, with the field's own focus and nothing in the way.
+         */
+        wantsFloating() {
+            const source = this.source;
+
+            // Nothing to format, and nothing to measure against
+            if (this.previewing() || !source.offsetParent) {
+                return false;
+            }
+
+            if (this.floatingBusy()) {
+                return true;
+            }
+
+            if (this.dismissed || this.selecting ||
+                !this.container.contains(document.activeElement)
+            ) {
+                return false;
+            }
+
+            return !!this.summoned || source.selectionStart !== source.selectionEnd;
+        }
+
+        /**
+         * Whether something the panel opened is still up: one of the menus, the
+         * snippet list, the cheatsheet.
+         *
+         * Each of them is anchored to a button on the panel, so taking the panel
+         * away would take the thing the author is reading with it — and Escape
+         * belongs to them before it belongs to the panel, for the same reason.
+         *
+         * Keyed off the ARIA state each of them keeps in step rather than off
+         * anything of ours, which is how the button styling reads it too.
+         */
+        floatingBusy() {
+            return !!this.floating && !this.floating.hidden &&
+                !!this.floating.querySelector('[aria-expanded="true"]');
+        }
+
+        /**
+         * ⌘⇧F: the panel at the caret, with nothing selected.
+         *
+         * Half of what the toolbar offers goes in where the author is typing — a
+         * heading, a list, a quote, an entry, a snippet — and a panel that only
+         * ever appears over a selection would put all of that behind selecting
+         * something first. Stays up until Escape, or until focus leaves the field.
+         */
+        toggleFloating() {
+            if (this.summoned) {
+                this.hideFloating();
+                return;
+            }
+
+            this.summoned = true;
+            this.dismissed = false;
+            this.syncFloating();
+        }
+
+        hideFloating() {
+            if (!this.floating) {
+                return;
+            }
+
+            this.floating.hidden = true;
+            this.summoned = false;
+        }
+
+        /**
+         * Where the selection sits, in the field's own coordinates: the rows the
+         * panel has to clear, and the point it should aim at.
+         *
+         * Measured on a throwaway copy of the textarea, the same trick the caret and
+         * the active line are found with. An inline element reports one client rect
+         * per row it takes, so a selection running over several rows gives up its
+         * first row and its last, which are the two the panel can sit against.
+         */
+        selectionBox() {
+            const source = this.source;
+            const value = source.value;
+
+            const copy = mirror(source, this.editorEl, value.slice(0, source.selectionStart));
+            const span = document.createElement('span');
+
+            // Zero-width filler, so a caret with nothing selected still has a rect
+            span.textContent = value.slice(source.selectionStart, source.selectionEnd) || '​';
+            copy.appendChild(span);
+
+            const rects = Array.from(span.getClientRects());
+            const base = copy.getBoundingClientRect();
+            copy.remove();
+
+            if (!rects.length) {
+                return null;
+            }
+
+            const first = rects[0];
+            const last = rects[rects.length - 1];
+
+            // In the writing surface, with the text scrolled under it
+            const top = first.top - base.top - source.scrollTop;
+            const bottom = last.bottom - base.top - source.scrollTop;
+
+            // Scrolled out of sight in a field that's hit its maximum height, so
+            // there's nothing on screen left to point at
+            if (bottom < 0 || top > this.editorEl.clientHeight) {
+                return null;
+            }
+
+            const container = this.container.getBoundingClientRect();
+            const editor = this.editorEl.getBoundingClientRect();
+            const offset = editor.top - container.top;
+            const inset = editor.left - container.left - source.scrollLeft;
+
+            return {
+                top: top + offset,
+                bottom: bottom + offset,
+                // The middle of whichever row the panel ends up beside
+                above: first.left - base.left + first.width / 2 + inset,
+                below: last.left - base.left + last.width / 2 + inset,
+                // The same rows on the page, for working out which side has room
+                pageTop: editor.top + top,
+                pageBottom: editor.top + bottom,
+            };
+        }
+
+        /**
+         * Puts the panel under the selection, or over it where there's no room
+         * below, and points the arrow back at the text.
+         */
+        positionFloating() {
+            const box = this.selectionBox();
+
+            if (!box) {
+                return false;
+            }
+
+            const panel = this.floating;
+            const width = panel.offsetWidth;
+            const height = panel.offsetHeight;
+
+            // The arrow, and a little daylight over the text
+            const gap = 10;
+
+            // Below, where the eye already is once something's been picked out,
+            // unless that would land the panel off the bottom of the window and
+            // there's room the other way
+            const below = box.pageBottom + gap + height <= window.innerHeight ||
+                box.pageTop - gap - height < 0;
+
+            const at = below ? box.below : box.above;
+            const top = below ? box.bottom + gap : box.top - gap - height;
+
+            // Held inside the field, which for a panel as wide as one means pinned
+            // to its start edge
+            const left = Math.max(0, Math.min(at - width / 2, this.container.clientWidth - width));
+
+            panel.classList.toggle('wahlberg-floating--above', !below);
+            panel.style.top = Math.round(top) + 'px';
+            panel.style.left = Math.round(left) + 'px';
+
+            // The arrow stays on the text however far the panel had to move to fit,
+            // stopping short of the corners, where it would have no edge to sit on
+            panel.style.setProperty('--wahlberg-arrow', Math.round(
+                Math.min(Math.max(at - left, 12), Math.max(width - 12, 12)),
+            ) + 'px');
+
+            return true;
+        }
+
         // -- Tabs -------------------------------------------------------------
 
         /**
@@ -1680,6 +1987,7 @@
             if (previewing) {
                 this.closeMenuIn(this.headingsMenu);
                 this.closeSnippets();
+                this.hideFloating();
             }
 
             // Nothing to write against while the preview is up, cheatsheet included

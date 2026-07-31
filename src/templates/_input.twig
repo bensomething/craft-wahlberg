@@ -1,4 +1,37 @@
-{% set hasHeader = showPreview or showToolbar %}
+{# The toolbar renders either in the header or in a panel over the text, so it's
+   a macro rather than markup in one of the two places. #}
+{% import _self as wahlberg %}
+
+{% macro toolbar(groups, overflowMenu, snippetsButton, guide) %}
+    <div class="wahlberg-toolbar" data-toolbar>
+        {% for group in groups %}
+            <div class="wahlberg-toolbar-group" data-toolbar-group>
+                {% for button in group %}
+                    {% if button.menu is defined %}
+                        {# The heading control, when it's a menu #}
+                        {{ button.menu|raw }}
+                    {% else %}
+                        <button type="button" class="wahlberg-tool" data-command="{{ button.command }}"
+                            {%- if button.shortcut %} data-shortcut="{{ button.shortcut }}"{% endif %}
+                            title="{{ button.label }}" aria-label="{{ button.label }}">{{ button.icon|raw }}</button>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        {# The buttons fold into here when the toolbar runs out of room #}
+        <div class="wahlberg-overflow hidden" data-overflow>{{ overflowMenu|raw }}</div>
+
+        {# Pinned: each opens something anchored to itself #}
+        {{ snippetsButton|raw }}
+        {{ guide|raw }}
+    </div>
+{% endmacro %}
+
+{% set floating = floating ?? false %}
+{% set headerToolbar = showToolbar and not floating %}
+{% set floatingToolbar = showToolbar and floating %}
+{% set hasHeader = showPreview or headerToolbar %}
 {% set highlight = highlight ?? true %}
 {% set showStats = showStats ?? false %}
 {% set placeholder = placeholder ?? null %}
@@ -10,7 +43,7 @@
 {# The rows go out as custom properties as well as on the textarea: the attribute
    is a floor the browser applies before it knows what the value wraps to, and
    these are what size the field to its content on the first paint. #}
-<div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not showToolbar ? ' wahlberg--no-toolbar' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
+<div id="{{ containerId }}" class="wahlberg{{ not showPreview ? ' wahlberg--source-only' }}{{ not headerToolbar ? ' wahlberg--no-toolbar' }}{{ not hasHeader ? ' wahlberg--bare' }}{{ not highlight ? ' wahlberg--plain' }}"
     style="--wahlberg-font-size: {{ fontSize }}px; --wahlberg-min-rows: {{ minRows }}{{ maxRows ? "; --wahlberg-max-rows: #{maxRows}" }}">
     {% if hasHeader %}
         <div class="wahlberg-header">
@@ -23,30 +56,8 @@
                 </div>
             {% endif %}
 
-            {% if showToolbar %}
-                <div class="wahlberg-toolbar" data-toolbar>
-                    {% for group in toolbar %}
-                        <div class="wahlberg-toolbar-group" data-toolbar-group>
-                            {% for button in group %}
-                                {% if button.menu is defined %}
-                                    {# The heading control, when it's a menu #}
-                                    {{ button.menu|raw }}
-                                {% else %}
-                                    <button type="button" class="wahlberg-tool" data-command="{{ button.command }}"
-                                        {%- if button.shortcut %} data-shortcut="{{ button.shortcut }}"{% endif %}
-                                        title="{{ button.label }}" aria-label="{{ button.label }}">{{ button.icon|raw }}</button>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-
-                    {# The buttons fold into here when the header runs out of room #}
-                    <div class="wahlberg-overflow hidden" data-overflow>{{ overflowMenu|raw }}</div>
-
-                    {# Pinned: each opens something anchored to itself #}
-                    {{ snippetsButton|raw }}
-                    {{ guide|raw }}
-                </div>
+            {% if headerToolbar %}
+                {{ wahlberg.toolbar(toolbar, overflowMenu, snippetsButton, guide) }}
             {% endif %}
         </div>
     {% endif %}
@@ -73,6 +84,15 @@
             <div class="wahlberg-preview" data-preview hidden></div>
         {% endif %}
     </div>
+
+    {% if floatingToolbar %}
+        {# Outside the writing surface, which clips its own overflow, and positioned
+           against the field: the panel has to be able to sit below the last line
+           and beyond either edge. Hidden until there's a selection to sit against. #}
+        <div class="wahlberg-floating" data-floating hidden>
+            {{ wahlberg.toolbar(toolbar, overflowMenu, snippetsButton, guide) }}
+        </div>
+    {% endif %}
 
     {# Outside the toolbar, and positioned at the caret when opened, so the
        shortcut works whether or not the button above is there #}

@@ -49,6 +49,7 @@ abstract class Editor
      *     value?: string,
      *     id?: string|null,
      *     toolbar?: bool,
+     *     floating?: bool,
      *     buttons?: list<string>,
      *     preview?: bool,
      *     highlight?: bool,
@@ -75,6 +76,7 @@ abstract class Editor
             'value' => '',
             'id' => null,
             'toolbar' => true,
+            'floating' => false,
             'buttons' => MarkdownField::DEFAULT_TOOLBAR_BUTTONS,
             'preview' => true,
             'highlight' => true,
@@ -169,6 +171,9 @@ abstract class Editor
                 max(MarkdownField::MIN_FONT_SIZE, (int)$config['fontSize']),
             ),
             'showToolbar' => $showToolbar,
+            // Over the selection rather than in the header, which leaves the
+            // header holding the tabs alone — or gone, with no tabs either
+            'floating' => (bool)$config['floating'],
             'showPreview' => (bool)$config['preview'],
             'highlight' => (bool)$config['highlight'],
             'showStats' => (bool)$config['stats'],
@@ -419,6 +424,10 @@ abstract class Editor
     {
         $labels = self::commands();
 
+        // A shortcut is the key the modifier is held with, prefixed `shift+` where
+        // Shift is held too. The editor turns that into ⌘K or ⌘⇧E for the tooltip,
+        // and Ctrl where the platform says so, which is why this is a key rather
+        // than a label
         $button = function(string $command, string $icon, ?string $shortcut = null) use ($labels) {
             return [
                 'command' => $command,
@@ -444,8 +453,8 @@ abstract class Editor
             ],
             [
                 $button('link', 'link', 'K'),
-                $button('entry', 'newspaper'),
-                $button('asset', 'image'),
+                $button('entry', 'newspaper', 'shift+E'),
+                $button('asset', 'image', 'shift+U'),
             ],
         ];
 

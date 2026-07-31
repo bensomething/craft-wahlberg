@@ -128,6 +128,14 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public bool $showToolbar = true;
 
     /**
+     * @var bool Whether the toolbar should sit over the selection rather than in a
+     * strip above the editor. Less a look than a statement about who’s writing in
+     * the field: with it on, nothing formatting-related is on screen until the
+     * author selects something, the Markdown guide button included.
+     */
+    public bool $floatingToolbar = false;
+
+    /**
      * @var list<string> Which formatting buttons the toolbar offers, out of
      * [[Editor::commands()]]. Order and grouping come from there rather than from
      * here, so a toolbar stays legible however it’s been cut down.
@@ -358,7 +366,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
         $rules[] = [['charLimit', 'byteLimit'], 'integer', 'min' => 1];
         $rules[] = [
             [
-                'showToolbar', 'showPreview', 'showHighlighting', 'showStats',
+                'showToolbar', 'floatingToolbar', 'showPreview', 'showHighlighting', 'showStats',
                 'preserveLineBreaks', 'inlineOnly', 'encodeHtml', 'parseRefs',
                 'purifyHtml', 'showUnpermittedVolumes', 'showUnpermittedFiles',
             ],
@@ -470,6 +478,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'name' => $this->handle,
             'value' => $value instanceof MarkdownData ? $value->getRaw() : '',
             'toolbar' => $this->showToolbar,
+            'floating' => $this->floatingToolbar,
             'buttons' => $this->toolbarButtons,
             'preview' => $this->showPreview,
             'highlight' => $this->showHighlighting,
@@ -677,9 +686,15 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'name' => 'showToolbar',
             'on' => $this->showToolbar,
             'toggle' => 'toolbar-buttons-container',
-        ]) . Html::tag('div', Cp::checkboxSelectFieldHtml([
+        ]) . Html::tag('div', Cp::lightswitchFieldHtml([
+            'label' => Craft::t('wahlberg', 'Floating Toolbar'),
+            'instructions' => Craft::t('wahlberg', 'Put the buttons in a panel over the selection rather than in a strip above the editor. The panel appears when text is selected, and on `⌘⇧F` at the caret.'),
+            'id' => 'floatingToolbar',
+            'name' => 'floatingToolbar',
+            'on' => $this->floatingToolbar,
+        ]) . Cp::checkboxSelectFieldHtml([
             'label' => Craft::t('wahlberg', 'Toolbar Buttons'),
-            'instructions' => Craft::t('wahlberg', 'Which buttons the toolbar offers. They keep the order and grouping above however many are turned off, and fold into a menu when the editor is too narrow to hold them.'),
+            'instructions' => Craft::t('wahlberg', 'Which buttons the toolbar offers. They keep the order and grouping above however many are turned off, and fold into a menu when the toolbar is too narrow to hold them.'),
             'id' => 'toolbarButtons',
             'name' => 'toolbarButtons',
             'options' => $options(Editor::commands()),

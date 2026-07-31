@@ -12,10 +12,11 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - Markdown syntax highlighting in the Write tab, without giving up the plain textarea
 - A band behind the line being written, over every row a wrapped line takes
 - Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted and numbered lists, folding into a menu when the field is too narrow for them
+- Or a floating toolbar, in a panel over the selection rather than a strip above the editor
 - Entry and asset links written as reference tags, so they survive a slug change or a replaced file
 - Snippets: blocks of Markdown you define, dropped in from the toolbar
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
-- `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧K` for snippets, `⌘⇧P` to preview, and Enter continues lists and blockquotes
+- `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧E` and `⌘⇧U` for the element pickers, `⌘⇧K` for snippets, `⌘⇧P` to preview, `⌘⇧F` for the floating toolbar, and Enter continues lists and blockquotes
 - Buttons toggle: hit **Bold** on already-bold text and the markers come off
 - Native browser undo, so formatting buttons don’t blow away the undo stack
 - No editor library bundled: it’s a textarea, some vanilla JS, and Craft’s own icons
@@ -105,14 +106,31 @@ Every button is optional, and which ones a field offers is up to *Toolbar Button
 | **Quote** | | `> ` |
 | **Code** | | `` ` `` around a selection on one line, a fence around one spanning several |
 | **Link** | <kbd>⌘K</kbd> | `[text](url)`, or `[](url)` with the caret in the brackets when a URL was selected |
-| **Entry**, **Asset** | | opens Craft’s element selector — see below |
+| **Entry** | <kbd>⌘⇧E</kbd> | opens Craft’s element selector — see below |
+| **Asset** | <kbd>⌘⇧U</kbd> | opens Craft’s element selector — see below |
 | **Bulleted list**, **Numbered list** | | `- ` and `1. `, toggling between each other rather than stacking up |
 | **Snippets** | <kbd>⌘⇧K</kbd> | blocks of Markdown you define — see [Snippets](#snippets) |
 | **Markdown guide** | | a syntax cheatsheet, in a popover off the button |
 
-Shortcuts work whether or not the button is shown, so a field with the toolbar switched off still has all of them. On Windows and Linux, <kbd>Ctrl</kbd> stands in for <kbd>⌘</kbd>.
+Shortcuts work whether or not the button is shown, so a field with the toolbar switched off still has all of them. On Windows and Linux, <kbd>Ctrl</kbd> stands in for <kbd>⌘</kbd>. **Asset** is <kbd>⌘⇧U</kbd> rather than the <kbd>⌘⇧A</kbd> you’d expect, because macOS browsers keep that one for themselves and it never reaches the page.
 
-The buttons fold into a menu when the field is too narrow to hold them all. **Snippets** and **Markdown guide** are the exceptions: each opens a panel rather than writing anything, so they stay put at the end of the toolbar.
+The buttons fold into a menu when the toolbar is too narrow to hold them all. **Snippets** and **Markdown guide** are the exceptions: each opens a panel rather than writing anything, so they stay put at the end.
+
+### Floating
+
+With *Floating Toolbar* on, the buttons leave the header and appear in a panel over the text instead — pointed at whatever’s selected, above it or below it depending on which side has room.
+
+It’s worth being clear about what the setting costs, because it isn’t a look. A field with a floating toolbar opens showing no formatting buttons at all, the **Markdown guide** among them; they only turn up once an author selects something. That’s a good trade for authors who write Markdown all day and a bad one for authors who don’t, which is what the setting is really choosing between.
+
+Half of what the toolbar offers goes in at the caret rather than around a selection — a heading, a list, a quote, an entry, a snippet — so the panel doesn’t only answer to selections:
+
+| | |
+| --- | --- |
+| A selection | the panel appears, pointed at it |
+| <kbd>⌘⇧F</kbd> | the panel at the caret, with nothing selected, until <kbd>Esc</kbd> |
+| <kbd>Esc</kbd> | puts it away until something else is selected |
+
+It stays put while a menu it opened is up, follows the text as the field scrolls or reflows, and goes away when the field loses focus, when the **Preview** tab comes up, or when the text it was pointing at scrolls out of a field that’s hit its maximum height.
 
 ### Headings
 
@@ -338,7 +356,7 @@ echo Editor::inputHtml([
 ]);
 ```
 
-**Options**: `name`, `value`, `id`, `toolbar`, `buttons`, `preview`, `highlight`, `stats`, `flavour`, `fontSize`, `minRows`, `maxRows`, `placeholder`, `charLimit`, `byteLimit`, `refTags`, `assetSources`, `assetCriteria`, `snippets`, and `inputAttributes` (merged onto the `<textarea>`). Anything else in the config is passed through to Craft’s field macro.
+**Options**: `name`, `value`, `id`, `toolbar`, `floating`, `buttons`, `preview`, `highlight`, `stats`, `flavour`, `fontSize`, `minRows`, `maxRows`, `placeholder`, `charLimit`, `byteLimit`, `refTags`, `assetSources`, `assetCriteria`, `snippets`, and `inputAttributes` (merged onto the `<textarea>`). Anything else in the config is passed through to Craft’s field macro.
 
 `snippets` takes handles from `config/wahlberg.php`, or `*` for all of them. Pass a map of `handle => {label, body}` instead and the editor uses those directly, for a plugin shipping snippets of its own rather than borrowing the installation’s.
 

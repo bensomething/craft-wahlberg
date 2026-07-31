@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Added a **Floating Toolbar** setting, which puts the formatting buttons in a panel over the selection rather than in a strip above the editor.
+- Added `⌘⇧F`, which brings the floating toolbar up at the caret with nothing selected, and `Esc`, which puts it away.
+- Added `⌘⇧E` and `⌘⇧U` for the **Entry** and **Asset** pickers.
+- Added a `floating` option to `Editor::inputHtml()` and the Twig macros.
+
 ### Changed
 
 - The read-only field shows the disabled input cursor on hover.
@@ -10,6 +17,7 @@
 
 - Fixed a bug where a field flashed empty on load before its content appeared. The editor now shows the textarea’s own text until the layer behind it is ready to take over.
 - Fixed a bug where a field opened at its minimum rows and grew a paint later. It now opens at the height its content needs, and browsers without `field-sizing` keep the old behaviour.
+- The **Markdown guide** button no longer takes the selection when it’s clicked, as every other button on the toolbar already didn’t.
 
 ## 1.0.0-beta.4 - 2026-07-29
 
