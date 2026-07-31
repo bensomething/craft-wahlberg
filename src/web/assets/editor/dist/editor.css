@@ -24,6 +24,20 @@
     --wahlberg-pad-block: 12px;
     --wahlberg-pad-inline: 14px;
 
+    /* How wide the text is allowed to run before *Line Length* starts holding it
+       back. Roughly 80 characters, the measure plain text has been wrapped at for
+       as long as there's been plain text.
+
+       In `em` and not `ch`, which is the obvious unit for a monospace column and
+       the wrong one here: `ch` is the width of a `0` in the face the browser
+       actually resolved, and a textarea and a div don't always resolve the same
+       one out of the same stack — which is what `alignMetrics()` is for. Two
+       layers on two different `ch` would take two different paddings and wrap in
+       two different places, and no amount of letter-spacing correction brings
+       those back together. `em` is the font size, which both layers take from the
+       same custom property. */
+    --wahlberg-measure: 48em;
+
     /* Syntax palette. Override these to retheme the editor. Colour only, on
        purpose: see the note by the token styles.
 
@@ -412,6 +426,30 @@
     font-kerning: none;
     font-variant-ligatures: none;
     font-feature-settings: 'liga' 0, 'clig' 0, 'calt' 0;
+}
+
+/* Line length. The text column is capped by padding rather than by a width, so
+   both layers, the preview and the read-only rendering all narrow together and
+   every measurement taken off a computed style follows without being told.
+   `max()` so a field too narrow for the measure keeps its ordinary padding and
+   nothing goes negative.
+
+   The slack goes at the end of the line, or half at each end when the setting
+   asks for centred — which is the only difference between the two, so the cap
+   itself is declared once. */
+
+.wahlberg--measured :is(.wahlberg-source, .wahlberg-highlight, .wahlberg-preview, .wahlberg-static) {
+    padding-inline-end: max(
+        var(--wahlberg-pad-inline),
+        100% - var(--wahlberg-measure) - var(--wahlberg-pad-inline)
+    );
+}
+
+.wahlberg--centred :is(.wahlberg-source, .wahlberg-highlight, .wahlberg-preview, .wahlberg-static) {
+    padding-inline: max(
+        var(--wahlberg-pad-inline),
+        (100% - var(--wahlberg-measure)) / 2
+    );
 }
 
 .wahlberg-highlight {

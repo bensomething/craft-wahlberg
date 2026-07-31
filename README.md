@@ -56,6 +56,7 @@ Create a field of type **Markdown** and add it to a field layout.
 | Setting | Default | |
 | --- | --- | --- |
 | **Text Size** | 14px | The Markdown source in the editor, 11–20px. Editing comfort only — no bearing on the front end. |
+| **Line Length** | Full width | How far the text runs before it wraps. **Comfortable** holds it to about 80 characters and leaves the spare room at the end of the line; **Comfortable (centred)** splits that room between both edges. `--wahlberg-measure` sets the width. Editing comfort only. |
 | **Minimum Rows** | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
 | **Maximum Rows** | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
 | **Placeholder Text** | none | Shown while the field is empty. |
@@ -475,6 +476,9 @@ There’s no setting for it. Retheme or switch it off with the CSS variables on 
 | `--wahlberg-active-line` | `--gray-050`, or a 3% lift in dark mode | `transparent` to do without |
 | `--wahlberg-active-line-pad` | `1px` | how far the band stands proud of the row, top and bottom |
 | `--wahlberg-line-height` | `1.6` | the row itself, which the caret and the selection are drawn to as well |
+| `--wahlberg-measure` | `48em` | how wide the text runs under *Line Length*, about 80 characters |
+
+`--wahlberg-measure` is in `em` rather than the `ch` you’d expect of a monospace column, and deliberately: `ch` is the width of a `0` in the face the browser actually resolved, and the two text layers don’t always resolve the same one out of the same stack. Two layers on two different `ch` would wrap in two different places, which is the one mismatch the editor can’t measure its way out of. `em` is the font size, which both take from the same place.
 
 `--wahlberg-line-height` is the one to reach for if the caret looks too tall for the text: a browser draws it to the full row, so the only way to shorten it is to tighten the row. Both text layers take it from the same place on purpose — two layers on different line heights is the one mismatch the editor can’t measure its way out of.
 

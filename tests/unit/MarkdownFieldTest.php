@@ -16,8 +16,9 @@ class MarkdownFieldTest extends TestCase
     /** The settings this field adds, as opposed to the ones every field has. */
     private const SETTINGS = [
         'flavour', 'preserveLineBreaks', 'inlineOnly', 'encodeHtml',
-        'fontSize', 'minRows', 'maxRows', 'placeholder',
-        'showToolbar', 'toolbarButtons', 'showPreview', 'showHighlighting', 'showStats',
+        'fontSize', 'lineLength', 'minRows', 'maxRows', 'placeholder',
+        'showToolbar', 'floatingToolbar', 'toolbarButtons',
+        'showPreview', 'showHighlighting', 'showStats',
         'charLimit', 'byteLimit',
         'parseRefs', 'purifyHtml', 'purifierConfig',
         'availableVolumes', 'showUnpermittedVolumes', 'showUnpermittedFiles',
@@ -204,6 +205,7 @@ class MarkdownFieldTest extends TestCase
             'limit of nothing' => [['charLimit' => 0], 'charLimit'],
             'negative limit' => [['byteLimit' => -1], 'byteLimit'],
             'unknown toolbar button' => [['toolbarButtons' => ['bold', 'blink']], 'toolbarButtons'],
+            'unknown line length' => [['lineLength' => 'novella'], 'lineLength'],
         ];
     }
 
@@ -231,6 +233,9 @@ class MarkdownFieldTest extends TestCase
             'a limit in characters' => [['charLimit' => 500]],
             'a limit in bytes' => [['byteLimit' => 500]],
             'no toolbar buttons' => [['toolbarButtons' => []]],
+            'a floating toolbar' => [['floatingToolbar' => true]],
+            'every line length' => [['lineLength' => MarkdownField::LINE_LENGTH_CENTRED]],
+            'a floating toolbar with nothing on it' => [['floatingToolbar' => true, 'toolbarButtons' => []]],
             'every toolbar button' => [['toolbarButtons' => array_keys(Editor::commands())]],
             'all volumes' => [['availableVolumes' => '*']],
         ];
@@ -252,6 +257,10 @@ class MarkdownFieldTest extends TestCase
         self::assertSame(MarkdownField::DEFAULT_FONT_SIZE, $field->fontSize);
         self::assertSame(MarkdownField::DEFAULT_MIN_ROWS, $field->minRows);
         self::assertNull($field->maxRows);
+
+        // The text runs the full width until someone says otherwise, which is what
+        // every field saved before the setting existed was doing
+        self::assertSame(MarkdownField::LINE_LENGTH_FULL, $field->lineLength);
 
         // The editor's chrome is all on unless a field turns it off
         self::assertTrue($field->showToolbar);

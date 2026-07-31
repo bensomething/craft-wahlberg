@@ -8,14 +8,15 @@
 - Added `⌘⇧F`, which brings the floating toolbar up at the caret with nothing selected, and `Esc`, which puts it away.
 - Added `⌘⇧E` and `⌘⇧U` for the **Entry** and **Asset** pickers.
 - Added a `floating` option to `Editor::inputHtml()` and the Twig macros.
+- Added a **Line Length** setting, which holds the text to a readable measure rather than the full width of the field, with the spare room at the end of the line or split between both edges. `--wahlberg-measure` sets the width.
 - The tabs and the toolbar now stick to the top of a field that fills more than half the window, so they’re still there once the text has scrolled past them. They stop below Craft’s own page header, and `--wahlberg-sticky-top` overrules where that lands.
 - Switching between **Write** and **Preview** now keeps the author’s place, by matching the block at the top of one pane to the element at the top of the other.
 
 ### Changed
 
-- The read-only field shows the disabled input cursor on hover.
 - Regrouped the field settings: **Editor** for the sizing and the field limit, **Toolbar** for everything above the writing surface.
 - The stats bar reads `1,234 words` rather than `1234 words`.
+- The read-only field shows the disabled input cursor on hover.
 
 ### Fixed
 

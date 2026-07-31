@@ -45,6 +45,21 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public const MIN_FONT_SIZE = 11;
     public const MAX_FONT_SIZE = 20;
 
+    /**
+     * The text runs the full width of the field, as it always did.
+     */
+    public const LINE_LENGTH_FULL = 'full';
+
+    /**
+     * Held to a readable measure, with the slack at the end of the line.
+     */
+    public const LINE_LENGTH_COMFORTABLE = 'comfortable';
+
+    /**
+     * The same measure, with the slack split between both edges.
+     */
+    public const LINE_LENGTH_CENTRED = 'centred';
+
     public const LIMIT_UNIT_CHARS = 'chars';
     public const LIMIT_UNIT_BYTES = 'bytes';
 
@@ -105,6 +120,13 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
      * @var int The editor’s text size, in pixels
      */
     public int $fontSize = self::DEFAULT_FONT_SIZE;
+
+    /**
+     * @var string How far the text is allowed to run before it wraps. Editing
+     * comfort only: it’s the column the author reads, and says nothing about how
+     * the value is stored or rendered.
+     */
+    public string $lineLength = self::LINE_LENGTH_FULL;
 
     /**
      * @var int How short the editor is allowed to get, in rows
@@ -303,6 +325,20 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     }
 
     /**
+     * How far the text may run, for the settings screen.
+     *
+     * @return array<string, string>
+     */
+    public static function lineLengths(): array
+    {
+        return [
+            self::LINE_LENGTH_FULL => Craft::t('wahlberg', 'Full width'),
+            self::LINE_LENGTH_COMFORTABLE => Craft::t('wahlberg', 'Comfortable'),
+            self::LINE_LENGTH_CENTRED => Craft::t('wahlberg', 'Comfortable (centred)'),
+        ];
+    }
+
+    /**
      * The units the field’s limit is counted in, for the settings screen.
      *
      * @return array<string, string>
@@ -360,6 +396,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
         $rules = parent::defineRules();
         $rules[] = [['flavour'], 'in', 'range' => array_keys(self::flavours())];
         $rules[] = [['fontSize'], 'integer', 'min' => self::MIN_FONT_SIZE, 'max' => self::MAX_FONT_SIZE];
+        $rules[] = [['lineLength'], 'in', 'range' => array_keys(self::lineLengths())];
         $rules[] = [['minRows'], 'integer', 'min' => self::MIN_ROWS];
         $rules[] = [['maxRows'], 'integer', 'min' => self::MIN_ROWS, 'skipOnEmpty' => true];
         $rules[] = [['maxRows'], 'compare', 'compareAttribute' => 'minRows', 'operator' => '>=', 'skipOnEmpty' => true];
@@ -486,6 +523,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'flavour' => $this->getParserFlavour(),
             'fieldUid' => $this->uid,
             'fontSize' => $this->fontSize,
+            'lineLength' => $this->lineLength,
             'minRows' => $this->minRows,
             'maxRows' => $this->maxRows,
             'placeholder' => $this->placeholder,
@@ -513,6 +551,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
         return Editor::staticHtml([
             'value' => $value instanceof MarkdownData ? $value->getRaw() : '',
             'fontSize' => $this->fontSize,
+            'lineLength' => $this->lineLength,
         ]);
     }
 
@@ -646,6 +685,14 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'max' => self::MAX_FONT_SIZE,
             'size' => 3,
             'errors' => $this->getErrors('fontSize'),
+        ]) . Cp::selectFieldHtml([
+            'label' => Craft::t('wahlberg', 'Line Length'),
+            'instructions' => Craft::t('wahlberg', 'How far the text runs before it wraps. **Comfortable** holds it to about 80 characters. **Centred** puts the spare room on both sides instead of at the end of the line.'),
+            'id' => 'lineLength',
+            'name' => 'lineLength',
+            'value' => $this->lineLength,
+            'options' => $options(self::lineLengths()),
+            'errors' => $this->getErrors('lineLength'),
         ]) . Cp::textFieldHtml([
             'label' => Craft::t('wahlberg', 'Minimum Rows'),
             'instructions' => Craft::t('wahlberg', 'How short the editor is allowed to get. It grows as the author types.'),

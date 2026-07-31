@@ -57,6 +57,7 @@ abstract class Editor
      *     flavour?: string,
      *     fieldUid?: string|null,
      *     fontSize?: int,
+     *     lineLength?: string,
      *     minRows?: int,
      *     maxRows?: int|null,
      *     placeholder?: string|null,
@@ -84,6 +85,7 @@ abstract class Editor
             'flavour' => MarkdownField::FLAVOUR_GFM_COMMENT,
             'fieldUid' => null,
             'fontSize' => MarkdownField::DEFAULT_FONT_SIZE,
+            'lineLength' => MarkdownField::LINE_LENGTH_FULL,
             'minRows' => MarkdownField::DEFAULT_MIN_ROWS,
             'maxRows' => null,
             'placeholder' => null,
@@ -170,6 +172,7 @@ abstract class Editor
                 MarkdownField::MAX_FONT_SIZE,
                 max(MarkdownField::MIN_FONT_SIZE, (int)$config['fontSize']),
             ),
+            'measureClass' => implode(' ', self::measureClasses((string)$config['lineLength'])),
             'showToolbar' => $showToolbar,
             // Over the selection rather than in the header, which leaves the
             // header holding the tabs alone — or gone, with no tabs either
@@ -204,6 +207,7 @@ abstract class Editor
      * @param array{
      *     value?: string,
      *     fontSize?: int,
+     *     lineLength?: string,
      * } $config
      */
     public static function staticHtml(array $config = []): string
@@ -211,6 +215,7 @@ abstract class Editor
         $config += [
             'value' => '',
             'fontSize' => MarkdownField::DEFAULT_FONT_SIZE,
+            'lineLength' => MarkdownField::LINE_LENGTH_FULL,
         ];
 
         // For the CSS. The bundle brings the editor's JS with it, which has nothing
@@ -229,9 +234,27 @@ abstract class Editor
         return Html::tag('div', Html::tag('div', $text, ['class' => 'wahlberg-editor']), [
             // `--bare` because there's no header for the editor's square top corners
             // to sit under
-            'class' => ['wahlberg', 'wahlberg--bare'],
+            'class' => ['wahlberg', 'wahlberg--bare', ...self::measureClasses((string)$config['lineLength'])],
             'style' => ['--wahlberg-font-size' => "{$fontSize}px"],
         ]);
+    }
+
+    /**
+     * What *Line Length* comes to on the field, as classes.
+     *
+     * Both comfortable settings cap the column the same way and differ only in
+     * where the room left over goes, so centred is the cap plus one more class
+     * rather than a second cap of its own.
+     *
+     * @return list<string>
+     */
+    private static function measureClasses(string $lineLength): array
+    {
+        return match ($lineLength) {
+            MarkdownField::LINE_LENGTH_COMFORTABLE => ['wahlberg--measured'],
+            MarkdownField::LINE_LENGTH_CENTRED => ['wahlberg--measured', 'wahlberg--centred'],
+            default => [],
+        };
     }
 
     /**
