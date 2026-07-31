@@ -145,6 +145,13 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
     public ?string $placeholder = null;
 
     /**
+     * @var bool Whether Enter should leave a blank line behind it, so it starts a
+     * paragraph rather than a line Markdown runs back into the one above.
+     * Shift+Enter still gives the single newline.
+     */
+    public bool $paragraphOnEnter = false;
+
+    /**
      * @var bool Whether the formatting toolbar should be shown
      */
     public bool $showToolbar = true;
@@ -403,7 +410,8 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
         $rules[] = [['charLimit', 'byteLimit'], 'integer', 'min' => 1];
         $rules[] = [
             [
-                'showToolbar', 'floatingToolbar', 'showPreview', 'showHighlighting', 'showStats',
+                'showToolbar', 'floatingToolbar', 'showPreview', 'showHighlighting',
+                'showStats', 'paragraphOnEnter',
                 'preserveLineBreaks', 'inlineOnly', 'encodeHtml', 'parseRefs',
                 'purifyHtml', 'showUnpermittedVolumes', 'showUnpermittedFiles',
             ],
@@ -527,6 +535,7 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'minRows' => $this->minRows,
             'maxRows' => $this->maxRows,
             'placeholder' => $this->placeholder,
+            'paragraphOnEnter' => $this->paragraphOnEnter,
             'charLimit' => $this->charLimit,
             'byteLimit' => $this->byteLimit,
             // So the Asset button writes `{asset:1:url}` rather than a URL that a
@@ -720,7 +729,19 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
             'name' => 'placeholder',
             'value' => $this->placeholder,
             'errors' => $this->getErrors('placeholder'),
-        ]) . $this->limitFieldHtml();
+        ]) . Cp::lightswitchFieldHtml([
+            'label' => Craft::t('wahlberg', 'New Paragraph on Enter'),
+            'instructions' => Craft::t('wahlberg', 'Leave a blank line when Enter is pressed, so it starts a paragraph. Without one, a single newline is the one piece of Markdown that does nothing you can see: a `<br>` with *Preserve Line Breaks* on, and a space with it off. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote.'),
+            'id' => 'paragraphOnEnter',
+            'name' => 'paragraphOnEnter',
+            'on' => $this->paragraphOnEnter,
+        ]) . $this->limitFieldHtml() . Cp::lightswitchFieldHtml([
+            'label' => Craft::t('wahlberg', 'Show Syntax Highlighting'),
+            'instructions' => Craft::t('wahlberg', 'Colour the Markdown as it’s typed. With this off, the Write tab is a plain textarea with the same sizing, toolbar and Preview tab.'),
+            'id' => 'showHighlighting',
+            'name' => 'showHighlighting',
+            'on' => $this->showHighlighting,
+        ]);
 
         // -- Toolbar ---------------------------------------------------------
 
@@ -754,12 +775,6 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
         ]), [
             'id' => 'toolbar-buttons-container',
             'class' => $this->showToolbar ? null : 'hidden',
-        ]) . Cp::lightswitchFieldHtml([
-            'label' => Craft::t('wahlberg', 'Show Syntax Highlighting'),
-            'instructions' => Craft::t('wahlberg', 'Colour the Markdown as it’s typed. With this off, the Write tab is a plain textarea with the same sizing, toolbar and Preview tab.'),
-            'id' => 'showHighlighting',
-            'name' => 'showHighlighting',
-            'on' => $this->showHighlighting,
         ]) . Cp::lightswitchFieldHtml([
             'label' => Craft::t('wahlberg', 'Show Stats'),
             'instructions' => Craft::t('wahlberg', 'Show character, word and line counts under the editor, along with the field limit if there is one.'),

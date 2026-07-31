@@ -1692,19 +1692,25 @@
                 return;
             }
 
+            // Shift+Enter never gets here, which is what leaves it as the way to a
+            // plain newline when Enter has been given the other job
             if (event.key === 'Enter' && !event.shiftKey && !event.altKey && !event[MOD_KEY]) {
-                this.continueBlock(event);
+                if (!this.continueBlock(event) && this.config.paragraphOnEnter) {
+                    this.paragraphBreak(event);
+                }
             }
         }
 
         /**
          * Carries a list marker or blockquote onto the next line, the way GitHub does.
+         * Reports whether it took the key, since Enter has somewhere else to be if
+         * this didn't want it.
          */
         continueBlock(event) {
             const source = this.source;
 
             if (source.selectionStart !== source.selectionEnd) {
-                return;
+                return false;
             }
 
             const value = source.value;
@@ -1722,7 +1728,7 @@
                     source.setSelectionRange(from, source.selectionStart);
                     this.insert('', 0, 0);
                     this.autoGrow();
-                    return;
+                    return true;
                 }
 
                 const numbered = marker.match(/^(\d+)([.)])$/);
@@ -1730,7 +1736,7 @@
 
                 this.insert('\n' + indent + next + space);
                 this.autoGrow();
-                return;
+                return true;
             }
 
             const quote = line.match(BLOCKQUOTE);
@@ -1746,7 +1752,36 @@
                 }
 
                 this.autoGrow();
+                return true;
             }
+
+            return false;
+        }
+
+        /**
+         * Enter leaves a blank line behind it, so what an author gets is the new
+         * paragraph they were expecting rather than a line Markdown runs back into
+         * the one above.
+         *
+         * The setting exists because a single newline is the one piece of Markdown
+         * that does nothing you can see: with *Preserve Line Breaks* on it's a
+         * `<br>`, and with it off it's a space. Neither is a paragraph, and pressing
+         * Enter twice is not a thing anyone arrives already knowing.
+         */
+        paragraphBreak(event) {
+            const source = this.source;
+            const value = source.value;
+            const from = value.lastIndexOf('\n', source.selectionStart - 1) + 1;
+
+            // Already on a blank line, so the gap the author wants is there. Another
+            // two would only pile up newlines that render as the same one break
+            if (value.slice(from, source.selectionStart).trim() === '') {
+                return;
+            }
+
+            event.preventDefault();
+            this.insert('\n\n');
+            this.autoGrow();
         }
 
         /**

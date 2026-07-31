@@ -17,7 +17,7 @@ class MarkdownFieldTest extends TestCase
     private const SETTINGS = [
         'flavour', 'preserveLineBreaks', 'inlineOnly', 'encodeHtml',
         'fontSize', 'lineLength', 'minRows', 'maxRows', 'placeholder',
-        'showToolbar', 'floatingToolbar', 'toolbarButtons',
+        'showToolbar', 'floatingToolbar', 'toolbarButtons', 'paragraphOnEnter',
         'showPreview', 'showHighlighting', 'showStats',
         'charLimit', 'byteLimit',
         'parseRefs', 'purifyHtml', 'purifierConfig',
@@ -234,6 +234,7 @@ class MarkdownFieldTest extends TestCase
             'a limit in bytes' => [['byteLimit' => 500]],
             'no toolbar buttons' => [['toolbarButtons' => []]],
             'a floating toolbar' => [['floatingToolbar' => true]],
+            'a paragraph on enter' => [['paragraphOnEnter' => true]],
             'every line length' => [['lineLength' => MarkdownField::LINE_LENGTH_CENTRED]],
             'a floating toolbar with nothing on it' => [['floatingToolbar' => true, 'toolbarButtons' => []]],
             'every toolbar button' => [['toolbarButtons' => array_keys(Editor::commands())]],
@@ -269,6 +270,9 @@ class MarkdownFieldTest extends TestCase
 
         // Except the counts, which are opt-in: most fields don't want them
         self::assertFalse($field->showStats);
+
+        // And Enter is a newline, as it is in every other textarea
+        self::assertFalse($field->paragraphOnEnter);
 
         // And the toolbar stays where an author can see it. Floating hides every
         // formatting control until text is picked out, which is a thing to ask for

@@ -61,7 +61,9 @@ Create a field of type **Markdown** and add it to a field layout.
 | **Minimum Rows** | 2 | How short the editor may get, 1 or more. It grows from there as the author types. |
 | **Maximum Rows** | none | How tall it may grow before it scrolls instead. Blank lets it keep growing. Dragging the resize handle overrides auto-growing for that session. |
 | **Placeholder Text** | none | Shown while the field is empty. |
+| **New Paragraph on Enter** | Off | Enter leaves a blank line, so it starts a paragraph rather than a line that runs back into the one above. `⇧Enter` still gives the single newline, and Enter still carries on a list or a quote. |
 | **Field Limit** | none | The most characters or bytes of Markdown the field accepts, enforced on save. Counts the source an author types, not the HTML it renders to. Bytes matter once the text stops being ASCII: an emoji is one character and four bytes. |
+| **Show Syntax Highlighting** | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
 
 **Toolbar**
 
@@ -71,7 +73,6 @@ Create a field of type **Markdown** and add it to a field layout.
 | **Show Formatting Toolbar** | On | The keyboard shortcuts keep working either way. |
 | **Floating Toolbar** | Off | Puts the buttons in a panel over the selection rather than in a strip above the editor. Nothing formatting-related is on screen until an author selects something or hits `⌘⇧F` — see [Floating](#floating). |
 | **Toolbar Buttons** | all but Heading 1, Heading 3–6 and the guide | Which buttons the toolbar offers — see [The toolbar](#the-toolbar). |
-| **Show Syntax Highlighting** | On | Off leaves a plain textarea with the same sizing, toolbar and Preview tab. The escape hatch if a font stack won’t hold the highlighted layer and the textarea together. |
 | **Show Stats** | Off | Character, word and line counts under the editor, with the field limit alongside when there is one. |
 
 **Parsing**
@@ -445,6 +446,14 @@ Markdown fields resolve to a `wahlberg_Markdown` type:
 ## Editing
 
 Enter continues a list or a blockquote onto the next line, and ends it on an empty item. The formatting shortcuts are in [The toolbar](#the-toolbar).
+
+### What Enter does
+
+With *New Paragraph on Enter* on, Enter leaves a blank line behind it and <kbd>⇧Enter</kbd> gives the single newline — the division every rich text editor makes.
+
+It's off by default, because a field whose authors write Markdown doesn't need it. It's worth turning on for one whose authors don't, because a single newline is the one piece of Markdown that does nothing you can see. With *Preserve Line Breaks* on it renders as a `<br>`; with it off it renders as a space, and the two lines you just separated come back as one. Neither is a paragraph, and "press it twice" is not something anyone arrives already knowing.
+
+Enter keeps its other jobs either way: it carries on a list or a quote, and ends one on an empty item. And a blank line already under the caret isn't doubled, so holding Enter down leaves a gap rather than a pile of them.
 
 <kbd>⌘⇧P</kbd> swaps between **Write** and **Preview**, from anywhere in the field, and puts the caret back where it was on the way in. It does nothing on a field with *Show Preview Tab* off, or while there’s nothing written to preview.
 

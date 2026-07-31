@@ -14,8 +14,11 @@
 
 - Added a `/` menu at the caret, listing the **Entry** and **Asset** pickers and then the field’s snippets, filtered by whatever’s typed after the slash. Only a slash at the start of a line or after a space opens it, and never one inside a fenced code block.
 
+- Added a **New Paragraph on Enter** setting, which has Enter leave a blank line behind it so it starts a paragraph rather than a line Markdown runs back into the one above. `⇧Enter` still gives the single newline.
+
 ### Changed
 
+- **Show Syntax Highlighting** moved to the bottom of the **Editor** settings, since it’s the writing surface rather than the toolbar.
 - `Editor::snippetsMenuHtml()` is now `Editor::insertMenuHtml()`, and takes the commands the field offers as a second argument. The **Snippets** button and `⌘⇧K` still open snippets alone.
 - Regrouped the field settings: **Editor** for the sizing and the field limit, **Toolbar** for everything above the writing surface.
 - The stats bar reads `1,234 words` rather than `1234 words`.
