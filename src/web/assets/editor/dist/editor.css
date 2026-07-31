@@ -588,12 +588,13 @@
     display: none;
 }
 
-/* Snippets. Craft's `.menu` classes carry the chrome, including the `visible`
-   class that shows it — `.menu:not(.visible)` is `display: none`, and outranks
-   anything this file says about display. So the JS toggles `visible` the way
-   Garnish would, and this only positions it. */
+/* The insert menu, opened by `/`, by the Snippets button, or by ⌘⇧K. Craft's
+   `.menu` classes carry the chrome, including the `visible` class that shows it —
+   `.menu:not(.visible)` is `display: none`, and outranks anything this file says
+   about display. So the JS toggles `visible` the way Garnish would, and this only
+   positions it. */
 
-.wahlberg-snippet-menu {
+.wahlberg-insert-menu {
     position: absolute;
     z-index: 10;
     margin: 0;
@@ -601,9 +602,17 @@
     overflow-y: auto;
 }
 
-/* The keyboard's current item. Craft's own focus ring covers the common case,
-   but the highlight shouldn't depend on focus having landed where we asked. */
-.wahlberg-snippet-menu .menu-item.is-highlighted {
+/* Craft hides a filtered `li` already. The groups and the divider between them
+   are ours, and go the same way: a divider with nothing under it reads as the
+   list having ended. */
+.wahlberg-insert-menu :is(ul, hr).filtered {
+    display: none;
+}
+
+/* The keyboard's current item. Craft's own focus ring covers the common case, and
+   isn't available at all when `/` leaves focus in the textarea so the author can
+   carry on typing to filter — which is exactly when the highlight matters most. */
+.wahlberg-insert-menu .menu-item.is-highlighted {
     background-color: var(--gray-100);
     color: var(--text-color);
 }

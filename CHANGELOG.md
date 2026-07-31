@@ -12,8 +12,11 @@
 - The tabs and the toolbar now stick to the top of a field that fills more than half the window, so they’re still there once the text has scrolled past them. They stop below Craft’s own page header, and `--wahlberg-sticky-top` overrules where that lands.
 - Switching between **Write** and **Preview** now keeps the author’s place, by matching the block at the top of one pane to the element at the top of the other.
 
+- Added a `/` menu at the caret, listing the **Entry** and **Asset** pickers and then the field’s snippets, filtered by whatever’s typed after the slash. Only a slash at the start of a line or after a space opens it, and never one inside a fenced code block.
+
 ### Changed
 
+- `Editor::snippetsMenuHtml()` is now `Editor::insertMenuHtml()`, and takes the commands the field offers as a second argument. The **Snippets** button and `⌘⇧K` still open snippets alone.
 - Regrouped the field settings: **Editor** for the sizing and the field limit, **Toolbar** for everything above the writing surface.
 - The stats bar reads `1,234 words` rather than `1234 words`.
 - The read-only field shows the disabled input cursor on hover.

@@ -14,6 +14,7 @@ A Markdown field with a GitHub-style editor: a **Write** tab, a **Preview** tab,
 - Formatting toolbar: headings, bold, italic, strikethrough, quote, code, link, entry and asset pickers, bulleted and numbered lists, folding into a menu when the field is too narrow for them
 - Or a floating toolbar, in a panel over the selection rather than a strip above the editor
 - Entry and asset links written as reference tags, so they survive a slug change or a replaced file
+- `/` at the caret opens an insert menu — entry and asset pickers, then your snippets — and filters it as you type
 - Snippets: blocks of Markdown you define, dropped in from the toolbar
 - The editor grows to fit what’s typed, between a minimum and (optional) maximum height
 - `⌘B` / `⌘I` / `⌘K` shortcuts, `⌘⇧E` and `⌘⇧U` for the element pickers, `⌘⇧K` for snippets, `⌘⇧P` to preview, `⌘⇧F` for the floating toolbar, and Enter continues lists and blockquotes
@@ -116,7 +117,7 @@ Every button is optional, and which ones a field offers is up to *Toolbar Button
 | **Entry** | <kbd>⌘⇧E</kbd> | opens Craft’s element selector — see below |
 | **Asset** | <kbd>⌘⇧U</kbd> | opens Craft’s element selector — see below |
 | **Bulleted list**, **Numbered list** | | `- ` and `1. `, toggling between each other rather than stacking up |
-| **Snippets** | <kbd>⌘⇧K</kbd> | blocks of Markdown you define — see [Snippets](#snippets) |
+| **Snippets** | <kbd>⌘⇧K</kbd> | blocks of Markdown you define, also on <kbd>/</kbd> — see [Snippets](#snippets) |
 | **Markdown guide** | | a syntax cheatsheet, in a popover off the button |
 
 Shortcuts work whether or not the button is shown, so a field with the toolbar switched off still has all of them. On Windows and Linux, <kbd>Ctrl</kbd> stands in for <kbd>⌘</kbd>. **Asset** is <kbd>⌘⇧U</kbd> rather than the <kbd>⌘⇧A</kbd> you’d expect, because macOS browsers keep that one for themselves and it never reaches the page.
@@ -199,9 +200,15 @@ A field that has never been saved against a snippet offers all of them, so addin
 
 ### Opening the menu
 
-<kbd>⌘⇧K</kbd> opens it **at the caret**, which is where the snippet is going. Clicking the toolbar button opens it under the button instead, since that's where the eye already is.
+Typing <kbd>/</kbd> opens it **at the caret**, and what you type after that narrows the list — `/cal` gets you to a callout without reaching for the arrow keys. <kbd>⌘⇧K</kbd> opens it at the caret too, and clicking the toolbar button opens it under the button, since that's where the eye already is.
 
-The shortcut doesn't need the button: it works with **Snippets** unticked in *Toolbar Buttons*, and with the toolbar switched off altogether. Arrows and <kbd>Tab</kbd> move through the list, <kbd>Enter</kbd> inserts, <kbd>Esc</kbd> closes and puts the caret back.
+Neither needs the button: both work with **Snippets** unticked in *Toolbar Buttons*, and with the toolbar switched off altogether. Arrows and <kbd>Tab</kbd> move through the list, <kbd>Enter</kbd> inserts, <kbd>Esc</kbd> closes and puts the caret back.
+
+The <kbd>/</kbd> menu also offers **Entry** and **Asset**, above the snippets and divided off from them — the two commands that put something in at the caret rather than reshaping what's around it, which is the only kind a menu opened by typing can offer. There's nothing selected to make bold. They follow *Toolbar Buttons* like the buttons do, so a field that turned them off keeps them off, and the menu is there for them alone on a field with no snippets at all.
+
+<kbd>⌘⇧K</kbd> and the button stay snippets-only. Both have meant snippets since before there was anything else in the list.
+
+**What counts as a `/`.** Only one at the start of a line or after a space, and never inside a fenced code block — Markdown source is full of the other kind, in URLs, paths, closing tags and dates. Past that the list narrows as you type and closes the moment nothing matches, so a slash that wasn't meant as a command costs a flicker rather than a dismissal.
 
 **Mind what your fields render.** With *Purify HTML* on — the default — raw HTML in a snippet is sanitised on the way out, and HTML Purifier only knows HTML 4: `<details>` and `<summary>` are dropped entirely, and iframes survive only for the hosts `config/htmlpurifier/` allows. Markdown *inside* a raw HTML block isn’t parsed either, whatever the purifier does. A snippet that emits Markdown works everywhere; one that emits HTML is worth checking in the Preview tab first.
 

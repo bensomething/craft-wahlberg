@@ -441,6 +441,7 @@
             const moved = () => {
                 this.syncActiveLine();
                 this.syncFloating();
+                this.syncSlashCaret();
             };
 
             document.addEventListener('selectionchange', moved);
@@ -450,7 +451,7 @@
             this.initOverflow();
             this.initFloating();
             this.initHeadings();
-            this.initSnippets();
+            this.initInsertMenu();
             this.initGuide();
             this.initSizing();
             this.alignMetrics();
@@ -474,6 +475,7 @@
             this.renderHighlight();
             this.renderStats();
             this.syncActiveLine();
+            this.syncSlash();
             this.syncPreviewTab();
         }
 
@@ -1025,44 +1027,80 @@
          * listens at the document and tracks the highlighted item itself, so it
          * behaves the same wherever focus actually is.
          */
-        driveMenu(menu, close) {
-            const items = Array.from(menu.querySelectorAll('.menu-item:not(.disabled)'));
+        driveMenu(menu, close, focus = true) {
+            // Read fresh each time rather than captured: `/` narrows the list as the
+            // author types, and arrowing onto something that's been filtered out
+            // would be arrowing onto nothing
+            const visible = () => Array.from(menu.querySelectorAll('.menu-item:not(.disabled)'))
+                .filter((item) => !item.closest('.filtered'));
 
-            if (!items.length) {
+            if (!visible().length) {
                 return;
             }
 
-            let index = -1;
+            let current = null;
 
             const highlight = (to) => {
-                index = (to + items.length) % items.length;
+                const items = visible();
 
-                items.forEach((item, i) => item.classList.toggle('is-highlighted', i === index));
+                if (!items.length) {
+                    return;
+                }
+
+                const at = items.indexOf(current);
+                const index = ((to === null ? at : to) + items.length) % items.length;
+
+                current = items[index];
+
+                menu.querySelectorAll('.menu-item').forEach((item) =>
+                    item.classList.toggle('is-highlighted', item === current));
 
                 // Best effort: it's what gives Craft's focus ring, but the class
-                // above is what guarantees the highlight is visible either way
-                items[index].focus();
+                // above is what guarantees the highlight is visible either way.
+                // Not when `/` opened it — focus has to stay in the textarea, or
+                // the next keystroke would go to the menu instead of the query
+                if (focus) {
+                    current.focus();
+                }
+            };
+
+            const step = (by) => {
+                const items = visible();
+                const at = items.indexOf(current);
+
+                highlight(at === -1 ? 0 : at + by);
             };
 
             const stop = () => {
                 document.removeEventListener('keydown', onKeydown, true);
-                items.forEach((item) => item.classList.remove('is-highlighted'));
+                document.removeEventListener('input', onInput, true);
+                menu.querySelectorAll('.menu-item').forEach((item) =>
+                    item.classList.remove('is-highlighted'));
                 this.drivenMenu = null;
             };
 
+            // Filtering can take the highlighted item away, so it moves back to the
+            // top of whatever's left
+            const onInput = () => {
+                if (current && current.closest('.filtered')) {
+                    current = null;
+                    highlight(0);
+                }
+            };
+
             const onKeydown = (event) => {
-                // Closed by a click elsewhere
-                if (menu.hidden) {
+                // Closed by a click elsewhere, or typed out of
+                if (!menu.classList.contains('visible')) {
                     stop();
                     return;
                 }
 
                 const keys = {
-                    ArrowDown: () => highlight(index + 1),
-                    ArrowUp: () => highlight(index - 1),
+                    ArrowDown: () => step(1),
+                    ArrowUp: () => step(-1),
                     Home: () => highlight(0),
-                    End: () => highlight(items.length - 1),
-                    Tab: () => highlight(index + (event.shiftKey ? -1 : 1)),
+                    End: () => highlight(visible().length - 1),
+                    Tab: () => step(event.shiftKey ? -1 : 1),
                 };
 
                 if (keys[event.key]) {
@@ -1072,11 +1110,11 @@
                     return;
                 }
 
-                if (event.key === 'Enter' && index !== -1) {
+                if (event.key === 'Enter' && current) {
                     event.preventDefault();
                     event.stopPropagation();
                     stop();
-                    items[index].click();
+                    current.click();
                     return;
                 }
 
@@ -1091,6 +1129,7 @@
 
             this.drivenMenu = menu;
             document.addEventListener('keydown', onKeydown, true);
+            document.addEventListener('input', onInput, true);
             highlight(0);
         }
 
@@ -1113,14 +1152,25 @@
             });
         }
 
-        // -- Snippets ---------------------------------------------------------
+        // -- The insert menu --------------------------------------------------
+        //
+        // One menu, three ways in. `/` opens the lot; the Snippets button and ⌘⇧K
+        // open it with the commands left out, since both of those have meant
+        // snippets since before there was anything else in it.
 
-        initSnippets() {
-            this.snippetMenu = this.container.querySelector('[data-snippet-menu]');
+        initInsertMenu() {
+            this.insertMenu = this.container.querySelector('[data-insert-menu]');
 
-            if (!this.snippetMenu) {
+            if (!this.insertMenu) {
                 return;
             }
+
+            this.commandGroup = this.insertMenu.querySelector('[data-command-group]');
+            this.divider = this.insertMenu.querySelector('hr');
+
+            // Where the `/` that opened the menu sits, so what's typed after it can
+            // be read back as a query and taken out again on the way in
+            this.slashAt = null;
 
             const trigger = this.container.querySelector('[data-snippets-trigger]');
 
@@ -1130,77 +1180,268 @@
                 // Anchored to itself when clicked, at the caret from the shortcut:
                 // a click comes from the toolbar, so that's where the eye is
                 trigger.addEventListener('click', () => {
-                    if (this.snippetsOpen()) {
-                        this.closeSnippets();
+                    if (this.insertOpen()) {
+                        this.closeInsert();
                     } else {
-                        this.openSnippets(trigger);
+                        this.openInsert(trigger, false);
                     }
                 });
             }
 
-            this.snippetMenu.querySelectorAll('[data-snippet]').forEach((item) => {
+            this.insertMenu.querySelectorAll('[data-snippet], [data-command]').forEach((item) => {
                 item.addEventListener('mousedown', (event) => event.preventDefault());
-                item.addEventListener('click', () => {
-                    this.closeSnippets();
-                    this.insertSnippet(item.dataset.snippet);
-                });
+                item.addEventListener('click', () => this.runInsert(item));
             });
 
             document.addEventListener('mousedown', (event) => {
-                if (this.snippetsOpen() && !this.snippetMenu.contains(event.target) &&
+                if (this.insertOpen() && !this.insertMenu.contains(event.target) &&
                     event.target !== trigger && !trigger?.contains(event.target)
                 ) {
-                    this.closeSnippets();
+                    this.closeInsert();
                 }
             });
         }
 
-        snippetsOpen() {
-            return !!this.snippetMenu && this.snippetMenu.classList.contains('visible');
+        insertOpen() {
+            return !!this.insertMenu && this.insertMenu.classList.contains('visible');
         }
 
         /**
-         * Opens the snippet menu, at the caret or under whatever opened it.
+         * Opens the insert menu, at the caret or under whatever opened it.
          *
-         * The caret is the default because that's where the snippet is going, and
-         * because the shortcut has to work when the button isn't on the toolbar at
-         * all. `visible` rather than an attribute of our own: Craft hides
+         * The caret is the default because that's where whatever's picked is going,
+         * and because `/` and the shortcut have to work when the button isn't on the
+         * toolbar at all. `visible` rather than an attribute of our own: Craft hides
          * `.menu:not(.visible)` outright, and that outranks anything the plugin's
          * own stylesheet says about display.
+         *
+         * `commands` is what tells the two snippet triggers from `/`: the button and
+         * ⌘⇧K have meant snippets since before there was anything else in here.
          */
-        openSnippets(anchor) {
-            if (!this.snippetMenu || this.snippetsOpen()) {
+        openInsert(anchor, commands) {
+            if (!this.insertMenu || this.insertOpen()) {
                 return;
             }
 
-            this.snippetMenu.classList.add('visible');
+            if (this.commandGroup) {
+                this.commandGroup.classList.toggle('filtered', !commands);
+                this.divider?.classList.toggle('filtered', !commands);
+            }
+
+            this.insertMenu.classList.add('visible');
 
             const at = anchor ? this.below(anchor) : this.atCaret();
-            const width = this.snippetMenu.offsetWidth;
+            const width = this.insertMenu.offsetWidth;
 
             // Right-aligned under a toolbar button, which sits at the end of the
             // header and would otherwise push the menu off the edge
             const left = anchor ? at.right - width : at.left;
             const room = this.container.clientWidth - width;
 
-            this.snippetMenu.style.top = at.top + 'px';
-            this.snippetMenu.style.left = Math.max(0, Math.min(left, room)) + 'px';
+            this.insertMenu.style.top = at.top + 'px';
+            this.insertMenu.style.left = Math.max(0, Math.min(left, room)) + 'px';
 
             this.container.querySelectorAll('[data-snippets-trigger]')
                 .forEach((button) => button.setAttribute('aria-expanded', 'true'));
 
-            this.driveMenu(this.snippetMenu, () => this.closeSnippets());
+            // Opened by typing, focus stays in the textarea so the author can carry
+            // on typing to narrow the list. Opened any other way it moves into the
+            // menu, which is what gives Craft's focus ring
+            this.driveMenu(this.insertMenu, () => this.closeInsert(), this.slashAt === null);
         }
 
-        closeSnippets() {
-            if (!this.snippetsOpen()) {
+        closeInsert() {
+            this.slashAt = null;
+
+            if (!this.insertOpen()) {
                 return;
             }
 
-            this.snippetMenu.classList.remove('visible');
+            this.insertMenu.classList.remove('visible');
+            this.filterInsert('');
 
             this.container.querySelectorAll('[data-snippets-trigger]')
                 .forEach((button) => button.setAttribute('aria-expanded', 'false'));
+        }
+
+        // -- Typing `/` -------------------------------------------------------
+        //
+        // A menu at the caret, listing the things that go in at one. It's the only
+        // way to reach the element pickers without the toolbar — which a field with
+        // a floating toolbar hasn't got until something is selected, and the whole
+        // point of an entry link is that there isn't.
+
+        /**
+         * Called on every keystroke: opens the menu on a `/` that starts something,
+         * and once it's open keeps it in step with what's been typed since.
+         */
+        syncSlash() {
+            if (!this.insertMenu) {
+                return;
+            }
+
+            if (this.slashAt === null) {
+                this.openSlash();
+                return;
+            }
+
+            const query = this.slashQuery();
+
+            if (query === null) {
+                this.closeInsert();
+                return;
+            }
+
+            this.filterInsert(query);
+        }
+
+        /**
+         * The caret has moved without anything being typed. Only ever closes: an
+         * opening is something the author did, not somewhere they clicked.
+         */
+        syncSlashCaret() {
+            if (this.slashAt !== null && this.slashQuery() === null) {
+                this.closeInsert();
+            }
+        }
+
+        openSlash() {
+            const source = this.source;
+            const at = source.selectionStart - 1;
+
+            // The slash just typed, and only where one starts something: at the
+            // beginning of a line or after a space. Markdown source is full of the
+            // other kind — URLs, paths, closing tags, dates
+            if (source.selectionStart !== source.selectionEnd ||
+                at < 0 || source.value[at] !== '/' ||
+                (at > 0 && !/\s/.test(source.value[at - 1]))
+            ) {
+                return;
+            }
+
+            // Inside a fenced block a slash is a path far more often than it's a
+            // command, and an author writing code shouldn't be interrupted
+            if (this.inFence(at)) {
+                return;
+            }
+
+            this.slashAt = at;
+            this.filterInsert('');
+            this.openInsert(null, true);
+        }
+
+        /**
+         * What's been typed since the slash, or null if the menu has been typed or
+         * clicked out of.
+         */
+        slashQuery() {
+            const source = this.source;
+
+            // The caret went back past it, or the slash itself has been deleted
+            if (source.selectionStart <= this.slashAt || source.value[this.slashAt] !== '/') {
+                return null;
+            }
+
+            const query = source.value.slice(this.slashAt + 1, source.selectionStart);
+
+            // A space ends it. Someone who types `/ ` was writing, not choosing
+            return /\s/.test(query) ? null : query;
+        }
+
+        /**
+         * Narrows the menu to what matches, and closes it when nothing does — which
+         * is what makes a false opening cost a flicker rather than a dismissal.
+         */
+        filterInsert(query) {
+            if (!this.insertMenu) {
+                return;
+            }
+
+            const needle = query.toLowerCase();
+            let matches = 0;
+
+            this.insertMenu.querySelectorAll('li').forEach((li) => {
+                const hit = li.textContent.toLowerCase().indexOf(needle) !== -1;
+                li.classList.toggle('filtered', !hit);
+
+                if (hit) {
+                    matches++;
+                }
+            });
+
+            // A group with nothing left in it, and the divider that was separating
+            // it from something
+            const groups = Array.from(this.insertMenu.querySelectorAll('ul'));
+
+            groups.forEach((ul) => {
+                ul.classList.toggle('filtered', !ul.querySelector('li:not(.filtered)'));
+            });
+
+            this.divider?.classList.toggle(
+                'filtered',
+                groups.some((ul) => ul.classList.contains('filtered')),
+            );
+
+            if (query !== '' && !matches) {
+                this.closeInsert();
+            }
+        }
+
+        /**
+         * Whether a position sits inside a fenced code block.
+         */
+        inFence(index) {
+            let fence = null;
+
+            for (const line of this.source.value.slice(0, index).split('\n')) {
+                const fenced = line.match(FENCE);
+
+                if (!fenced) {
+                    continue;
+                }
+
+                if (!fence) {
+                    fence = fenced[2];
+                } else if (fenced[2][0] === fence[0] && fenced[2].length >= fence.length) {
+                    fence = null;
+                }
+            }
+
+            return fence !== null;
+        }
+
+        /**
+         * Takes the `/query` back out and does whatever was picked.
+         *
+         * Out first, and as an edit of its own: it was the way into the menu rather
+         * than anything to keep, and leaving it in place would have a snippet take
+         * it for the selection it's meant to wrap.
+         */
+        runInsert(item) {
+            const command = item.dataset.command;
+            const handle = item.dataset.snippet;
+
+            this.clearSlash();
+            this.closeInsert();
+
+            if (command) {
+                this.run(command);
+            } else {
+                this.insertSnippet(handle);
+            }
+        }
+
+        clearSlash() {
+            const source = this.source;
+
+            if (this.slashAt === null || source.value[this.slashAt] !== '/' ||
+                source.selectionStart <= this.slashAt
+            ) {
+                return;
+            }
+
+            source.setSelectionRange(this.slashAt, source.selectionStart);
+            this.insert('', 0, 0);
         }
 
         /**
@@ -1396,9 +1637,11 @@
             if (event[MOD_KEY] && event.shiftKey && !event.altKey) {
                 const key = event.key.toLowerCase();
 
-                if (key === 'k' && this.snippetMenu) {
+                // Snippets only, as it always has been — and only where the field
+                // has any, since the menu now exists for the commands alone too
+                if (key === 'k' && this.insertMenu?.querySelector('[data-snippet]')) {
                     event.preventDefault();
-                    this.openSnippets();
+                    this.openInsert(null, false);
                     return;
                 }
 
@@ -2354,7 +2597,7 @@
 
             if (previewing) {
                 this.closeMenuIn(this.headingsMenu);
-                this.closeSnippets();
+                this.closeInsert();
                 this.hideFloating();
             }
 

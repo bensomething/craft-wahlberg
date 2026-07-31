@@ -42,6 +42,15 @@ abstract class Editor
      */
     public const DEFAULT_SNIPPET_ICON = 'align-left';
 
+    /**
+     * What the `/` menu offers above the snippets, as `command => icon`.
+     *
+     * The two commands that put something in at the caret rather than reshaping
+     * what's around it, which is the only kind a menu opened by typing can offer:
+     * there's nothing selected to make bold.
+     */
+    public const INSERT_COMMANDS = ['entry' => 'newspaper', 'asset' => 'image'];
+
 
     /**
      * @param array{
@@ -184,9 +193,9 @@ abstract class Editor
             'toolbar' => self::renderMenus($toolbar),
             'overflowMenu' => $showToolbar ? self::overflowMenuHtml($buttons) : null,
             'snippetsButton' => $showToolbar ? $snippetsButton : null,
-            // Outside the toolbar: the shortcut opens it whether or not the button
-            // is there, and it's positioned at the caret rather than at either
-            'snippetsMenu' => self::snippetsMenuHtml($snippets),
+            // Outside the toolbar: `/` and the shortcut open it whether or not the
+            // button is there, and it's positioned at the caret rather than at either
+            'insertMenu' => self::insertMenuHtml($snippets, $buttons),
             'guide' => $showToolbar ? $guide : null,
             'inputAttributes' => $config['inputAttributes'],
         ], View::TEMPLATE_MODE_CP);
@@ -312,39 +321,72 @@ abstract class Editor
     }
 
     /**
-     * The snippets menu, rendered hidden and opened at the caret.
+     * The insert menu, rendered hidden and opened at the caret.
+     *
+     * What `/` opens: the element pickers, then a divider, then whatever snippets
+     * the field offers. The **Snippets** button and `⌘⇧K` open the same menu with
+     * the commands left out, since both of those have meant snippets all along.
      *
      * Craft's disclosure menu anchors to the button that opens it, which is the
-     * wrong place: a snippet goes in where the author is typing, and the shortcut
-     * has to work when the button isn't on the toolbar. Same markup Craft's menus
-     * use, so the classes carry the styling, but driven by the editor itself.
+     * wrong place: whatever's picked goes in where the author is typing, and `/`
+     * has no button at all. Same markup Craft's menus use, so the classes carry
+     * the styling, but driven by the editor itself.
      *
      * @param array<string, array{label: string, body: string, icon: string|null}> $snippets
+     * @param list<string>|null $only Commands the field is offering
      */
-    public static function snippetsMenuHtml(array $snippets): string
+    public static function insertMenuHtml(array $snippets, ?array $only = null): string
     {
-        if ($snippets === []) {
+        $labels = self::commands();
+
+        // Everything gets an icon, so the labels line up. Applied here rather than
+        // stored, so a snippet's config keeps saying what was actually set
+        $item = fn(?string $icon, string $label, array $data) => Html::tag('li', Html::button(
+            Html::tag('span', (string)Cp::iconSvg($icon ?? self::DEFAULT_SNIPPET_ICON), [
+                'class' => 'icon',
+                'aria' => ['hidden' => 'true'],
+            ]) . Html::encode($label),
+            ['class' => 'menu-item', 'type' => 'button', 'data' => $data],
+        ));
+
+        $commands = [];
+
+        foreach (self::INSERT_COMMANDS as $command => $icon) {
+            if ($only === null || in_array($command, $only, true)) {
+                $commands[] = $item($icon, $labels[$command], ['command' => $command]);
+            }
+        }
+
+        $items = array_map(
+            fn(string $handle, array $snippet) => $item(
+                $snippet['icon'],
+                $snippet['label'],
+                ['snippet' => $handle],
+            ),
+            array_keys($snippets),
+            array_values($snippets),
+        );
+
+        if ($commands === [] && $items === []) {
             return '';
         }
 
-        $items = array_map(function(string $handle, array $snippet) {
-            // Everything gets an icon, so the labels line up. Applied here rather
-            // than stored, so the config keeps saying what was actually set
-            $icon = Html::tag('span', (string)Cp::iconSvg($snippet['icon'] ?? self::DEFAULT_SNIPPET_ICON), [
-                'class' => 'icon',
-                'aria' => ['hidden' => 'true'],
+        $groups = [];
+
+        if ($commands !== []) {
+            // Marked so the two triggers that mean snippets can leave it out
+            $groups[] = Html::tag('ul', implode('', $commands), [
+                'data' => ['command-group' => true],
             ]);
+        }
 
-            return Html::tag('li', Html::button($icon . Html::encode($snippet['label']), [
-                'class' => 'menu-item',
-                'type' => 'button',
-                'data' => ['snippet' => $handle],
-            ]));
-        }, array_keys($snippets), array_values($snippets));
+        if ($items !== []) {
+            $groups[] = Html::tag('ul', implode('', $items));
+        }
 
-        return Html::tag('div', Html::tag('ul', implode('', $items)), [
-            'class' => ['menu', 'menu--disclosure', 'wahlberg-snippet-menu'],
-            'data' => ['snippet-menu' => true],
+        return Html::tag('div', implode(Html::tag('hr'), $groups), [
+            'class' => ['menu', 'menu--disclosure', 'wahlberg-insert-menu'],
+            'data' => ['insert-menu' => true],
         ]);
     }
 

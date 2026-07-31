@@ -37,7 +37,7 @@
 {% set showStats = showStats ?? false %}
 {% set placeholder = placeholder ?? null %}
 {% set snippetsButton = snippetsButton ?? null %}
-{% set snippetsMenu = snippetsMenu ?? null %}
+{% set insertMenu = insertMenu ?? null %}
 {% set guide = guide ?? null %}
 {% set inputAttributes = inputAttributes ?? {} %}
 
@@ -95,9 +95,9 @@
         </div>
     {% endif %}
 
-    {# Outside the toolbar, and positioned at the caret when opened, so the
-       shortcut works whether or not the button above is there #}
-    {{ snippetsMenu|raw }}
+    {# Outside the toolbar, and positioned at the caret when opened, so `/` and the
+       shortcut work whether or not the button above is there #}
+    {{ insertMenu|raw }}
 
     {% if showStats %}
         {# aria-live polite, so a screen reader hears the count settle rather than
