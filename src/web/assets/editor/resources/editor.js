@@ -2938,6 +2938,11 @@
 
     window.WahlbergEditor = WahlbergEditor;
 
+    // Fields whose init script ran before this file had loaded (see Editor.php)
+    (window.WahlbergEditorQueue || []).splice(0).forEach(([selector, config]) => {
+        new WahlbergEditor(selector, config);
+    });
+
     // The pure parts of the file, handed to the tests in tests/js. Nothing in here
     // touches the DOM until something calls it, so Node can require the file and
     // reach them without pretending to be a browser

@@ -147,8 +147,11 @@ abstract class Editor
         $showToolbar = (bool)$config['toolbar'] &&
             ($toolbar !== [] || $snippetsButton !== '' || $guide !== '');
 
+        // On Craft 6 the Yii2 adapter can run this before editor.js has loaded, so
+        // if the class isn't there yet the arguments wait in a queue that
+        // editor.js works through once it is
         $view->registerJs(sprintf(
-            'new WahlbergEditor(%s, %s);',
+            '(window.WahlbergEditor ? (s, c) => new WahlbergEditor(s, c) : (s, c) => (window.WahlbergEditorQueue = window.WahlbergEditorQueue || []).push([s, c]))(%s, %s);',
             Json::encode('#' . $view->namespaceInputId($containerId)),
             // The preview looks the field’s settings up from the UID rather than
             // trusting anything the browser sends
