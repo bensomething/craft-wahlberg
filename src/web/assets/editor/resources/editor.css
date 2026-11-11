@@ -15,7 +15,7 @@
        literal white. `--white` is the wrong token for a surface: a dark CP theme
        leaves it alone, because Craft uses it more often as ink on a coloured fill
        than as a background. */
-    --wahlberg-surface: var(--c-input-fill, var(--input-bg, var(--c-surface-white, var(--white, #fff))));
+    --wahlberg-surface: var(--c-form-control-fill, var(--input-bg, var(--white, #fff)));
     --wahlberg-tab-border: var(--c-color-border-quiet, var(--hairline-color));
 
     /* The row. Both text layers take it from here, since a row of one height
@@ -35,7 +35,7 @@
        field's own, because the field's border takes a pixel off the curve on the
        inside: matched exactly, an inner box cuts its corner back further than the
        border does and leaves a crescent of the field showing through. */
-    --wahlberg-inner-radius: calc(var(--c-radius-lg, var(--large-border-radius, 5px)) - 1px);
+    --wahlberg-inner-radius: calc(var(--c-form-control-radius, var(--large-border-radius, 5px)) - 1px);
 
     /* How wide the text runs before *Line Length* holds it back. Roughly 80
        characters, the measure plain text has been wrapped at for as long as
@@ -87,13 +87,26 @@
     /* What the insert menu and the floating toolbar are positioned against, so
        both sit where the field does */
     position: relative;
-    border: 1px solid var(--c-color-border-quiet, var(--hairline-color));
-    border-radius: var(--c-radius-lg, var(--large-border-radius, 5px));
-    background-color: var(--color-gray-50, var(--gray-050, #f9fafb));
+
+    /* Dressed as one of Craft's text inputs: on Craft 6 the form-control tokens,
+       on Craft 5 the hairline box it has always had */
+    border: var(--c-form-control-border-width, 1px) solid var(--c-form-control-border-color, var(--hairline-color));
+    border-radius: var(--c-form-control-radius, var(--large-border-radius, 5px));
+    background-color: var(--c-form-control-fill, var(--gray-050, #f9fafb));
+    box-shadow: var(--c-input-shadow, none);
 }
 
+/* Craft 5 darkens the border of a focused input */
 .wahlberg:focus-within {
     border-color: var(--c-form-control-border-color, var(--medium-hairline-color, #b3b3b3));
+}
+
+/* Craft 6 rings it instead. The textarea's own outline is off (it's one of two
+   stacked layers), so the field wears the ring. None of these tokens exist on
+   Craft 5, which leaves the outline invalid and so not drawn. */
+.wahlberg:has(.wahlberg-source:focus-visible) {
+    outline: var(--c-focus-outline-width) var(--c-focus-outline-style, solid) var(--c-color-focus-outline);
+    outline-offset: var(--c-focus-outline-offset);
 }
 
 /* Header: tabs on the start edge, formatting buttons on the end edge. No
@@ -138,7 +151,7 @@
 
     /* It was borrowing the fill of the field behind it, which is no longer behind
        it once the text is */
-    background-color: var(--color-gray-50, var(--gray-050, #f9fafb));
+    background-color: var(--c-form-control-fill, var(--gray-050, #f9fafb));
 
     /* Same for the field's top corners: a square-cornered strip over a rounded box
        shows its corners past the curve */
