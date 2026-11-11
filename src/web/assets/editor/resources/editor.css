@@ -253,6 +253,16 @@
 }
 
 /* Craft's .btn brings its own height and padding, so size it like the other tools */
+/* The overflow menu and its items are shown and hidden with Craft's `hidden`
+   class. Craft 5 has it as `display: none !important`; Craft 6's is a Tailwind
+   utility in a cascade layer, which anything unlayered outranks, so the "…"
+   showed with nothing in it. The items live wherever Craft moves the menu,
+   outside the field, hence the attribute rather than a `.wahlberg` prefix. */
+.wahlberg-overflow.hidden,
+[data-command-item].hidden {
+    display: none !important;
+}
+
 .wahlberg-more.btn {
     display: flex;
     align-items: center;

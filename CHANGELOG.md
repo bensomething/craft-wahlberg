@@ -11,6 +11,7 @@
 ### Fixed
 
 - Fixed a Wahlberg field doing nothing when its setup script ran before the editor script had loaded, which can happen on Craft 6.
+- Fixed the toolbar’s **…** menu showing, empty, on Craft 6 when every button fits.
 
 ## 1.0.0-beta.5 - 2026-07-31
 
