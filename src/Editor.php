@@ -3,13 +3,13 @@
 namespace bensomething\wahlberg;
 
 use bensomething\wahlberg\fields\MarkdownField;
+use bensomething\wahlberg\helpers\MarkdownParser;
 use bensomething\wahlberg\helpers\Snippets;
 use bensomething\wahlberg\web\assets\editor\EditorAsset;
 use Craft;
 use craft\helpers\Cp;
 use craft\helpers\Html;
 use craft\helpers\Json;
-use craft\helpers\Markdown;
 use craft\web\View;
 
 /**
@@ -612,7 +612,7 @@ abstract class Editor
                     ['value' => $row['syntax']],
                 ), ['scope' => 'row']),
                 // Parsed, so a label can mark up the syntax it names. Our strings
-                Html::tag('td', Markdown::processParagraph($row['label'])),
+                Html::tag('td', MarkdownParser::processParagraph($row['label'])),
             ])),
             self::guide(),
         );

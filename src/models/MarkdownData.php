@@ -2,10 +2,10 @@
 
 namespace bensomething\wahlberg\models;
 
+use bensomething\wahlberg\helpers\MarkdownParser;
 use bensomething\wahlberg\helpers\Purifier;
 use bensomething\wahlberg\helpers\ReferenceTags;
 use craft\helpers\Html;
-use craft\helpers\Markdown;
 use craft\helpers\Template;
 use JsonSerializable;
 use Stringable;
@@ -138,8 +138,8 @@ class MarkdownData implements Stringable, JsonSerializable
         $markdown = $this->encodeHtml ? Html::encode($this->markdown) : $this->markdown;
 
         $html = $this->inlineOnly
-            ? Markdown::processParagraph($markdown, $this->flavour)
-            : Markdown::process($markdown, $this->flavour);
+            ? MarkdownParser::processParagraph($markdown, $this->flavour)
+            : MarkdownParser::process($markdown, $this->flavour);
 
         // Before purification, not after: whatever a reference tag resolves to gets
         // sanitized along with everything else

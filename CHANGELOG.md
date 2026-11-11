@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added support for Craft CMS 6, via the Yii2 adapter (`craftcms/yii2-adapter`). On Craft 6, Markdown is parsed with Craft’s native parser.
+
 ## 1.0.0-beta.5 - 2026-07-31
 
 ### Added

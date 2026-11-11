@@ -18,8 +18,11 @@
     },
     "require": {
         "php": "^8.2",
-        "craftcms/cms": "^5.0",
+        "craftcms/cms": "^5.0|^6.0.0-beta.1",
         "ezyang/htmlpurifier": "^4.17"
+    },
+    "suggest": {
+        "craftcms/yii2-adapter": "Required to use Wahlberg with Craft CMS 6."
     },
     "require-dev": {
         "craftcms/ecs": "dev-main",
