@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added `.markdown` to the field value, and `markdown` to the `wahlberg_Markdown` GraphQL type. It’s the Markdown with its reference tags resolved but not parsed, for output that should stay Markdown, like an `llms.txt`. ([#1](https://github.com/bensomething/craft-wahlberg/issues/1))
+- Added `ReferenceTags::processMarkdown()`, which resolves the reference tags in Markdown source and leaves any inside code as typed.
+
 ## 1.0.0-beta.6 - 2026-11-11
 
 ### Added

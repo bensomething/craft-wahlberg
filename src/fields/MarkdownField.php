@@ -632,6 +632,11 @@ class MarkdownField extends Field implements SortableFieldInterface, MergeableFi
                     'description' => 'The raw Markdown, as the author typed it.',
                     'resolve' => fn(MarkdownData $data) => $data->getRaw(),
                 ],
+                'markdown' => [
+                    'type' => Type::string(),
+                    'description' => 'The Markdown with its reference tags resolved, but not parsed.',
+                    'resolve' => fn(MarkdownData $data) => $data->getMarkdown(),
+                ],
                 'html' => [
                     'type' => Type::string(),
                     'description' => 'The parsed HTML.',

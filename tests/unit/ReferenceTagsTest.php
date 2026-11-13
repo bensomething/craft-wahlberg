@@ -2,6 +2,7 @@
 
 namespace bensomething\wahlberg\tests\unit;
 
+use bensomething\wahlberg\helpers\MarkdownParser;
 use bensomething\wahlberg\helpers\ReferenceTags;
 use bensomething\wahlberg\tests\TestCase;
 use PHPUnit\Framework\Attributes\TestDox;
@@ -105,5 +106,72 @@ class ReferenceTagsTest extends TestCase
         $html = '<p>Nothing to resolve here.</p>';
 
         self::assertSame($html, ReferenceTags::process($html));
+    }
+
+    /**
+     * Resolves Markdown source the way a field with the given flavour would.
+     *
+     * @param list<string> $seen
+     */
+    private function resolveMarkdown(string $markdown, array &$seen, string $flavour = 'gfm'): string
+    {
+        return ReferenceTags::outsideMarkdownCode(
+            $markdown,
+            static fn(string $md): string => MarkdownParser::process($md, $flavour),
+            $this->spy($seen),
+        );
+    }
+
+    #[TestDox('reference tags in Markdown source get resolved, and the Markdown stays Markdown')]
+    public function testMarkdownResolvesWithoutParsing(): void
+    {
+        $seen = [];
+        $markdown = "# Docs\n\n- [Read more]({entry:1:url})\n";
+
+        self::assertSame("# Docs\n\n- [Read more](/resolved)\n", $this->resolveMarkdown($markdown, $seen));
+        self::assertSame([$markdown], $seen);
+    }
+
+    #[TestDox('reference tags in a Markdown code span are left alone')]
+    public function testMarkdownSkipsInlineCode(): void
+    {
+        $seen = [];
+
+        self::assertSame(
+            'Write `{entry:1:url}` to link to /resolved.',
+            $this->resolveMarkdown('Write `{entry:1:url}` to link to {entry:1:url}.', $seen),
+        );
+        self::assertStringNotContainsString('`{entry:1:url}`', $seen[0]);
+    }
+
+    #[TestDox('reference tags in fenced, tilde-fenced and indented Markdown code are left alone')]
+    public function testMarkdownSkipsCodeBlocks(): void
+    {
+        $markdown = "{entry:1:url}\n\n```twig\n{entry:1:url}\n```\n\n~~~\n{entry:1:url}\n~~~\n\n    {entry:1:url}\n";
+        $seen = [];
+
+        self::assertSame(
+            "/resolved\n\n```twig\n{entry:1:url}\n```\n\n~~~\n{entry:1:url}\n~~~\n\n    {entry:1:url}\n",
+            $this->resolveMarkdown($markdown, $seen),
+        );
+    }
+
+    #[TestDox('what counts as code in Markdown source follows the flavour')]
+    public function testMarkdownCodeFollowsTheFlavour(): void
+    {
+        // Traditional Markdown has no tilde fences, so the tag between them is text
+        $markdown = "~~~\n{entry:1:url}\n~~~\n";
+        $seen = [];
+
+        self::assertSame("~~~\n/resolved\n~~~\n", $this->resolveMarkdown($markdown, $seen, 'original'));
+        self::assertSame($markdown, $this->resolveMarkdown($markdown, $seen, 'gfm'));
+    }
+
+    #[TestDox('Markdown source with no reference tags is returned untouched, without asking Craft')]
+    public function testMarkdownShortCircuitsWithoutBraces(): void
+    {
+        $markdown = "# Nothing\n\nto resolve here.";
+
+        self::assertSame($markdown, ReferenceTags::processMarkdown($markdown, static fn(string $md): string => $md));
     }
 }

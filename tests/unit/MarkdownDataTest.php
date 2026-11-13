@@ -195,4 +195,20 @@ class MarkdownDataTest extends TestCase
 
         self::assertStringContainsString('<h1>Heading</h1>', (string)$data->getHtml());
     }
+
+    #[TestDox('resolved Markdown is the source as typed when reference tags are off')]
+    public function testMarkdownIsRawWhenRefsAreDisabled(): void
+    {
+        $markdown = '[Read more]({entry:123:url})';
+
+        self::assertSame($markdown, (new MarkdownData($markdown, 'gfm', true, null, false))->getMarkdown());
+    }
+
+    #[TestDox('resolved Markdown with no reference tags never goes looking for elements')]
+    public function testMarkdownSkipsRefsWhenThereAreNone(): void
+    {
+        $markdown = "# Heading\n\n<b>Not purified</b> & not encoded.";
+
+        self::assertSame($markdown, (new MarkdownData($markdown, 'gfm', true, null, true))->getMarkdown());
+    }
 }

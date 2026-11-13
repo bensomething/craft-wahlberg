@@ -21,6 +21,8 @@ class MarkdownData implements Stringable, JsonSerializable
 {
     private ?string $parsed = null;
 
+    private ?string $resolved = null;
+
     public function __construct(
         private readonly string $markdown,
         private readonly string $flavour = 'gfm-comment',
@@ -44,6 +46,32 @@ class MarkdownData implements Stringable, JsonSerializable
     public function getRaw(): string
     {
         return $this->markdown;
+    }
+
+    /**
+     * The Markdown with its reference tags resolved, but not parsed: what to output
+     * where Markdown is wanted rather than HTML, like an `llms.txt`. Tags inside code
+     * are left as typed, the same as in the HTML.
+     *
+     * Neither purified nor encoded, since there’s no HTML yet to do either to. It’s a
+     * plain string, so Twig escapes it in an HTML template, which is right for HTML
+     * and wrong for a text file. Pipe it through `|raw` in the text file.
+     */
+    public function getMarkdown(): string
+    {
+        if ($this->resolved !== null) {
+            return $this->resolved;
+        }
+
+        if (!$this->parseRefs) {
+            return $this->resolved = $this->markdown;
+        }
+
+        return $this->resolved = ReferenceTags::processMarkdown(
+            $this->markdown,
+            fn(string $markdown): string => $this->render($markdown),
+            $this->siteId,
+        );
     }
 
     /**
@@ -133,13 +161,7 @@ class MarkdownData implements Stringable, JsonSerializable
             return $this->parsed;
         }
 
-        // Before the parser sees it, so a tag reaches the page as text. Purifying
-        // would drop it instead; encoding shows it
-        $markdown = $this->encodeHtml ? Html::encode($this->markdown) : $this->markdown;
-
-        $html = $this->inlineOnly
-            ? MarkdownParser::processParagraph($markdown, $this->flavour)
-            : MarkdownParser::process($markdown, $this->flavour);
+        $html = $this->render($this->markdown);
 
         // Before purification, not after: whatever a reference tag resolves to gets
         // sanitized along with everything else
@@ -152,5 +174,22 @@ class MarkdownData implements Stringable, JsonSerializable
         }
 
         return $this->parsed = $html;
+    }
+
+    /**
+     * Turns Markdown into HTML with this field’s parser settings, before reference
+     * tags or purification.
+     */
+    private function render(string $markdown): string
+    {
+        // Before the parser sees it, so a tag reaches the page as text. Purifying
+        // would drop it instead; encoding shows it
+        if ($this->encodeHtml) {
+            $markdown = Html::encode($markdown);
+        }
+
+        return $this->inlineOnly
+            ? MarkdownParser::processParagraph($markdown, $this->flavour)
+            : MarkdownParser::process($markdown, $this->flavour);
     }
 }
