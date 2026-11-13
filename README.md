@@ -247,21 +247,39 @@ A handle already defined in `config/wahlberg.php` wins, so an installation can a
 
 ## Templating
 
-The field value is `null`, or a `MarkdownData` object:
+The field value is `null`, or a `MarkdownData` object. `.raw` is what went in, and the other three are what comes out of it, each with its [reference tags](#reference-tags) resolved when the field parses them:
 
 ```twig
-{{ entry.body.html }}   {# the parsed HTML #}
-{{ entry.body.raw }}    {# the raw Markdown, as typed #}
-{{ entry.body.text }}   {# parsed, then stripped to plain text #}
-{{ entry.body.flavour }} {# the flavour it was parsed with #}
+{{ entry.body.raw }}      {# the source, exactly as typed #}
+
+{{ entry.body.html }}     {# output as HTML #}
+{{ entry.body.markdown }} {# output as Markdown, see below #}
+{{ entry.body.text }}     {# output as plain text #}
+
+{{ entry.body.flavour }}  {# the flavour it was parsed with #}
 ```
 
-`{{ entry.body }}` on its own outputs the raw Markdown, so Craft’s own filter still works if you’d rather parse it yourself:
+`{{ entry.body }}` on its own is `.raw`, not `.markdown`: the source, tags and all. That’s so Craft’s own filter still works if you’d rather parse it yourself:
 
 ```twig
 {{ entry.body|md('gfm') }}
 {{ entry.body|md(inlineOnly=true) }}
 ```
+
+Pipe `.markdown` instead for Craft’s plain parser with the links already resolved: `{{ entry.body.markdown|md }}`.
+
+### Markdown out
+
+`.markdown` is for anywhere the output should *be* Markdown rather than HTML, like an `llms.txt`. It’s the source as typed, with its [reference tags](#reference-tags) resolved, so `[Pricing]({entry:12:url})` comes out as `[Pricing](https://example.com/pricing)` and nothing else changes:
+
+```twig
+{# templates/llms.txt.twig #}
+# {{ siteName }}
+
+{{ entry.body.markdown|raw }}
+```
+
+Tags inside code are left as typed, the same as in `.html`. Nothing is purified or encoded, since there’s no HTML yet to do either to. It comes back as a plain string, so Twig escapes it in an HTML template, which is right there. A text file wants `|raw`, or a `&` in the Markdown arrives as `&amp;`. With **Parse Reference Tags** off, `.markdown` is the same as `.raw`.
 
 ### The `|marky` filter
 
@@ -444,6 +462,7 @@ Markdown fields resolve to a `wahlberg_Markdown` type:
     ... on article_Entry {
       body {
         raw
+        markdown
         html
         text
       }
