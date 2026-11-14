@@ -1,33 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="tests/bootstrap.php"
-         colors="true"
-         cacheDirectory=".phpunit.cache"
-         failOnWarning="true"
-         failOnNotice="true"
-         failOnDeprecation="true"
-         beStrictAboutOutputDuringTests="true"
-         displayDetailsOnTestsThatTriggerDeprecations="true"
-         displayDetailsOnTestsThatTriggerErrors="true"
-         displayDetailsOnTestsThatTriggerNotices="true"
-         displayDetailsOnTestsThatTriggerWarnings="true">
+<phpunit
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+        bootstrap="vendor/autoload.php"
+        colors="true"
+        cacheDirectory=".phpunit.cache"
+>
     <testsuites>
-        <testsuite name="wahlberg">
-            <directory>tests/unit</directory>
+        <testsuite name="Feature">
+            <directory>./tests/Feature</directory>
         </testsuite>
     </testsuites>
-
-    <!--
-        Warnings, notices and deprecations fail the build, but only Wahlberg's own. PHP
-        deprecations from inside `vendor` are the dependency's business, and one arrives
-        with every release the `^5.0` constraint allows.
-    -->
-    <source restrictNotices="true"
-            restrictWarnings="true"
-            ignoreIndirectDeprecations="true">
+    <php>
+        <ini name="memory_limit" value="1G"/>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_KEY" value="base64:6BDzvwO4hrN7Twv6/gaQ6oZMB/CvpUArZXho189U75E="/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+    </php>
+    <source>
         <include>
-            <directory>src</directory>
+            <directory suffix=".php">./src</directory>
         </include>
     </source>
 </phpunit>

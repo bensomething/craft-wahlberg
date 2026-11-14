@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0 - Unreleased
+
+### Changed
+
+- Wahlberg 2 is for Craft CMS 6, and adds snippets to Craft’s own Markdown field rather than bringing a field type of its own. Wahlberg 1.x is still the full field on Craft 5.
+
 ## 1.0.0-beta.7 - 2026-11-13
 
 ### Added
