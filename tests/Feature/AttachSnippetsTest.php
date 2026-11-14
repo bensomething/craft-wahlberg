@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace bensomething\wahlberg\tests\Feature;
 
 use bensomething\wahlberg\Events\SnippetsRegistering;
+use bensomething\wahlberg\Plugin;
 use bensomething\wahlberg\Snippets;
 use bensomething\wahlberg\tests\TestCase;
 use CraftCms\Cms\Entry\Elements\Entry;
@@ -18,7 +19,6 @@ use CraftCms\Cms\Support\Facades\Fields;
 use CraftCms\Cms\Ui\Contracts\Control;
 use CraftCms\Cms\Ui\Contracts\Node;
 use CraftCms\Cms\Ui\Controls\Markdown as MarkdownControl;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 
 /** The `/` menu on native Markdown fields, through a real field layout compile. */
@@ -117,13 +117,29 @@ final class AttachSnippetsTest extends TestCase
         $this->assertSame('config', $options[1]['value']);
     }
 
+    public function test_rows_from_the_settings_screen_work_too(): void
+    {
+        $this->configure([
+            ['label' => 'Pull quote', 'handle' => '', 'body' => '> $1', 'fields' => ''],
+            ['label' => 'Aside', 'handle' => 'aside', 'body' => 'a', 'fields' => 'body, intro'],
+            ['label' => 'Empty', 'handle' => 'empty', 'body' => '', 'fields' => ''],
+        ]);
+
+        // A blank handle comes from the label, a blank Fields means all of them,
+        // and a row with no Markdown is skipped
+        $this->assertSame(['pullQuote', 'aside'], $this->handlesFor($this->field('body')));
+        $this->assertSame(['pullQuote'], $this->handlesFor($this->field('summary')));
+    }
+
     /**
-     * @param  array<string, mixed>  $snippets
+     * Through the settings model, which is where the config file lands too.
+     *
+     * @param  array<array-key, mixed>  $snippets
      * @param  array<string, mixed>  $extra
      */
     private function configure(array $snippets, array $extra = []): void
     {
-        Config::set('craft.wahlberg', ['snippets' => $snippets] + $extra);
+        Plugin::getInstance()->setSettings(['snippets' => $snippets] + $extra);
         app(Snippets::class)->reset();
     }
 

@@ -7,17 +7,14 @@ namespace bensomething\wahlberg;
 use bensomething\wahlberg\Events\SnippetsRegistering;
 use CraftCms\Cms\Field\Contracts\FieldInterface;
 use CraftCms\Cms\Support\Facades\Fields;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
 use function CraftCms\Cms\t;
 
 /**
- * The snippets Markdown fields offer, read from `config/craft/wahlberg.php`.
- *
- * A config file rather than a settings screen: a snippet is a contract with the
- * templates and CSS that render it, so it belongs to whoever can write those, in
- * version control. Plugins can add their own through {@see SnippetsRegistering}.
+ * The snippets Markdown fields offer: those on the settings screen, or in
+ * `config/craft/wahlberg.php` when that sets them, plus any a plugin adds through
+ * {@see SnippetsRegistering}.
  *
  * @phpstan-type Snippet array{label: string, body: string, fields: list<string>|null}
  * @phpstan-type Stop array{int, int}
@@ -42,17 +39,19 @@ class Snippets
     /** @var array<string, Snippet>|null */
     private ?array $snippets = null;
 
+    public function __construct(
+        private readonly Settings $settings,
+    ) {}
+
     /** The character that opens the menu. */
     public function trigger(): string
     {
-        $trigger = Config::get('craft.wahlberg.trigger');
-
-        return is_string($trigger) && $trigger !== '' ? $trigger : self::DEFAULT_TRIGGER;
+        return $this->settings->trigger !== '' ? $this->settings->trigger : self::DEFAULT_TRIGGER;
     }
 
     /**
      * Every snippet defined, keyed by handle, in the order defined: plugins' first,
-     * then the config file's.
+     * then the installation's own.
      *
      * @return array<string, Snippet>
      */
@@ -62,14 +61,15 @@ class Snippets
             return $this->snippets;
         }
 
-        $configured = Config::get('craft.wahlberg.snippets', []);
-
         event($event = new SnippetsRegistering);
 
         // Plugins first, so a handle the installation defined for itself wins
-        $defined = array_merge($event->snippets, is_array($configured) ? $configured : []);
+        $defined = array_merge(
+            $this->normalize($event->snippets),
+            $this->normalize($this->settings->snippets),
+        );
 
-        return $this->snippets = $this->normalize($defined);
+        return $this->snippets = $defined;
     }
 
     /**
@@ -171,12 +171,7 @@ class Snippets
     {
         $snippets = [];
 
-        foreach ($defined as $handle => $snippet) {
-            // A list rather than a map, so there are no handles to key by
-            if (! is_string($handle)) {
-                continue;
-            }
-
+        foreach ($defined as $key => $snippet) {
             $body = is_array($snippet) ? ($snippet['body'] ?? null) : $snippet;
 
             if (! is_string($body) || $body === '') {
@@ -184,16 +179,46 @@ class Snippets
             }
 
             $label = is_array($snippet) ? ($snippet['label'] ?? null) : null;
-            $fields = is_array($snippet) ? ($snippet['fields'] ?? null) : null;
+            $label = is_string($label) && trim($label) !== '' ? trim($label) : null;
+
+            // Keyed by handle in the config file. Rows from the settings screen carry
+            // it in a column, and one left blank takes it from the label
+            $handle = is_string($key) ? $key : (is_array($snippet) ? ($snippet['handle'] ?? null) : null);
+            $handle = is_string($handle) && trim($handle) !== '' ? trim($handle) : ($label ? Str::camel($label) : null);
+
+            if ($handle === null) {
+                continue;
+            }
 
             $snippets[$handle] = [
-                'label' => t(is_string($label) && $label !== '' ? $label : Str::headline($handle), category: 'site'),
+                'label' => t($label ?? Str::headline($handle), category: 'site'),
                 'body' => $body,
-                'fields' => is_array($fields) ? array_values(array_filter($fields, 'is_string')) : null,
+                'fields' => self::fields(is_array($snippet) ? ($snippet['fields'] ?? null) : null),
             ];
         }
 
         return $snippets;
+    }
+
+    /**
+     * A list in the config file, and handles separated by commas or spaces on the
+     * settings screen. None means every field.
+     *
+     * @return list<string>|null
+     */
+    private static function fields(mixed $fields): ?array
+    {
+        if (is_string($fields)) {
+            $fields = preg_split('/[\s,]+/', $fields, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        }
+
+        if (! is_array($fields)) {
+            return null;
+        }
+
+        $fields = array_values(array_filter($fields, fn ($field) => is_string($field) && $field !== ''));
+
+        return $fields === [] ? null : $fields;
     }
 
     private static function utf16Length(string $text): int

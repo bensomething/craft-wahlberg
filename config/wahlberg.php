@@ -3,6 +3,10 @@
 /**
  * Wahlberg config file.
  *
+ * Everything here can be set under Settings → Plugins → Wahlberg instead, which saves
+ * to project config. Use this file for values that should be fixed in code: a key set
+ * here replaces the saved one entirely, and shows read-only on the settings screen.
+ *
  * Publish it into your project with `php artisan vendor:publish --tag=wahlberg`,
  * which copies it to `config/craft/wahlberg.php`, and edit it there.
  *
@@ -24,11 +28,13 @@ return [
     // In a body, `$1` to `$9` are stops visited on Tab, `${1:like this}` is a stop
     // with a default, and `$0` is where the caret ends up. Escape the `$` in
     // double-quoted strings, or PHP reads them as variables.
-    'snippets' => [
-        // 'callout' => [
-        //     'label' => 'Callout',
-        //     'body' => "> [!NOTE]\n> \${1:Text}\$0",
-        //     'fields' => ['body'],
-        // ],
-    ],
+    //
+    // Uncommented, this replaces the snippets on the settings screen.
+    // 'snippets' => [
+    //     'callout' => [
+    //         'label' => 'Callout',
+    //         'body' => "> [!NOTE]\n> \${1:Text}\$0",
+    //         'fields' => ['body'],
+    //     ],
+    // ],
 ];
