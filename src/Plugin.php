@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace bensomething\wahlberg;
 
+use bensomething\wahlberg\Listeners\AttachSnippets;
+use CraftCms\Cms\FieldLayout\Events\FieldLayoutUiResolving;
 use CraftCms\Cms\Plugin\Plugin as BasePlugin;
+use Override;
 
 /**
  * Wahlberg: snippets for Craft's Markdown field, Craft 6 line.
@@ -17,4 +20,20 @@ use CraftCms\Cms\Plugin\Plugin as BasePlugin;
 class Plugin extends BasePlugin
 {
     public string $schemaVersion = '2.0.0';
+
+    protected array $events = [
+        FieldLayoutUiResolving::class => AttachSnippets::class,
+    ];
+
+    /**
+     * Scoped, so the config and the registering event are read once per request
+     * however many fields a page renders.
+     */
+    #[Override]
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->scoped(Snippets::class);
+    }
 }
