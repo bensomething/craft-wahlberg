@@ -26,6 +26,14 @@ class Plugin extends BasePlugin
     ];
 
     /**
+     * On every CP page, since a Markdown field can turn up in any of them, slideouts
+     * included. It does nothing until a snippet is picked.
+     */
+    protected array $scripts = [
+        __DIR__.'/../resources/js/tab-stops.js' => 'js/tab-stops.js',
+    ];
+
+    /**
      * Scoped, so the config and the registering event are read once per request
      * however many fields a page renders.
      */

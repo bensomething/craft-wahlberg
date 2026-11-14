@@ -20,6 +20,16 @@ final class PluginTest extends TestCase
         $this->assertInstanceOf(Plugin::class, Plugin::getInstance());
     }
 
+    public function test_every_listed_asset_exists(): void
+    {
+        $assets = (fn () => [...$this->styles, ...$this->scripts])->call(Plugin::getInstance());
+        $this->assertNotEmpty($assets);
+
+        foreach (array_keys($assets) as $source) {
+            $this->assertFileExists($source);
+        }
+    }
+
     public function test_it_uninstalls_and_reinstalls_cleanly(): void
     {
         $plugins = app(Plugins::class);
