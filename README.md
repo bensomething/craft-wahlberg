@@ -91,6 +91,17 @@ Twig filters for a Markdown field’s value, or any string of Markdown:
 
 A field’s value is read in its field’s flavour. A string is read in the Wahlberg flavour.
 
+## Writing checks
+
+Wahlberg can point out things worth fixing under a Markdown field while an entry is edited. Tick the ones you want under **Writing Checks** in Wahlberg’s settings. All are off to start with.
+
+- **Images without alt text**
+- **Level 1 headings**, since the page’s title is usually the only one
+- **Skipped heading levels**, like a level 4 heading straight after a level 2
+- **Links to entries that aren’t live**: disabled, not published yet, expired or deleted
+
+What they find shows as the field’s warning, after any warning the field already has. It updates each time the entry saves or autosaves, and never stops a save. Markdown inside code isn’t checked.
+
 ## Configuration
 
 To fix snippets or the trigger in code, publish the config file:

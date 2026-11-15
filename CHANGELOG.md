@@ -4,17 +4,15 @@
 
 ### Added
 
-- Added snippets to Craft’s Markdown field. Type `/` at the start of a line or after a space to pick one. Snippets are set up under Settings → Plugins → Wahlberg, or in `config/craft/wahlberg.php`, and plugins can add their own through `SnippetsRegistering`.
-- Snippets can have tab stops: `$1` to `$9`, `${1:defaults}` and `$0`, visited with Tab and Shift+Tab.
-- Snippets go on lines of their own when picked mid-sentence, unless they’re marked **Inline**.
-- The menu trigger can be `/`, `\` or `;`.
-- Added `@` links. Type `@` and part of an entry’s title to link to it with a reference tag. The menu follows the field’s link settings: its allowed link types, entry sources and selectable entries condition.
+- Added snippets to Craft’s Markdown field, with tab stops, from a `/` menu.
+- Added `@` links to entries.
+- Added the Wahlberg Markdown flavour, with GitHub’s alerts, footnotes, `==highlights==` and heading ids.
 - Added the `toc`, `excerpt`, `readingTime`, `plainText` and `parseMarkdownRefs` Twig filters.
-- Added the Wahlberg Markdown flavour, on the Markdown field’s **Markdown Flavor** setting: GitHub-Flavored Markdown plus GitHub’s alerts, footnotes, `==highlights==` and heading ids.
+- Added writing checks.
 
 ### Changed
 
-- Wahlberg 2 is for Craft CMS 6, and adds snippets to Craft’s own Markdown field rather than bringing a field type of its own. Wahlberg 1.x is still the full field on Craft 5.
+- Wahlberg 2 is for Craft CMS 6, and adds to Craft’s own Markdown field rather than bringing a field type of its own. Wahlberg 1.x is still the full field on Craft 5.
 
 ## 1.0.0-beta.7 - 2026-11-13
 

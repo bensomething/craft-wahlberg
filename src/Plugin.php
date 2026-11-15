@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace bensomething\wahlberg;
 
 use bensomething\wahlberg\Listeners\AttachMenus;
+use bensomething\wahlberg\Listeners\ShowWritingChecks;
 use bensomething\wahlberg\Markdown\WahlbergFlavor;
 use bensomething\wahlberg\Twig\WahlbergExtension;
 use CraftCms\Cms\Field\Markdown as MarkdownField;
@@ -15,6 +16,7 @@ use CraftCms\Cms\Support\Facades\Fields;
 use CraftCms\Cms\Support\Facades\Twig as CraftTwig;
 use CraftCms\Cms\Ui\Controls\Choice;
 use CraftCms\Cms\Ui\Controls\Table;
+use CraftCms\Cms\Ui\Enums\ChoicePresentation;
 use CraftCms\Cms\Ui\Enums\ControlMode;
 use CraftCms\Cms\Ui\Nodes\Field;
 use CraftCms\Cms\Ui\Ui;
@@ -47,7 +49,7 @@ class Plugin extends BasePlugin
     public bool $hasReadOnlyCpSettings = true;
 
     protected array $events = [
-        FieldLayoutUiResolving::class => AttachMenus::class,
+        FieldLayoutUiResolving::class => [AttachMenus::class, ShowWritingChecks::class],
     ];
 
     /**
@@ -181,6 +183,16 @@ class Plugin extends BasePlugin
                 ->allowReorder()
                 ->addRowLabel(t('Add a snippet', category: 'wahlberg')))
                 ->instructions(t('Blocks of Markdown authors can drop into a Markdown field from its snippets menu. In the Markdown, `$1` to `$9` are stops the author moves between with Tab, `${1:like this}` is a stop with text already in it, and `$0` is where the caret ends up. A snippet picked mid-sentence starts a new paragraph, since most are blocks like a quote or a table. Tick **Inline** for one that should go in exactly where it’s typed. **Fields** takes field handles, separated by commas, to offer a snippet on only those fields.', category: 'wahlberg'))),
+
+            $overridable('checks', Field::make(t('Writing Checks', category: 'wahlberg'), Choice::make('checks')
+                ->options(array_map(
+                    fn (string $handle, string $label) => ['label' => $label, 'value' => $handle],
+                    array_keys(WritingChecks::labels()),
+                    WritingChecks::labels(),
+                ))
+                ->presentation(ChoicePresentation::Checkboxes)
+                ->multiple())
+                ->instructions(t('Things to point out under a Markdown field while an entry is edited. They show as the field’s warning, update each time the entry saves, and never stop a save.', category: 'wahlberg'))),
         ]);
     }
 }

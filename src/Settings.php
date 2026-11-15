@@ -29,6 +29,13 @@ class Settings extends PluginSettings
      */
     public array $snippets = [];
 
+    /**
+     * The writing checks that are on, by handle. All are off to start with.
+     *
+     * @var list<string>
+     */
+    public array $checks = [];
+
     #[Override]
     public function getRules(): array
     {
@@ -41,6 +48,8 @@ class Settings extends PluginSettings
             'snippets.*.handle' => ['nullable', 'string', 'regex:/^[A-Za-z][A-Za-z0-9_-]*$/', 'distinct'],
             'snippets.*.body' => ['required', 'string'],
             'snippets.*.inline' => ['nullable', 'boolean'],
+            'checks' => ['array'],
+            'checks.*' => ['string', 'in:'.implode(',', WritingChecks::ALL)],
         ]);
     }
 }

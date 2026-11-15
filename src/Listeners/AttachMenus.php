@@ -7,11 +7,10 @@ namespace bensomething\wahlberg\Listeners;
 use bensomething\wahlberg\EntryLinks;
 use bensomething\wahlberg\Snippets;
 use CraftCms\Cms\Element\Contracts\ElementInterface;
-use CraftCms\Cms\FieldLayout\Events\FieldLayoutUiResolving;
-use CraftCms\Cms\FieldLayout\FieldLayout;
+use CraftCms\Cms\Field\Contracts\FieldInterface;
 use CraftCms\Cms\Support\Facades\Sites;
-use CraftCms\Cms\Ui\Contracts\Node;
 use CraftCms\Cms\Ui\Controls\Markdown as MarkdownControl;
+use CraftCms\Cms\Ui\Nodes\Field;
 
 use function CraftCms\Cms\t;
 
@@ -21,10 +20,9 @@ use function CraftCms\Cms\t;
  * `@` one for linking to entries.
  *
  * Craft's Markdown control already carries a text expander, it just never gives it
- * any triggers. A field's control is found by its path, which a field layout always
- * sets to `['fields', <handle>]`.
+ * any triggers.
  */
-class AttachMenus
+class AttachMenus extends MarkdownFieldListener
 {
     public const string ENTRY_LINK_TRIGGER = '@';
 
@@ -32,39 +30,8 @@ class AttachMenus
         private readonly Snippets $snippets,
     ) {}
 
-    public function handle(FieldLayoutUiResolving $event): void
+    protected function apply(Field $node, MarkdownControl $control, FieldInterface $field, string $handle, ?ElementInterface $element): void
     {
-        $this->walk($event->ui->nodes(), $event->fieldLayout, $event->element);
-    }
-
-    /** @param  array<Node>  $nodes */
-    private function walk(array $nodes, FieldLayout $layout, ?ElementInterface $element): void
-    {
-        foreach ($nodes as $node) {
-            $control = $node->getControl();
-
-            if ($control instanceof MarkdownControl) {
-                $this->attach($control, $layout, $element);
-            }
-
-            $this->walk($node->children(), $layout, $element);
-        }
-    }
-
-    private function attach(MarkdownControl $control, FieldLayout $layout, ?ElementInterface $element): void
-    {
-        $path = (array) $control->path();
-
-        if (($path[0] ?? null) !== 'fields' || ! is_string($path[1] ?? null)) {
-            return;
-        }
-
-        $field = $layout->getFieldByHandle($path[1]);
-
-        if (! $field) {
-            return;
-        }
-
         $triggers = [];
         $options = $this->snippets->optionsFor($field);
 
