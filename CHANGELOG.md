@@ -2,6 +2,10 @@
 
 ## 2.0.0 - Unreleased
 
+### Added
+
+- Added the Wahlberg Markdown flavour, on the Markdown field’s **Markdown Flavor** setting: GitHub-Flavored Markdown plus GitHub’s alerts, footnotes, `==highlights==` and heading ids.
+
 ### Changed
 
 - Wahlberg 2 is for Craft CMS 6, and adds snippets to Craft’s own Markdown field rather than bringing a field type of its own. Wahlberg 1.x is still the full field on Craft 5.

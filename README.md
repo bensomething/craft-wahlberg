@@ -24,6 +24,33 @@ In a snippet’s Markdown:
 - `${1:like this}` is a stop with a default: the text goes in, and landing on the stop selects it.
 - `$0` is where the caret ends up, after any numbered stops. Without one it lands at the end.
 
+## The Wahlberg flavour
+
+Wahlberg adds a **Wahlberg** option to the Markdown field’s **Markdown Flavor** setting. It’s everything Craft’s GitHub-Flavored Markdown does, plus:
+
+- **Alerts**, written the way GitHub reads them:
+
+  ```markdown
+  > [!WARNING]
+  > Mind the gap.
+  ```
+
+  `NOTE`, `TIP`, `IMPORTANT`, `WARNING` and `CAUTION` work, in any case. They render with GitHub’s classes, so CSS written for GitHub-style alerts works as it is:
+
+  ```html
+  <div class="markdown-alert markdown-alert-warning">
+  <p class="markdown-alert-title">Warning</p>
+  <p>Mind the gap.</p>
+  </div>
+  ```
+
+  The titles are translated in the `site` category.
+- **Footnotes**: `Text.[^1]`, and `[^1]: The note.` anywhere below.
+- **Highlights**: `==marked==` becomes `<mark>marked</mark>`.
+- **Heading ids**, from each heading’s text, so a page can link to `#getting-started`.
+
+It works anywhere Craft parses Markdown, so `{{ text|md(flavor='Wahlberg') }}` uses it too. Uninstalling Wahlberg moves fields on the Wahlberg flavour back to GitHub-Flavored Markdown.
+
 ## Configuration
 
 To fix snippets or the trigger in code, publish the config file:

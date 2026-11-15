@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace bensomething\wahlberg;
 
 use bensomething\wahlberg\Listeners\AttachSnippets;
+use bensomething\wahlberg\Markdown\WahlbergFlavor;
+use CraftCms\Cms\Field\Markdown as MarkdownField;
 use CraftCms\Cms\FieldLayout\Events\FieldLayoutUiResolving;
+use CraftCms\Cms\Markdown\Markdown;
 use CraftCms\Cms\Plugin\Plugin as BasePlugin;
+use CraftCms\Cms\Support\Facades\Fields;
 use CraftCms\Cms\Ui\Controls\Table;
 use CraftCms\Cms\Ui\Controls\Text;
 use CraftCms\Cms\Ui\Enums\ControlMode;
@@ -64,6 +68,31 @@ class Plugin extends BasePlugin
 
         $this->app->singleton(Settings::class, fn () => $this->getSettings());
         $this->app->scoped(Snippets::class);
+    }
+
+    /**
+     * The Wahlberg flavour goes on the field's Markdown Flavor menu, next to Craft's.
+     */
+    public function boot(Markdown $markdown): void
+    {
+        $markdown->extend(WahlbergFlavor::NAME, new WahlbergFlavor);
+    }
+
+    /**
+     * Fields on the Wahlberg flavour go back to GitHub-Flavored Markdown, which it
+     * builds on: once the plugin's gone, Craft would throw on a flavour it doesn't
+     * know rather than render the field.
+     */
+    #[Override]
+    protected function beforeUninstall(): void
+    {
+        foreach (Fields::getFieldsByType(MarkdownField::class, false) as $field) {
+            /** @var MarkdownField $field */
+            if ($field->flavor === WahlbergFlavor::NAME) {
+                $field->flavor = Markdown::FLAVOR_GFM;
+                Fields::saveField($field, false);
+            }
+        }
     }
 
     #[Override]
