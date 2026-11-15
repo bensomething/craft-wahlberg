@@ -102,6 +102,40 @@ Wahlberg can point out things worth fixing under a Markdown field while an entry
 
 What they find shows as the field’s warning, after any warning the field already has. It updates each time the entry saves or autosaves, and never stops a save. Markdown inside code isn’t checked.
 
+## Upgrading from 1.x
+
+Wahlberg 1.x brought its own Markdown field. 2.x converts each one to Craft’s Markdown field when you update, in a migration that `php artisan craft:up` runs. Entries aren’t touched: both fields keep the Markdown as it was typed, so the content reads the same afterwards.
+
+To see what will change first, run this before `craft:up`:
+
+```bash
+php artisan wahlberg:convert-fields --dry-run
+```
+
+It lists each field, any setting that can’t come across, and the snippets that were limited to certain fields. The same list goes to the log when the migration runs. Without `--dry-run`, the command converts the fields itself.
+
+The conversion is a project config change, so commit the result and deploy it like any other field change. Other environments pick up the converted fields from project config.
+
+Most settings carry across: the flavour (GitHub-Flavored Markdown with line breaks kept becomes Craft’s **GitHub-Flavored Markdown Comment**), the toolbar buttons, HTML encoding and sanitising, the placeholder, the starting height, the character and byte limits, and the asset volumes. The **Entry** and **Link** buttons become one **Link** button whose link types match, which also decides whether the field gets `@` links.
+
+These don’t carry across:
+
+- **Font Size**, **Line Length**, **Max Rows**, **New Paragraph on Return**, **Floating Toolbar**, **Syntax Highlighting** and **Show Unpermitted Files**. The native field has nothing like them.
+- **HTML Purifier configs.** The native field uses Craft’s HTML sanitizers.
+- **Available Snippets**, which is set on the snippet now: give a snippet `fields` to offer it on only those fields. The dry run lists the `fields` that match what each field offered.
+
+In templates:
+
+| 1.x | 2.x |
+| --- | --- |
+| `entry.body.markdown` (reference tags resolved) | `entry.body|parseMarkdownRefs`. Craft’s own `.markdown` is the Markdown as typed |
+| `entry.body.text` | `entry.body|plainText`, or `entry.body|excerpt` for one line |
+| `entry.body.flavour` | `entry.body.flavor` |
+| `text|marky` | `text|md` |
+| `wahlbergEditor()` | Nothing. Use a Markdown field |
+
+The config file has moved from `config/wahlberg.php` to `config/craft/wahlberg.php`, and per-environment keys (`'*'`, `'dev'`) aren’t read. The snippet format is unchanged.
+
 ## Configuration
 
 To fix snippets or the trigger in code, publish the config file:

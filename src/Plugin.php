@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace bensomething\wahlberg;
 
+use bensomething\wahlberg\Console\ConvertFieldsCommand;
 use bensomething\wahlberg\Listeners\AttachMenus;
 use bensomething\wahlberg\Listeners\ShowWritingChecks;
 use bensomething\wahlberg\Markdown\WahlbergFlavor;
@@ -46,6 +47,8 @@ class Plugin extends BasePlugin
      * so it's clear which snippets there are.
      */
     public bool $hasReadOnlyCpSettings = true;
+
+    protected array $commands = [ConvertFieldsCommand::class];
 
     protected array $events = [
         FieldLayoutUiResolving::class => [AttachMenus::class, ShowWritingChecks::class],

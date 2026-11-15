@@ -9,6 +9,7 @@
 - Added the Wahlberg Markdown flavour, with GitHub’s alerts, footnotes, `==highlights==` and heading ids.
 - Added the `toc`, `excerpt`, `readingTime`, `plainText` and `parseMarkdownRefs` Twig filters.
 - Added writing checks.
+- Updating from 1.x converts Wahlberg’s Markdown fields to Craft’s, keeping their settings where Craft’s field has an equivalent. `wahlberg:convert-fields --dry-run` shows what will change.
 
 ### Changed
 
