@@ -1,9 +1,14 @@
 # Changelog
 
-## 2.0.0 - Unreleased
+## 2.0.0-beta.1 - Unreleased
 
 ### Added
 
+- Added snippets to Craft’s Markdown field. Type `/` at the start of a line or after a space to pick one. Snippets are set up under Settings → Plugins → Wahlberg, or in `config/craft/wahlberg.php`, and plugins can add their own through `SnippetsRegistering`.
+- Snippets can have tab stops: `$1` to `$9`, `${1:defaults}` and `$0`, visited with Tab and Shift+Tab.
+- Snippets go on lines of their own when picked mid-sentence, unless they’re marked **Inline**.
+- The menu trigger can be `/`, `\` or `;`.
+- Added `@` links. Type `@` and part of an entry’s title to link to it with a reference tag. The menu follows the field’s link settings: its allowed link types, entry sources and selectable entries condition.
 - Added the Wahlberg Markdown flavour, on the Markdown field’s **Markdown Flavor** setting: GitHub-Flavored Markdown plus GitHub’s alerts, footnotes, `==highlights==` and heading ids.
 
 ### Changed
