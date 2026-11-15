@@ -16,13 +16,20 @@ use function CraftCms\Cms\t;
  * `config/craft/wahlberg.php` when that sets them, plus any a plugin adds through
  * {@see SnippetsRegistering}.
  *
- * @phpstan-type Snippet array{label: string, body: string, fields: list<string>|null}
+ * @phpstan-type Snippet array{label: string, body: string, inline: bool, fields: list<string>|null}
  * @phpstan-type Stop array{int, int}
- * @phpstan-type Option array{label: string, value: string, keywords: list<string>, data: array{wahlberg: array{stops: list<Stop>}}}
+ * @phpstan-type Option array{label: string, value: string, keywords: list<string>, data: array{wahlberg: array{stops: list<Stop>, inline: bool}, hint?: string}}
  */
 class Snippets
 {
     public const string DEFAULT_TRIGGER = '/';
+
+    /**
+     * The characters the menu can open on. Most others mean something already: `#`,
+     * `>`, `-`, `*` and `+` start Markdown blocks, `!` an image, `:` one of Craft's
+     * emoji shortcodes, and `@` is taken by mentions and entry links.
+     */
+    public const array TRIGGERS = ['/', '\\', ';'];
 
     /**
      * `$0` through `$9`, bare or carrying a default: `${1:Name}`. No nested braces in
@@ -43,10 +50,13 @@ class Snippets
         private readonly Settings $settings,
     ) {}
 
-    /** The character that opens the menu. */
+    /**
+     * The character that opens the menu. The config file isn't validated, so one it
+     * sets outside the list falls back to the default.
+     */
     public function trigger(): string
     {
-        return $this->settings->trigger !== '' ? $this->settings->trigger : self::DEFAULT_TRIGGER;
+        return in_array($this->settings->trigger, self::TRIGGERS, true) ? $this->settings->trigger : self::DEFAULT_TRIGGER;
     }
 
     /**
@@ -97,11 +107,19 @@ class Snippets
 
             ['text' => $text, 'stops' => $stops] = self::compile($snippet['body']);
 
+            $data = ['wahlberg' => ['stops' => $stops, 'inline' => $snippet['inline']]];
+
+            // Shown at the right of the option, so the author knows it won't start a
+            // new paragraph
+            if ($snippet['inline']) {
+                $data['hint'] = t('Inline', category: 'wahlberg');
+            }
+
             $options[] = [
                 'label' => $snippet['label'],
                 'value' => $text,
                 'keywords' => [$handle],
-                'data' => ['wahlberg' => ['stops' => $stops]],
+                'data' => $data,
             ];
         }
 
@@ -193,6 +211,9 @@ class Snippets
             $snippets[$handle] = [
                 'label' => t($label ?? Str::headline($handle), category: 'site'),
                 'body' => $body,
+                // Most snippets are blocks (a quote, a table, a figure) that need lines
+                // of their own. An inline one goes in exactly where it was typed
+                'inline' => is_array($snippet) && filter_var($snippet['inline'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 'fields' => self::fields(is_array($snippet) ? ($snippet['fields'] ?? null) : null),
             ];
         }

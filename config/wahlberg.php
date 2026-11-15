@@ -18,12 +18,14 @@
 
 return [
     // The character that opens the snippets menu, typed at the start of a line or
-    // after a space.
+    // after a space: '/', '\\' or ';'. Anything else falls back to '/'.
     // 'trigger' => '/',
 
     // Blocks of Markdown authors can drop in from the `/` menu, keyed by handle.
     // Each takes a `label` and a `body`, and optionally `fields`: the handles of the
     // Markdown fields that offer it. Without `fields`, every Markdown field does.
+    // Picked mid-sentence, a snippet starts a new paragraph, since most are blocks.
+    // `'inline' => true` puts one in exactly where it was typed instead.
     //
     // In a body, `$1` to `$9` are stops visited on Tab, `${1:like this}` is a stop
     // with a default, and `$0` is where the caret ends up. Escape the `$` in

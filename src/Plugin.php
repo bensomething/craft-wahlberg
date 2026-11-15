@@ -11,8 +11,8 @@ use CraftCms\Cms\FieldLayout\Events\FieldLayoutUiResolving;
 use CraftCms\Cms\Markdown\Markdown;
 use CraftCms\Cms\Plugin\Plugin as BasePlugin;
 use CraftCms\Cms\Support\Facades\Fields;
+use CraftCms\Cms\Ui\Controls\Choice;
 use CraftCms\Cms\Ui\Controls\Table;
-use CraftCms\Cms\Ui\Controls\Text;
 use CraftCms\Cms\Ui\Enums\ControlMode;
 use CraftCms\Cms\Ui\Nodes\Field;
 use CraftCms\Cms\Ui\Ui;
@@ -49,11 +49,12 @@ class Plugin extends BasePlugin
     ];
 
     /**
-     * On every CP page, since a Markdown field can turn up in any of them, slideouts
-     * included. It does nothing until a snippet is picked.
+     * Places a picked snippet and runs its tab stops. On every CP page, since a
+     * Markdown field can turn up in any of them, slideouts included. It does nothing
+     * until a snippet is picked.
      */
     protected array $scripts = [
-        __DIR__.'/../resources/js/tab-stops.js' => 'js/tab-stops.js',
+        __DIR__.'/../resources/js/snippets.js' => 'js/snippets.js',
     ];
 
     /**
@@ -125,6 +126,15 @@ class Plugin extends BasePlugin
         };
 
         return Ui::make([
+            $overridable('trigger', Field::make(t('Menu Trigger', category: 'wahlberg'), Choice::make('trigger')
+                ->options([
+                    ['label' => t('{character} Slash', ['character' => '/'], 'wahlberg'), 'value' => '/'],
+                    ['label' => t('{character} Backslash', ['character' => '\\'], 'wahlberg'), 'value' => '\\'],
+                    ['label' => t('{character} Semicolon', ['character' => ';'], 'wahlberg'), 'value' => ';'],
+                ])
+                ->withoutPlaceholder())
+                ->instructions(t('The character that opens the snippets menu, typed at the start of a line or after a space.', category: 'wahlberg'))),
+
             $overridable('snippets', Field::make(t('Snippets', category: 'wahlberg'), Table::make('snippets')
                 // Widths a column won't shrink below, so on a narrow screen the table
                 // scrolls sideways in Craft's scroller instead of wrapping every word
@@ -148,6 +158,11 @@ class Plugin extends BasePlugin
                         'code' => true,
                         'width' => '18rem',
                     ],
+                    'inline' => [
+                        'heading' => t('Inline', category: 'wahlberg'),
+                        'type' => 'checkbox',
+                        'width' => '4rem',
+                    ],
                     'fields' => [
                         'heading' => t('Fields', category: 'wahlberg'),
                         'type' => 'singleline',
@@ -160,13 +175,7 @@ class Plugin extends BasePlugin
                 ->allowDelete()
                 ->allowReorder()
                 ->addRowLabel(t('Add a snippet', category: 'wahlberg')))
-                ->instructions(t('Blocks of Markdown authors can drop into a Markdown field from its snippets menu. In the Markdown, `$1` to `$9` are stops the author moves between with Tab, `${1:like this}` is a stop with text already in it, and `$0` is where the caret ends up. **Fields** takes field handles, separated by commas, to offer a snippet on only those fields.', category: 'wahlberg'))),
-
-            $overridable('trigger', Field::make(t('Menu Trigger', category: 'wahlberg'), Text::make('trigger')
-                ->size(2)
-                ->maxLength(1)
-                ->monospace())
-                ->instructions(t('The character that opens the snippets menu, typed at the start of a line or after a space.', category: 'wahlberg'))),
+                ->instructions(t('Blocks of Markdown authors can drop into a Markdown field from its snippets menu. In the Markdown, `$1` to `$9` are stops the author moves between with Tab, `${1:like this}` is a stop with text already in it, and `$0` is where the caret ends up. A snippet picked mid-sentence starts a new paragraph, since most are blocks like a quote or a table. Tick **Inline** for one that should go in exactly where it’s typed. **Fields** takes field handles, separated by commas, to offer a snippet on only those fields.', category: 'wahlberg'))),
         ]);
     }
 }

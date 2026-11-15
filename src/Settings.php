@@ -21,8 +21,8 @@ class Settings extends PluginSettings
     public string $trigger = Snippets::DEFAULT_TRIGGER;
 
     /**
-     * Rows from the settings screen, each with a `label`, `handle`, `body` and
-     * `fields`. The config file's handle-keyed map is accepted here too, since it
+     * Rows from the settings screen, each with a `label`, `handle`, `body`, `inline`
+     * and `fields`. The config file's handle-keyed map is accepted here too, since it
      * lands on this property when it overrides it.
      *
      * @var array<array-key, mixed>
@@ -33,11 +33,14 @@ class Settings extends PluginSettings
     public function getRules(): array
     {
         return array_merge(parent::getRules(), [
-            'trigger' => ['required', 'string', 'size:1', 'not_regex:/\s/'],
+            // Unquoted: Rule::in() quotes each value, and Laravel reads the rule back
+            // with str_getcsv(), which takes a backslash inside quotes for an escape
+            'trigger' => ['required', 'string', 'in:'.implode(',', Snippets::TRIGGERS)],
             'snippets' => ['array'],
             'snippets.*.label' => ['nullable', 'string'],
             'snippets.*.handle' => ['nullable', 'string', 'regex:/^[A-Za-z][A-Za-z0-9_-]*$/', 'distinct'],
             'snippets.*.body' => ['required', 'string'],
+            'snippets.*.inline' => ['nullable', 'boolean'],
         ]);
     }
 }

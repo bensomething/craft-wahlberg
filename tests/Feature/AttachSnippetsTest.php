@@ -40,7 +40,7 @@ final class AttachSnippetsTest extends TestCase
                 'label' => 'Callout',
                 'value' => '> Text',
                 'keywords' => ['callout'],
-                'data' => ['wahlberg' => ['stops' => [[2, 6], [6, 6]]]],
+                'data' => ['wahlberg' => ['stops' => [[2, 6], [6, 6]], 'inline' => false]],
             ]],
         ]], $triggers);
     }
@@ -50,6 +50,14 @@ final class AttachSnippetsTest extends TestCase
         $this->configure(['note' => 'Note'], ['trigger' => ';']);
 
         $this->assertSame(';', $this->triggersFor($this->field('body'))[0]['trigger']);
+    }
+
+    public function test_a_trigger_outside_the_list_falls_back_to_slash(): void
+    {
+        // As the config file could set it, which isn't validated
+        $this->configure(['note' => 'Note'], ['trigger' => '#']);
+
+        $this->assertSame('/', $this->triggersFor($this->field('body'))[0]['trigger']);
     }
 
     public function test_a_label_defaults_to_the_handle(): void
@@ -129,6 +137,27 @@ final class AttachSnippetsTest extends TestCase
         // and a row with no Markdown is skipped
         $this->assertSame(['pullQuote', 'aside'], $this->handlesFor($this->field('body')));
         $this->assertSame(['pullQuote'], $this->handlesFor($this->field('summary')));
+    }
+
+    public function test_a_snippet_can_be_inline(): void
+    {
+        $this->configure([
+            'callout' => ['body' => '> $1'],
+            'kbd' => ['body' => '<kbd>$1</kbd>', 'inline' => true],
+            ['label' => 'Table', 'handle' => 'table', 'body' => '| $1 |', 'inline' => false, 'fields' => ''],
+            ['label' => 'Abbr', 'handle' => 'abbr', 'body' => '<abbr>$1</abbr>', 'inline' => true, 'fields' => ''],
+        ]);
+
+        $options = $this->triggersFor($this->field('body'))[0]['options'];
+        $inline = array_combine(
+            array_merge(...array_column($options, 'keywords')),
+            array_map(fn (array $option) => $option['data']['wahlberg']['inline'], $options),
+        );
+
+        $this->assertSame(['callout' => false, 'kbd' => true, 'table' => false, 'abbr' => true], $inline);
+
+        // Tagged in the menu
+        $this->assertSame([null, 'Inline', null, 'Inline'], array_map(fn (array $option) => $option['data']['hint'] ?? null, $options));
     }
 
     /**

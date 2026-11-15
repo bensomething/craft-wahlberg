@@ -1,10 +1,11 @@
 /**
- * Tab stops for snippets inserted from a Markdown field's `/` menu.
+ * What happens after a snippet is picked from a Markdown field's `/` menu.
  *
  * Craft's text expander inserts the snippet's text and fires `craft-select` with the
- * option it inserted. Wahlberg's options carry their stops, already measured from
- * the start of the text (see `Snippets::compile()`), so this only has to find where
- * the text landed and walk the author through them.
+ * option it inserted. Wahlberg's options say whether the snippet is inline, and
+ * carry its stops, already measured from the start of the text (see
+ * `Snippets::compile()`). So this only has to find where the text landed, move a
+ * block (anything not inline) onto lines of its own, and walk the author through the stops.
  *
  * More than one stop starts a run: Tab moves on, Shift+Tab back, Escape hands Tab
  * back. Tab is only borrowed while a run lasts. It's how you leave a field, and one
@@ -48,6 +49,38 @@
 
       return stop;
     });
+  }
+
+  /**
+   * A block picked mid-line (a quote, a table) gets a blank line either side, which
+   * Markdown needs to read it as one. The spaces the author typed before the `/`
+   * go, so the line it came from doesn't end in them. Returns where the snippet
+   * now starts.
+   *
+   * One edit, through `execCommand` like the expander's, so it stays undoable.
+   */
+  function placeAsBlock(textarea, from, to) {
+    const value = textarea.value;
+    const before = value.slice(0, from).replace(/[ \t]+$/, '');
+    const after = value.slice(to).replace(/^[ \t]+/, '');
+    const prefix = before ? '\n'.repeat(Math.max(0, 2 - before.match(/\n*$/)[0].length)) : '';
+    const suffix = after ? '\n'.repeat(Math.max(0, 2 - after.match(/^\n*/)[0].length)) : '';
+    const start = before.length;
+    const finish = value.length - after.length;
+
+    if (!prefix && !suffix && start === from && finish === to) {
+      return from;
+    }
+
+    const replacement = prefix + value.slice(from, to) + suffix;
+    textarea.setSelectionRange(start, finish);
+
+    if (!document.execCommand('insertText', false, replacement)) {
+      textarea.setRangeText(replacement, start, finish, 'end');
+      textarea.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+
+    return start + prefix.length;
   }
 
   function end() {
@@ -139,9 +172,9 @@
   });
 
   document.addEventListener('craft-select', (event) => {
-    const stops = event.detail?.option?.data?.wahlberg?.stops;
+    const snippet = event.detail?.option?.data?.wahlberg;
 
-    if (!Array.isArray(stops) || !stops.length) {
+    if (!snippet) {
       return;
     }
 
@@ -157,20 +190,28 @@
     end();
 
     // The expander leaves the caret after what it inserted. If the field's limit
-    // cut it short, the stops no longer describe the text, so leave the caret be
+    // cut it short, the snippet isn't what's there, so leave it be
     const text = event.detail.option.value;
-    const to = textarea.selectionEnd;
-    const from = to - text.length;
+    let to = textarea.selectionEnd;
+    let from = to - text.length;
 
     if (from < 0 || textarea.value.slice(from, to) !== text) {
       return;
     }
 
+    if (!snippet.inline) {
+      from = placeAsBlock(textarea, from, to);
+      to = from + text.length;
+    }
+
+    const stops = Array.isArray(snippet.stops) ? snippet.stops : [];
     const absolute = stops.map(([start, finish]) => ({from: from + start, to: from + finish}));
 
-    // One stop is where the caret goes, which needs no run
-    if (absolute.length === 1) {
-      textarea.setSelectionRange(absolute[0].from, absolute[0].to);
+    // None leaves the caret after the snippet, and one is where it goes. Neither
+    // needs a run
+    if (absolute.length < 2) {
+      const caret = absolute[0] ?? {from: to, to};
+      textarea.setSelectionRange(caret.from, caret.to);
       return;
     }
 

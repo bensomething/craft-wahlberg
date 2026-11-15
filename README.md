@@ -16,6 +16,8 @@ Snippets for Craft’s Markdown field.
 
 Set snippets up under **Settings → Plugins → Wahlberg**. Each has a label, a handle, its Markdown, and optionally the handles of the fields that offer it. Without any, every Markdown field does.
 
+Picked mid-sentence, a snippet moves to a new paragraph, with a blank line either side, since most are blocks like a quote, a table or a figure. Tick **Inline** for one that should go in exactly where it’s typed, like a `<kbd>` or an abbreviation.
+
 In a Markdown field, type `/` at the start of a line or after a space to open the snippets menu, and keep typing to filter it.
 
 In a snippet’s Markdown:
