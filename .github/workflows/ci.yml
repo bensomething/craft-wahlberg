@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [2.x]
+  pull_request:
+    branches: [2.x]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A branch only needs its latest push checked.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: ${{ matrix.script }} (Craft ${{ matrix.dependencies }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        script: [check-cs, phpstan, test]
+        # Both ends of the craftcms/cms constraint. Craft 6 is pre-release, so the
+        # highest moves often, and that's where a token rename shows up first.
+        dependencies: [highest, lowest]
+        exclude:
+          # Code style is ours alone; the Craft version can't affect it.
+          - script: check-cs
+            dependencies: lowest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+
+      # Which Craft got installed is the first thing to know from a failure.
+      - name: Report the Craft version under test
+        run: composer show craftcms/cms | head -3
+
+      - run: composer ${{ matrix.script }}
+
+  # Craft's development branch, ahead of any tag. Allowed to fail: it's early warning
+  # of an upstream change, not a release gate.
+  craft-dev:
+    name: test (Craft 6.x-dev)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_sqlite
+          coverage: none
+
+      # 6.x-dev pulls in its siblings' dev branches too (craftcms/cms-assets), which
+      # the package's beta minimum-stability would refuse.
+      - run: composer config minimum-stability dev
+
+      - run: composer require --no-update --no-interaction "craftcms/cms:6.x-dev"
+
+      - run: composer update --no-interaction --no-progress --with-all-dependencies
+
+      - name: Report the Craft version under test
+        run: composer show craftcms/cms | head -3
+
+      - run: composer test
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+
+      # No `composer install` above: validation reads the manifest, not the tree.
+      # `--no-plugins` keeps `craftcms/plugin-installer` out of it, which errors on a
+      # relative vendor path when it does get loaded.
+      - run: composer validate --strict --no-plugins
+
+      # `export-ignore` is easy to get wrong, and only ever wrong in the published
+      # package, where it's least visible. This prints what an install would receive.
+      - name: List what ships in the dist archive
+        run: git archive --format=tar HEAD | tar --list | sort

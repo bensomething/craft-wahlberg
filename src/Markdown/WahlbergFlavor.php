@@ -45,14 +45,18 @@ final class WahlbergFlavor extends Flavor
 
     public function __invoke(MarkdownOptions $options): MarkdownConverter
     {
-        $config = [
-            'heading_permalink' => [
+        $config = [];
+
+        // Only alongside the extension that reads it: league/commonmark rejects config
+        // for an extension that isn't there, which inline-only parsing leaves out
+        if (! $options->inlineOnly) {
+            $config['heading_permalink'] = [
                 'insert' => HeadingPermalinkProcessor::INSERT_NONE,
                 'apply_id_to_heading' => true,
                 'id_prefix' => '',
                 'fragment_prefix' => '',
-            ],
-        ];
+            ];
+        }
 
         if (! $options->allowUnsafeLinks) {
             $config['allow_unsafe_links'] = false;
