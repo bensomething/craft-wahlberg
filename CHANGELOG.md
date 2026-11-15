@@ -9,6 +9,7 @@
 - Snippets go on lines of their own when picked mid-sentence, unless they’re marked **Inline**.
 - The menu trigger can be `/`, `\` or `;`.
 - Added `@` links. Type `@` and part of an entry’s title to link to it with a reference tag. The menu follows the field’s link settings: its allowed link types, entry sources and selectable entries condition.
+- Added the `toc`, `excerpt`, `readingTime`, `plainText` and `parseMarkdownRefs` Twig filters.
 - Added the Wahlberg Markdown flavour, on the Markdown field’s **Markdown Flavor** setting: GitHub-Flavored Markdown plus GitHub’s alerts, footnotes, `==highlights==` and heading ids.
 
 ### Changed

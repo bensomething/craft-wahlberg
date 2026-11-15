@@ -6,11 +6,13 @@ namespace bensomething\wahlberg;
 
 use bensomething\wahlberg\Listeners\AttachMenus;
 use bensomething\wahlberg\Markdown\WahlbergFlavor;
+use bensomething\wahlberg\Twig\WahlbergExtension;
 use CraftCms\Cms\Field\Markdown as MarkdownField;
 use CraftCms\Cms\FieldLayout\Events\FieldLayoutUiResolving;
 use CraftCms\Cms\Markdown\Markdown;
 use CraftCms\Cms\Plugin\Plugin as BasePlugin;
 use CraftCms\Cms\Support\Facades\Fields;
+use CraftCms\Cms\Support\Facades\Twig as CraftTwig;
 use CraftCms\Cms\Ui\Controls\Choice;
 use CraftCms\Cms\Ui\Controls\Table;
 use CraftCms\Cms\Ui\Enums\ControlMode;
@@ -72,11 +74,14 @@ class Plugin extends BasePlugin
     }
 
     /**
-     * The Wahlberg flavour goes on the field's Markdown Flavor menu, next to Craft's.
+     * The Wahlberg flavour goes on the field's Markdown Flavor menu, next to Craft's,
+     * and the template helpers into Twig, for site and CP templates alike.
      */
     public function boot(Markdown $markdown): void
     {
         $markdown->extend(WahlbergFlavor::NAME, new WahlbergFlavor);
+
+        CraftTwig::registerExtension(new WahlbergExtension);
     }
 
     /**
