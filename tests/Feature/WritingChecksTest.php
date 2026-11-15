@@ -177,8 +177,13 @@ final class WritingChecksTest extends TestCase
 
     private function warningFor(string $markdown, ?string $layoutWarning = null): ?string
     {
-        $field = Fields::createField(['type' => Markdown::class, 'name' => 'Body', 'handle' => 'body']);
-        $this->assertTrue(Fields::saveField($field));
+        // One field for every call in a test: Craft rejects a second with the same handle
+        $field = Fields::getFieldByHandle('body');
+
+        if ($field === null) {
+            $field = Fields::createField(['type' => Markdown::class, 'name' => 'Body', 'handle' => 'body']);
+            $this->assertTrue(Fields::saveField($field));
+        }
 
         $layout = FieldLayout::createFromConfig([
             'type' => Entry::class,
