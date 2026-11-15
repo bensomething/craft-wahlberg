@@ -1,0 +1,29 @@
+name: Create Release
+run-name: Create release for ${{ github.event.client_payload.version }}
+
+on:
+  repository_dispatch:
+    types:
+      - craftcms/new-release
+
+# The release detector often dispatches twice in quick succession; queue
+# same-tag runs so the second sees the created release (allowUpdates no-op)
+# instead of racing the first into an already_exists error.
+concurrency:
+  group: create-release-${{ github.event.client_payload.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          body: ${{ github.event.client_payload.notes }}
+          makeLatest: ${{ github.event.client_payload.latest }}
+          name: ${{ github.event.client_payload.version }}
+          prerelease: ${{ github.event.client_payload.prerelease }}
+          tag: ${{ github.event.client_payload.tag }}
