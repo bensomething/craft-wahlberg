@@ -1,6 +1,6 @@
 {
     "name": "bensomething/craft-wahlberg",
-    "description": "A Markdown field with a GitHub-style editor.",
+    "description": "Better Markdown in Craft: a full editor on Craft 5, and more for the native field on Craft 6.",
     "type": "craft-plugin",
     "license": "MIT",
     "keywords": [
