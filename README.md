@@ -1,9 +1,9 @@
 # Wahlberg for Craft CMS
 
-Snippets for Craft’s Markdown field.
+Supercharge Craft’s native Markdown field.
 
 > [!NOTE]
-> This is the Craft 6 line, in development. Craft 6 ships a Markdown field of its own, with a toolbar, a server-rendered preview and reference tags, so Wahlberg 2 doesn’t bring a field type. It adds the snippets from Wahlberg 1 to the native field instead.
+> This is the Craft 6 line, in development. Craft 6 ships a Markdown field of its own, with a toolbar, a server-rendered preview and reference tags, so Wahlberg 2 doesn’t bring a field type. It adds to the native field instead: snippets, `@` links to entries, a Markdown flavour with alerts and footnotes, and template helpers.
 >
 > For Craft 5, use [Wahlberg 1.x](https://github.com/bensomething/craft-wahlberg/tree/develop), the full field.
 

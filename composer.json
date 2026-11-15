@@ -1,6 +1,6 @@
 {
     "name": "bensomething/craft-wahlberg",
-    "description": "Snippets for Craft’s Markdown field.",
+    "description": "Supercharge Craft’s native Markdown field.",
     "type": "craft-plugin",
     "license": "MIT",
     "keywords": [
