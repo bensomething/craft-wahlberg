@@ -34,7 +34,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "bensomething\\wahlberg\\tests\\": "tests/"
+            "bensomething\\wahlberg\\tests\\": "tests/",
+            "CraftCms\\Cms\\Database\\Factories\\": "vendor/craftcms/cms/database/factories/"
         }
     },
     "extra": {

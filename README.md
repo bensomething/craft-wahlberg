@@ -26,6 +26,12 @@ In a snippet’s Markdown:
 - `${1:like this}` is a stop with a default: the text goes in, and landing on the stop selects it.
 - `$0` is where the caret ends up, after any numbered stops. Without one it lands at the end.
 
+## Entry links
+
+Type `@` in a Markdown field, then part of an entry’s title, to link to it. The link goes in as Markdown with a reference tag for its URL, `[Getting started]({entry:12@1:url})`, so it follows the entry if its URI changes, and Craft tracks the reference. The menu lists entries with URLs that the author can view, in the site being edited, most recently edited first.
+
+Turn it off with **Entry Links** under Settings → Plugins → Wahlberg.
+
 ## The Wahlberg flavour
 
 Wahlberg adds a **Wahlberg** option to the Markdown field’s **Markdown Flavor** setting. It’s everything Craft’s GitHub-Flavored Markdown does, plus:

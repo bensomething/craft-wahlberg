@@ -21,8 +21,8 @@ use CraftCms\Cms\Ui\Contracts\Node;
 use CraftCms\Cms\Ui\Controls\Markdown as MarkdownControl;
 use Illuminate\Support\Facades\Event;
 
-/** The `/` menu on native Markdown fields, through a real field layout compile. */
-final class AttachSnippetsTest extends TestCase
+/** The `/` and `@` menus on native Markdown fields, through a real field layout compile. */
+final class AttachMenusTest extends TestCase
 {
     public function test_a_markdown_field_gets_the_snippets(): void
     {
@@ -139,6 +139,27 @@ final class AttachSnippetsTest extends TestCase
         $this->assertSame(['pullQuote'], $this->handlesFor($this->field('summary')));
     }
 
+    public function test_entry_links_add_an_at_menu(): void
+    {
+        $this->configure(['note' => 'Note'], ['entryLinks' => true]);
+
+        $triggers = $this->triggersFor($this->field('body'));
+
+        $this->assertCount(2, $triggers);
+        $this->assertSame('@', $triggers[1]['trigger']);
+        $this->assertSame('whitespace', $triggers[1]['boundary']);
+        $this->assertSame('Entries', $triggers[1]['label']);
+        $this->assertArrayNotHasKey('options', $triggers[1]);
+        $this->assertStringContainsString('/wahlberg/entries?site=', $triggers[1]['source']);
+    }
+
+    public function test_entry_links_work_without_snippets(): void
+    {
+        $this->configure([], ['entryLinks' => true]);
+
+        $this->assertSame(['@'], array_column($this->triggersFor($this->field('body')) ?? [], 'trigger'));
+    }
+
     public function test_a_snippet_can_be_inline(): void
     {
         $this->configure([
@@ -168,7 +189,8 @@ final class AttachSnippetsTest extends TestCase
      */
     private function configure(array $snippets, array $extra = []): void
     {
-        Plugin::getInstance()->setSettings(['snippets' => $snippets] + $extra);
+        // Entry links off unless a test turns them on, so the snippets menu is alone
+        Plugin::getInstance()->setSettings($extra + ['snippets' => $snippets, 'entryLinks' => false]);
         app(Snippets::class)->reset();
     }
 

@@ -21,6 +21,9 @@ return [
     // after a space: '/', '\\' or ';'. Anything else falls back to '/'.
     // 'trigger' => '/',
 
+    // Whether typing `@` in a Markdown field offers links to entries.
+    // 'entryLinks' => true,
+
     // Blocks of Markdown authors can drop in from the `/` menu, keyed by handle.
     // Each takes a `label` and a `body`, and optionally `fields`: the handles of the
     // Markdown fields that offer it. Without `fields`, every Markdown field does.
