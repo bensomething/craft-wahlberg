@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace bensomething\wahlberg\Listeners;
 
-use bensomething\wahlberg\Settings;
+use bensomething\wahlberg\EntryLinks;
 use bensomething\wahlberg\Snippets;
 use CraftCms\Cms\Element\Contracts\ElementInterface;
 use CraftCms\Cms\FieldLayout\Events\FieldLayoutUiResolving;
@@ -17,7 +17,8 @@ use function CraftCms\Cms\t;
 
 /**
  * Gives every native Markdown field a field layout renders its menus: the snippets
- * one (`/` by default) and the `@` one for linking to entries.
+ * one (`/` by default) and, where the field's link settings allow entry links, the
+ * `@` one for linking to entries.
  *
  * Craft's Markdown control already carries a text expander, it just never gives it
  * any triggers. A field's control is found by its path, which a field layout always
@@ -29,15 +30,10 @@ class AttachMenus
 
     public function __construct(
         private readonly Snippets $snippets,
-        private readonly Settings $settings,
     ) {}
 
     public function handle(FieldLayoutUiResolving $event): void
     {
-        if ($this->snippets->all() === [] && ! $this->settings->entryLinks) {
-            return;
-        }
-
         $this->walk($event->ui->nodes(), $event->fieldLayout, $event->element);
     }
 
@@ -81,14 +77,15 @@ class AttachMenus
             ];
         }
 
-        if ($this->settings->entryLinks) {
-            // Searched as the author types. Entries in the site being edited, so the
-            // link goes to that site's version of the entry
+        if (EntryLinks::enabledFor($field)) {
+            // Searched as the author types, by the field's link settings. Entries in
+            // the site being edited, so the link goes to that site's version
             $triggers[] = [
                 'trigger' => self::ENTRY_LINK_TRIGGER,
                 'boundary' => 'whitespace',
                 'label' => t('Entries', category: 'wahlberg'),
                 'source' => route('wahlberg.entries', [
+                    'field' => $field->id,
                     'site' => $element->siteId ?? Sites::getPrimarySite()->id,
                 ]),
             ];

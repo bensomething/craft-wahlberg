@@ -30,7 +30,7 @@ In a snippet’s Markdown:
 
 Type `@` in a Markdown field, then part of an entry’s title, to link to it. The link goes in as Markdown with a reference tag for its URL, `[Getting started]({entry:12@1:url})`, so it follows the entry if its URI changes, and Craft tracks the reference. The menu lists entries with URLs that the author can view, in the site being edited, most recently edited first.
 
-Turn it off with **Entry Links** under Settings → Plugins → Wahlberg.
+It follows the field’s own link settings, the ones its toolbar’s Link button uses: a field offers `@` only when **Entry** is one of its **Allowed Link Types**, and then only entries from its **Entry Sources** that match its **Selectable Entries Condition**.
 
 ## The Wahlberg flavour
 

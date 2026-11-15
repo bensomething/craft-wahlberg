@@ -12,7 +12,6 @@ use CraftCms\Cms\Markdown\Markdown;
 use CraftCms\Cms\Plugin\Plugin as BasePlugin;
 use CraftCms\Cms\Support\Facades\Fields;
 use CraftCms\Cms\Ui\Controls\Choice;
-use CraftCms\Cms\Ui\Controls\Lightswitch;
 use CraftCms\Cms\Ui\Controls\Table;
 use CraftCms\Cms\Ui\Enums\ControlMode;
 use CraftCms\Cms\Ui\Nodes\Field;
@@ -135,9 +134,6 @@ class Plugin extends BasePlugin
                 ])
                 ->withoutPlaceholder())
                 ->instructions(t('The character that opens the snippets menu, typed at the start of a line or after a space.', category: 'wahlberg'))),
-
-            $overridable('entryLinks', Field::make(t('Entry Links', category: 'wahlberg'), Lightswitch::make('entryLinks'))
-                ->instructions(t('Whether typing `@` in a Markdown field offers links to entries, found by title. A link points at the entry rather than its URL, so it keeps working when the entry’s URI changes.', category: 'wahlberg'))),
 
             $overridable('snippets', Field::make(t('Snippets', category: 'wahlberg'), Table::make('snippets')
                 // Widths a column won't shrink below, so on a narrow screen the table

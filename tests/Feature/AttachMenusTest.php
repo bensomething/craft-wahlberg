@@ -141,23 +141,32 @@ final class AttachMenusTest extends TestCase
 
     public function test_entry_links_add_an_at_menu(): void
     {
-        $this->configure(['note' => 'Note'], ['entryLinks' => true]);
+        $this->configure(['note' => 'Note']);
 
-        $triggers = $this->triggersFor($this->field('body'));
+        $field = $this->field('body', linkTypes: ['entry', 'url']);
+        $triggers = $this->triggersFor($field);
 
         $this->assertCount(2, $triggers);
         $this->assertSame('@', $triggers[1]['trigger']);
         $this->assertSame('whitespace', $triggers[1]['boundary']);
         $this->assertSame('Entries', $triggers[1]['label']);
         $this->assertArrayNotHasKey('options', $triggers[1]);
-        $this->assertStringContainsString('/wahlberg/entries?site=', $triggers[1]['source']);
+        $this->assertStringContainsString('/wahlberg/entries?', $triggers[1]['source']);
+        $this->assertStringContainsString('field='.$field->id, $triggers[1]['source']);
+    }
+
+    public function test_no_at_menu_when_the_field_doesnt_allow_entry_links(): void
+    {
+        $this->configure(['note' => 'Note']);
+
+        $this->assertSame(['/'], array_column($this->triggersFor($this->field('body', linkTypes: ['url'])) ?? [], 'trigger'));
     }
 
     public function test_entry_links_work_without_snippets(): void
     {
-        $this->configure([], ['entryLinks' => true]);
+        $this->configure([]);
 
-        $this->assertSame(['@'], array_column($this->triggersFor($this->field('body')) ?? [], 'trigger'));
+        $this->assertSame(['@'], array_column($this->triggersFor($this->field('body', linkTypes: ['entry'])) ?? [], 'trigger'));
     }
 
     public function test_a_snippet_can_be_inline(): void
@@ -189,14 +198,23 @@ final class AttachMenusTest extends TestCase
      */
     private function configure(array $snippets, array $extra = []): void
     {
-        // Entry links off unless a test turns them on, so the snippets menu is alone
-        Plugin::getInstance()->setSettings($extra + ['snippets' => $snippets, 'entryLinks' => false]);
+        Plugin::getInstance()->setSettings($extra + ['snippets' => $snippets]);
         app(Snippets::class)->reset();
     }
 
-    private function field(string $handle): FieldInterface
+    /**
+     * Without entry links unless a test allows them, so the snippets menu is alone.
+     *
+     * @param  list<string>  $linkTypes
+     */
+    private function field(string $handle, array $linkTypes = ['url']): FieldInterface
     {
-        $field = Fields::createField(['type' => Markdown::class, 'name' => ucfirst($handle), 'handle' => $handle]);
+        $field = Fields::createField([
+            'type' => Markdown::class,
+            'name' => ucfirst($handle),
+            'handle' => $handle,
+            'linkSettingsTypes' => $linkTypes,
+        ]);
         $this->assertTrue(Fields::saveField($field));
 
         return $field;
