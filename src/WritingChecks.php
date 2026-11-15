@@ -21,8 +21,8 @@ use function CraftCms\Cms\t;
 
 /**
  * Checks on a Markdown field's content that a field layout shows as the field's
- * warning: things worth fixing that shouldn't stop a save. Each is off until it's
- * ticked in Wahlberg's settings.
+ * warning: things worth fixing that shouldn't stop a save. All are on until they're
+ * unticked in Wahlberg's settings.
  *
  * Read from the parsed document, in the field's own flavour, so Markdown inside code
  * is never mistaken for an image, a heading or a link.
@@ -42,6 +42,12 @@ class WritingChecks
     public const string ENTRY_LINKS = 'entryLinks';
 
     public const array ALL = [self::ALT_TEXT, self::H1, self::HEADING_LEVELS, self::ENTRY_LINKS];
+
+    /**
+     * The setting's value for every check, including any added in a later version,
+     * as the settings screen's “All” checkbox saves it.
+     */
+    public const string EVERY = '*';
 
     /** An entry reference tag, by ID or UID, with or without a site. */
     private const string ENTRY_TAG = '/\{entry:([^@:}]+)(?:@([^:}]+))?/';
@@ -63,14 +69,20 @@ class WritingChecks
     }
 
     /**
-     * The checks that are on. The config file isn't validated, so anything unknown
-     * it sets is ignored.
+     * The checks that are on: every one for `*`, otherwise those listed. The config
+     * file isn't validated, so anything unknown it sets is ignored.
      *
      * @return list<string>
      */
     public function enabled(): array
     {
-        return array_values(array_intersect(self::ALL, $this->settings->checks));
+        $checks = Settings::normalizeChecks($this->settings->checks);
+
+        if ($checks === self::EVERY) {
+            return self::ALL;
+        }
+
+        return is_array($checks) ? array_values(array_intersect(self::ALL, $checks)) : [];
     }
 
     /**

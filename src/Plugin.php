@@ -16,7 +16,6 @@ use CraftCms\Cms\Support\Facades\Fields;
 use CraftCms\Cms\Support\Facades\Twig as CraftTwig;
 use CraftCms\Cms\Ui\Controls\Choice;
 use CraftCms\Cms\Ui\Controls\Table;
-use CraftCms\Cms\Ui\Enums\ChoicePresentation;
 use CraftCms\Cms\Ui\Enums\ControlMode;
 use CraftCms\Cms\Ui\Nodes\Field;
 use CraftCms\Cms\Ui\Ui;
@@ -133,7 +132,7 @@ class Plugin extends BasePlugin
         };
 
         return Ui::make([
-            $overridable('trigger', Field::make(t('Menu Trigger', category: 'wahlberg'), Choice::make('trigger')
+            $overridable('trigger', Field::make(t('Snippet Menu Trigger', category: 'wahlberg'), Choice::make('trigger')
                 ->options([
                     ['label' => t('{character} Slash', ['character' => '/'], 'wahlberg'), 'value' => '/'],
                     ['label' => t('{character} Backslash', ['character' => '\\'], 'wahlberg'), 'value' => '\\'],
@@ -190,8 +189,7 @@ class Plugin extends BasePlugin
                     array_keys(WritingChecks::labels()),
                     WritingChecks::labels(),
                 ))
-                ->presentation(ChoicePresentation::Checkboxes)
-                ->multiple())
+                ->allOption(t('All', category: 'wahlberg'), WritingChecks::EVERY))
                 ->instructions(t('Things to point out under a Markdown field while an entry is edited. They show as the field’s warning, update each time the entry saves, and never stop a save.', category: 'wahlberg'))),
         ]);
     }

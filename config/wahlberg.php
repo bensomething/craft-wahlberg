@@ -43,6 +43,7 @@ return [
     // Writing checks shown under Markdown fields as their warning, never blocking a
     // save: 'altText' (images without alt text), 'h1' (level 1 headings),
     // 'headingLevels' (skipped heading levels) and 'entryLinks' (links to entries
-    // that are disabled, not published yet, expired or gone). All off by default.
+    // that are disabled, not published yet, expired or gone). '*', the default,
+    // turns on all of them, including any added later; [] turns them all off.
     // 'checks' => ['altText', 'headingLevels'],
 ];

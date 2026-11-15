@@ -98,6 +98,26 @@ final class WritingChecksTest extends TestCase
         $this->assertSame([], app(WritingChecks::class)->check('# Title'));
     }
 
+    public function test_every_check_is_on_by_default(): void
+    {
+        $this->assertSame(WritingChecks::EVERY, Plugin::getInstance()->getSettings()->checks);
+        $this->assertSame(WritingChecks::ALL, app(WritingChecks::class)->enabled());
+    }
+
+    public function test_all_saves_as_a_single_value(): void
+    {
+        // As the settings screen posts it with All ticked
+        $this->assertTrue(app(Plugins::class)->savePluginSettings(Plugin::getInstance(), ['checks' => ['*']]));
+        $this->assertSame(WritingChecks::EVERY, Plugin::getInstance()->getSettings()->configData()['checks']);
+        $this->assertSame(WritingChecks::ALL, app(WritingChecks::class)->enabled());
+    }
+
+    public function test_unticking_everything_turns_them_off(): void
+    {
+        $this->assertTrue(app(Plugins::class)->savePluginSettings(Plugin::getInstance(), ['checks' => '']));
+        $this->assertSame([], app(WritingChecks::class)->enabled());
+    }
+
     public function test_unknown_checks_from_the_config_file_are_ignored(): void
     {
         Plugin::getInstance()->setSettings(['checks' => ['h1', 'spelling']]);

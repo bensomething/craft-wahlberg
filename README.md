@@ -93,7 +93,7 @@ A field’s value is read in its field’s flavour. A string is read in the Wahl
 
 ## Writing checks
 
-Wahlberg can point out things worth fixing under a Markdown field while an entry is edited. Tick the ones you want under **Writing Checks** in Wahlberg’s settings. All are off to start with.
+Wahlberg can point out things worth fixing under a Markdown field while an entry is edited. They’re all on to start with. Untick any you don’t want under **Writing Checks** in Wahlberg’s settings, where **All** also turns on any checks a later version adds.
 
 - **Images without alt text**
 - **Level 1 headings**, since the page’s title is usually the only one
